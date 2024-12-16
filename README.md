@@ -1,6 +1,10 @@
 # inbest-frontend
 
 ```
+pnpm build
+```
+
+```
 pnpm run dev
 ```
 

@@ -134,11 +134,13 @@ export const LineChart = ({
                     <div className="mb-2 text-sm font-medium">{label}</div>
                     <div className="space-y-1">
                       {payload
-                        .filter(
-                          (entry) =>
-                            entry.dataKey === "Portfolio" ||
-                            !hiddenSeries.has(entry.dataKey)
-                        )
+                        .filter((entry) => {
+                          const dataKey = entry.dataKey as string;
+                          return (
+                            dataKey === "Portfolio" ||
+                            !hiddenSeries.has(dataKey)
+                          );
+                        })
                         .map((entry: any, index) => (
                           <div key={index} className="flex items-center gap-2">
                             <div

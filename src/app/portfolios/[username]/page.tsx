@@ -30,7 +30,7 @@ const userData = {
       currentPrice: 202.64,
       return: 12.27,
       lastTransaction: {
-        type: "sell",
+        type: "sell" as const,
         date: "Mar 15, 2024",
       },
       logo: `https://assets.parqet.com/logos/symbol/TSLA?format=svg`,
@@ -43,7 +43,7 @@ const userData = {
       currentPrice: 878.35,
       return: 108.76,
       lastTransaction: {
-        type: "increase",
+        type: "increase" as const,
         date: "Mar 14, 2024",
       },
       logo: `https://assets.parqet.com/logos/symbol/NVDA?format=svg`,
@@ -56,7 +56,7 @@ const userData = {
       currentPrice: 24.89,
       return: 99.92,
       lastTransaction: {
-        type: "start",
+        type: "start" as const,
         date: "Mar 10, 2024",
       },
       logo: `https://assets.parqet.com/logos/symbol/PLTR?format=svg`,
@@ -69,7 +69,7 @@ const userData = {
       currentPrice: 7.52,
       return: -4.2,
       lastTransaction: {
-        type: "decrease",
+        type: "decrease" as const,
         date: "Mar 8, 2024",
       },
       logo: `https://assets.parqet.com/logos/symbol/GOOG?format=svg`,
@@ -82,7 +82,7 @@ const userData = {
       currentPrice: 179.84,
       return: 23.77,
       lastTransaction: {
-        type: "increase",
+        type: "increase" as const,
         date: "Mar 7, 2024",
       },
       logo: `https://assets.parqet.com/logos/symbol/AMZN?format=svg`,
@@ -95,7 +95,7 @@ const userData = {
       currentPrice: 315.65,
       return: 12.55,
       lastTransaction: {
-        type: "buy",
+        type: "buy" as const,
         date: "Mar 5, 2024",
       },
       logo: `https://assets.parqet.com/logos/symbol/CRWD?format=svg`,
@@ -108,7 +108,7 @@ const userData = {
       currentPrice: 23.45,
       return: 5.87,
       lastTransaction: {
-        type: "start",
+        type: "start" as const,
         date: "Mar 1, 2024",
       },
       logo: `https://assets.parqet.com/logos/symbol/PATH?format=svg`,
