@@ -94,13 +94,13 @@ export default function Header() {
         ) : (
           <div className="hidden items-center justify-end gap-5 md:flex md:flex-1 lg:w-0">
             <Link
-              href="/sign-in"
+              href="/login"
               className="whitespace-nowrap rounded-full px-3 py-1 text-base text-gray-600 hover:bg-gray-100 hover:text-gray-900"
             >
               Sign in
             </Link>
             <Link
-              href="/sign-up"
+              href="/register"
               className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-transparent bg-blue-600 py-1 pl-3 pr-1 text-base font-medium text-white shadow-sm"
             >
               Sign up
