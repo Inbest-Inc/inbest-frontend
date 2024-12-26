@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Card } from "@tremor/react";
-import { useState } from "react";
+import { Card, Text } from "@tremor/react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Comment {
   id: string;
@@ -232,13 +233,15 @@ const followingFeed: FeedItem[] = [
 ];
 
 const ActionIcon = ({ type }: { type: FeedItem["action"]["type"] }) => {
+  const baseClasses =
+    "h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm";
   switch (type) {
     case "buy":
     case "increase":
       return (
-        <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+        <div className={`${baseClasses} bg-emerald-50/80`}>
           <svg
-            className="w-4 h-4 text-green-600"
+            className="w-5 h-5 text-emerald-600"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -255,9 +258,9 @@ const ActionIcon = ({ type }: { type: FeedItem["action"]["type"] }) => {
     case "sell":
     case "decrease":
       return (
-        <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+        <div className={`${baseClasses} bg-rose-50/80`}>
           <svg
-            className="w-4 h-4 text-red-600"
+            className="w-5 h-5 text-rose-600"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -273,9 +276,9 @@ const ActionIcon = ({ type }: { type: FeedItem["action"]["type"] }) => {
       );
     case "start":
       return (
-        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+        <div className={`${baseClasses} bg-blue-50/80`}>
           <svg
-            className="w-4 h-4 text-blue-600"
+            className="w-5 h-5 text-blue-600"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -291,9 +294,9 @@ const ActionIcon = ({ type }: { type: FeedItem["action"]["type"] }) => {
       );
     case "exit":
       return (
-        <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+        <div className={`${baseClasses} bg-gray-50/80`}>
           <svg
-            className="w-4 h-4 text-gray-600"
+            className="w-5 h-5 text-gray-600"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -336,6 +339,18 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
   const feed = activeTab === "for-you" ? forYouFeed : followingFeed;
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading state
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [activeTab]);
 
   const toggleComments = (postId: string, e: React.MouseEvent) => {
     e.preventDefault(); // Prevent any parent click events
@@ -378,179 +393,326 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
     return `${diffInMonths}mo`;
   };
 
-  return (
-    <div className="space-y-6">
-      {feed.map((item) => (
-        <Card key={item.id} className="bg-white p-4">
-          <div className="flex gap-4">
-            {/* Action Icon */}
-            <ActionIcon type={item.action.type} />
+  const togglePostLike = (postId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    setLikedPosts((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) {
+        next.delete(postId);
+      } else {
+        next.add(postId);
+      }
+      return next;
+    });
+  };
 
-            {/* Content */}
-            <div className="flex-1">
-              {/* Header */}
-              <div className="flex items-start justify-between">
-                <Link
-                  href={`/portfolios/${item.user.username}`}
-                  className="inline-flex items-center gap-2 group"
-                >
-                  <div className="relative h-5 w-5 rounded-full overflow-hidden">
-                    <Image
-                      src={item.user.avatar}
-                      alt={item.user.name}
-                      fill
-                      className="object-cover"
-                    />
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card
+            key={i}
+            className="bg-white/60 backdrop-blur-sm p-4 ring-1 ring-black/[0.1]"
+          >
+            <div className="flex gap-4">
+              <div className="h-10 w-10 rounded-xl bg-gray-200 animate-pulse" />
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-xl bg-gray-200 animate-pulse" />
+                      <div className="space-y-2">
+                        <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                        <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="h-8 w-32 bg-gray-200 rounded-xl animate-pulse" />
                   </div>
-                  <span className="font-medium text-gray-900 group-hover:text-gray-700">
-                    {item.user.name}
-                  </span>
-                  <span className="text-gray-500">@{item.user.username}</span>
-                </Link>
-                <span className="text-sm text-gray-500">
-                  {formatTimeAgo(item.timestamp)}
-                </span>
-              </div>
-
-              {/* Action */}
-              <Link
-                href={`/portfolios/${item.user.username}/${item.portfolioId}`}
-                className="mt-2 flex items-center gap-2 text-gray-500 text-sm hover:text-gray-700"
-              >
-                <div className="relative h-4 w-4">
-                  <Image
-                    src={item.action.stockLogo}
-                    alt={item.action.stock}
-                    fill
-                    className="object-contain"
-                  />
                 </div>
-                {getActionText(item.action)}
-              </Link>
-
-              {/* Note */}
-              {item.note && (
-                <p className="mt-3 text-gray-900 text-lg">{item.note}</p>
-              )}
-
-              {/* Footer */}
-              <div className="mt-4 flex items-center gap-4">
-                <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                  <span className="text-sm">{item.likes}</span>
-                </button>
-                <button
-                  onClick={(e) => toggleComments(item.id, e)}
-                  className="flex items-center gap-1 text-gray-500 hover:text-gray-700"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                  </svg>
-                  <span className="text-sm">
-                    {item.comments.length}{" "}
-                    {expandedPosts.has(item.id) ? "Hide" : "Show"}
-                  </span>
-                </button>
+                <div className="h-6 w-3/4 bg-gray-200 rounded animate-pulse" />
+                <div className="flex gap-4">
+                  <div className="h-7 w-16 bg-gray-200 rounded-full animate-pulse" />
+                  <div className="h-7 w-16 bg-gray-200 rounded-full animate-pulse" />
+                </div>
               </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
-              {/* Comments */}
-              {expandedPosts.has(item.id) && item.comments.length > 0 && (
-                <div className="mt-4 space-y-3 border-t pt-3">
-                  {item.comments.map((comment) => (
-                    <div key={comment.id} className="flex items-start gap-2">
-                      <div className="relative h-5 w-5 rounded-full overflow-hidden flex-shrink-0">
+  return (
+    <div className="space-y-4">
+      {feed.map((item) => (
+        <motion.div
+          key={item.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="bg-white/60 backdrop-blur-sm p-4 hover:bg-white transition-all duration-300 ring-1 ring-black/[0.1]">
+            <div className="flex gap-4">
+              {/* Action Icon */}
+              <ActionIcon type={item.action.type} />
+
+              {/* Content */}
+              <div className="flex-1 space-y-3">
+                {/* Header Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <Link
+                      href={`/portfolios/${item.user.username}`}
+                      className="group flex items-center gap-3 flex-shrink-0"
+                    >
+                      <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
                         <Image
-                          src={comment.user.avatar}
-                          alt={comment.user.name}
+                          src={item.user.avatar}
+                          alt={item.user.name}
                           fill
                           className="object-cover"
                         />
                       </div>
-                      <div className="flex-1 bg-gray-50 rounded-lg p-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">
-                            {comment.user.name}
-                          </span>
-                          <span className="text-gray-500 text-sm">
-                            @{comment.user.username}
-                          </span>
-                        </div>
-                        <p className="text-gray-600 mt-1">{comment.text}</p>
-                        <div className="mt-1 flex items-center gap-2">
-                          <button
-                            onClick={(e) => toggleCommentLike(comment.id, e)}
-                            className="flex items-center gap-1 text-sm transition-colors duration-200"
-                          >
-                            {likedComments.has(comment.id) ? (
-                              <>
-                                <svg
-                                  className="w-4 h-4 text-red-500"
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                >
-                                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                                </svg>
-                                <span className="text-red-500">
-                                  {comment.likes + 1}
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <svg
-                                  className="w-4 h-4 text-gray-500 hover:text-red-500"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                                  />
-                                </svg>
-                                <span className="text-gray-500 hover:text-red-500">
-                                  {comment.likes}
-                                </span>
-                              </>
-                            )}
-                          </button>
-                          <span className="text-gray-400">•</span>
-                          <span className="text-gray-500 text-sm">
-                            {formatTimeAgo(comment.timestamp)}
-                          </span>
-                        </div>
+                      <div className="flex flex-col">
+                        <Text className="font-semibold text-gray-900 group-hover:text-gray-700">
+                          {item.user.name}
+                        </Text>
+                        <Text className="text-gray-500 text-sm">
+                          @{item.user.username}
+                        </Text>
                       </div>
+                    </Link>
+
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50/80 backdrop-blur-sm rounded-xl text-sm text-gray-600 flex-shrink-0 ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-colors duration-200">
+                      <div className="relative h-4 w-4">
+                        <Image
+                          src={item.action.stockLogo}
+                          alt={item.action.stock}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                      {getActionText(item.action)}
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                        />
+                      </svg>
+                    </motion.button>
+                    <Text className="text-sm text-gray-500">
+                      {formatTimeAgo(item.timestamp)}
+                    </Text>
+                  </div>
                 </div>
-              )}
+
+                {/* Note */}
+                {item.note && (
+                  <Text className="text-lg text-gray-800 leading-relaxed">
+                    {item.note}
+                  </Text>
+                )}
+
+                {/* Footer */}
+                <div className="flex items-center gap-6">
+                  <button
+                    onClick={(e) => togglePostLike(item.id, e)}
+                    className="flex items-center gap-2 group"
+                  >
+                    <div
+                      className={`h-7 w-7 rounded-full ${
+                        likedPosts.has(item.id)
+                          ? "bg-rose-50/80"
+                          : "bg-gray-50/80"
+                      } backdrop-blur-sm flex items-center justify-center transition-colors duration-200 ring-1 ring-black/[0.04] group-hover:bg-rose-50/80`}
+                    >
+                      <motion.svg
+                        animate={
+                          likedPosts.has(item.id) ? { scale: [1, 1.2, 1] } : {}
+                        }
+                        className={`w-4 h-4 ${
+                          likedPosts.has(item.id)
+                            ? "text-rose-500"
+                            : "text-gray-400 group-hover:text-rose-500"
+                        } transition-colors duration-200`}
+                        viewBox="0 0 24 24"
+                        fill={likedPosts.has(item.id) ? "currentColor" : "none"}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
+                      </motion.svg>
+                    </div>
+                    <motion.span
+                      animate={
+                        likedPosts.has(item.id) ? { scale: [1, 1.2, 1] } : {}
+                      }
+                      className={`text-sm font-medium ${
+                        likedPosts.has(item.id)
+                          ? "text-rose-500"
+                          : "text-gray-500 group-hover:text-rose-500"
+                      } transition-colors duration-200`}
+                    >
+                      {likedPosts.has(item.id) ? item.likes + 1 : item.likes}
+                    </motion.span>
+                  </button>
+
+                  <button
+                    onClick={(e) => toggleComments(item.id, e)}
+                    className="flex items-center gap-2 group"
+                  >
+                    <div className="h-7 w-7 rounded-full bg-gray-50/80 backdrop-blur-sm group-hover:bg-blue-50/80 flex items-center justify-center transition-colors duration-200 ring-1 ring-black/[0.04]">
+                      <svg
+                        className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-500 group-hover:text-blue-500 transition-colors duration-200">
+                      {item.comments.length}
+                    </span>
+                  </button>
+
+                  {/* Sentiment Indicator */}
+                  {item.likes > 1000 && (
+                    <div className="ml-auto flex items-center gap-2 px-2 py-1 rounded-full bg-emerald-50/60 backdrop-blur-sm ring-1 ring-emerald-500/[0.08]">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
+                      <span className="text-xs font-medium text-emerald-600">
+                        Trending
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Comments */}
+                <AnimatePresence>
+                  {expandedPosts.has(item.id) && item.comments.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-3 border-t border-black/[0.06] pt-3"
+                    >
+                      {item.comments.map((comment) => (
+                        <motion.div
+                          key={comment.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex gap-3 group"
+                        >
+                          <div className="relative h-6 w-6 rounded-lg overflow-hidden flex-shrink-0 ring-1 ring-black/[0.08]">
+                            <Image
+                              src={comment.user.avatar}
+                              alt={comment.user.name}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 bg-gray-50/80 backdrop-blur-sm group-hover:bg-gray-100/80 rounded-xl p-3 transition-colors duration-200 ring-1 ring-black/[0.04]">
+                            <div className="flex items-center gap-2">
+                              <Text className="font-medium text-gray-900">
+                                {comment.user.name}
+                              </Text>
+                              <Text className="text-gray-500 text-sm">
+                                @{comment.user.username}
+                              </Text>
+                              <Text className="text-gray-400 text-xs">•</Text>
+                              <Text className="text-gray-400 text-xs">
+                                {formatTimeAgo(comment.timestamp)}
+                              </Text>
+                            </div>
+                            <Text className="text-gray-600 text-sm">
+                              {comment.text}
+                            </Text>
+                            <button
+                              onClick={(e) => toggleCommentLike(comment.id, e)}
+                              className="mt-1 flex items-center gap-1.5 group/like"
+                            >
+                              <svg
+                                className={`w-3.5 h-3.5 ${
+                                  likedComments.has(comment.id)
+                                    ? "text-rose-500"
+                                    : "text-gray-400 group-hover/like:text-rose-500"
+                                } transition-colors duration-200`}
+                                viewBox="0 0 24 24"
+                                fill={
+                                  likedComments.has(comment.id)
+                                    ? "currentColor"
+                                    : "none"
+                                }
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                                />
+                              </svg>
+                              <span
+                                className={`text-xs ${
+                                  likedComments.has(comment.id)
+                                    ? "text-rose-500"
+                                    : "text-gray-500 group-hover/like:text-rose-500"
+                                } transition-colors duration-200`}
+                              >
+                                {likedComments.has(comment.id)
+                                  ? comment.likes + 1
+                                  : comment.likes}
+                              </span>
+                            </button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </motion.div>
       ))}
+
+      {/* End of feed indicator */}
+      <div className="pt-4 pb-8 text-center">
+        <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gray-50/80 backdrop-blur-sm ring-1 ring-black/[0.04]">
+          <div className="w-1 h-1 rounded-full bg-gray-300" />
+          <span className="text-sm text-gray-500 font-medium">
+            {activeTab === "for-you" ? "You're all caught up" : "End of feed"}
+          </span>
+          <div className="w-1 h-1 rounded-full bg-gray-300" />
+        </div>
+      </div>
     </div>
   );
 }

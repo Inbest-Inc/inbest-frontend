@@ -158,10 +158,10 @@ const featuredPortfolios = [
     user: "Sude Akarcay",
     avatar: "https://i.ytimg.com/vi/m0XpDRhnTN8/maxresdefault.jpg",
     allocation: [
-      { name: "AAPL", value: 47.3 },
-      { name: "BAC", value: 23.8 },
-      { name: "KO", value: 17.4 },
-      { name: "AXP", value: 11.5 },
+      { name: "AAPL", value: 47.3, logo: getStockLogo("AAPL") },
+      { name: "BAC", value: 23.8, logo: getStockLogo("BAC") },
+      { name: "KO", value: 17.4, logo: getStockLogo("KO") },
+      { name: "AXP", value: 11.5, logo: getStockLogo("AXP") },
     ],
     monthlyReturn: "+12.4%",
     followers: "124K",
@@ -171,10 +171,10 @@ const featuredPortfolios = [
     avatar:
       "https://pbs.twimg.com/profile_images/1316982158578298880/BRoYwo1W_400x400.jpg",
     allocation: [
-      { name: "TSLA", value: 38.5 },
-      { name: "COIN", value: 28.7 },
-      { name: "ROKU", value: 19.3 },
-      { name: "PATH", value: 13.5 },
+      { name: "TSLA", value: 38.5, logo: getStockLogo("TSLA") },
+      { name: "COIN", value: 28.7, logo: getStockLogo("COIN") },
+      { name: "ROKU", value: 19.3, logo: getStockLogo("ROKU") },
+      { name: "PATH", value: 13.5, logo: getStockLogo("PATH") },
     ],
     monthlyReturn: "+8.9%",
     followers: "89K",
@@ -357,15 +357,20 @@ const ActivityTable = ({ data }: { data: any[] }) => {
   );
 };
 
-// Define a consistent color palette for the entire app
-const CHART_COLORS = {
-  primary: ["emerald-500", "emerald-400", "emerald-300", "emerald-200"],
-  secondary: ["blue-500", "blue-400", "blue-300", "blue-200"],
-  comparison: "emerald-600",
-  success: "green-600",
-  warning: "orange-600",
-  danger: "red-600",
-};
+// Define chart colors using Tailwind classes that work well with Tremor
+const portfolioChartColors = [
+  "blue-500",
+  "violet-500",
+  "orange-500",
+  "emerald-500",
+  "rose-500",
+  "cyan-500",
+  "amber-500",
+  "indigo-500",
+];
+
+// For the trade cards area charts
+const tradeChartColor = "emerald-500";
 
 export default function Home() {
   return (
@@ -464,7 +469,19 @@ export default function Home() {
                               key={stock.name}
                               className="flex items-center justify-between"
                             >
-                              <Text className="font-medium">{stock.name}</Text>
+                              <div className="flex items-center gap-2">
+                                <div className="relative h-4 w-4">
+                                  <Image
+                                    src={stock.logo}
+                                    alt={stock.name}
+                                    fill
+                                    className="object-contain"
+                                  />
+                                </div>
+                                <Text className="font-medium">
+                                  {stock.name}
+                                </Text>
+                              </div>
                               <Text className="text-gray-600">
                                 {stock.value}%
                               </Text>
@@ -481,7 +498,7 @@ export default function Home() {
                           category="value"
                           index="name"
                           valueFormatter={(number) => `${number.toFixed(1)}%`}
-                          colors={AvailableChartColors}
+                          colors={portfolioChartColors}
                           className="h-40"
                           showLabel={false}
                         />
@@ -556,7 +573,7 @@ export default function Home() {
                           data={trade.chartData}
                           index="date"
                           categories={["value"]}
-                          colors={[CHART_COLORS.success]}
+                          colors={[tradeChartColor]}
                           showXAxis={false}
                           showYAxis={false}
                           showLegend={false}
@@ -622,7 +639,7 @@ export default function Home() {
                           data={trade.chartData}
                           index="date"
                           categories={["value"]}
-                          colors={[CHART_COLORS.success]}
+                          colors={[tradeChartColor]}
                           showXAxis={false}
                           showYAxis={false}
                           showLegend={false}
@@ -701,29 +718,39 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Chart container with default height */}
-              <div className="bg-gray-50 rounded-2xl p-6">
-                <AreaChart
-                  data={performanceData}
-                  index="date"
-                  categories={["Portfolio", "S&P 500"]}
-                  colors={AvailableChartColors}
-                  valueFormatter={(number) => `$${number.toLocaleString()}`}
-                  showAnimation={true}
-                  showLegend={false}
-                  showGridLines={false}
-                  curveType="monotone"
-                />
+              {/* Chart container with matching style to KPI cards */}
+              <div className="p-6 bg-gray-50 rounded-2xl">
+                <div className="relative w-full">
+                  <AreaChart
+                    data={performanceData}
+                    index="date"
+                    categories={["Portfolio", "S&P 500"]}
+                    colors={AvailableChartColors}
+                    valueFormatter={(number) =>
+                      new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 0,
+                      }).format(number)
+                    }
+                    showAnimation={true}
+                    showLegend={false}
+                    showGridLines={false}
+                    curveType="monotone"
+                    yAxisWidth={85}
+                    className="h-[400px]"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-4 gap-6">
                 <div className="p-6 bg-gray-50 rounded-2xl">
-                  <div className="text-sm text-gray-600">Total Value</div>
+                  <div className="text-sm text-gray-600">Sharpe Ratio</div>
                   <div className="text-3xl font-semibold text-gray-900 mt-1">
-                    $29,500
+                    2.14
                   </div>
                   <div className="text-sm text-emerald-600 mt-1">
-                    +195% all time
+                    Excellent risk-adjusted returns
                   </div>
                 </div>
                 <div className="p-6 bg-gray-50 rounded-2xl">
