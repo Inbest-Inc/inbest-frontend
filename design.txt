@@ -1,0 +1,125 @@
+# Inbest Design System Guidelines
+
+## Core Design Principles
+
+[CONTEXT]
+Inbest is a modern investment portfolio platform that adheres to Apple's design philosophy while maintaining its unique identity. The following guidelines MUST be followed precisely to maintain design consistency across the platform.
+
+[DESIGN PHILOSOPHY]
+1. Design Uniformity
+- REQUIRE all components to share consistent visual language
+- ENSURE every page feels part of the same ecosystem
+- MAINTAIN consistent spacing, typography, and interaction patterns
+- FOLLOW Apple's component architecture principles
+
+2. Apple-Inspired Design Language
+- REPLICATE Apple's modern, clean aesthetic
+- IMPLEMENT frosted glass effects (backdrop-blur) on floating elements
+- USE subtle shadows and depth
+- FOLLOW Apple's grid system and layout principles
+- INCORPORATE smooth animations and transitions
+
+3. Typography & Text
+- USE SF Pro Display for headings (-apple-system, BlinkMacSystemFont)
+- USE SF Pro Text for body content
+- FOLLOW Apple's type scale:
+  * Large Title: 34px/40px
+  * Title 1: 28px/34px
+  * Title 2: 22px/28px
+  * Title 3: 20px/25px
+  * Body: 17px/22px
+  * Footnote: 13px/18px
+
+4. Color System
+- Primary Brand Color: #2563EB (Inbest Blue)
+- FOLLOW Apple's Color Palette:
+  * Background: white, white/80 with backdrop-blur
+  * Text: #1D1D1F (primary), #6E6E73 (secondary)
+  * Borders: rgba(0,0,0,0.1)
+  * Success: #00A852
+  * Warning: #FF9F0A
+  * Error: #FF3B30
+  * Info: #007AFF
+
+5. Component Design
+- Border Radius:
+  * Small elements: 8px
+  * Medium elements: 12px
+  * Large cards: 16px
+  * Full rounded: 9999px
+- Shadows:
+  * Light: 0 2px 8px rgba(0,0,0,0.04)
+  * Medium: 0 4px 12px rgba(0,0,0,0.08)
+  * Heavy: 0 8px 24px rgba(0,0,0,0.12)
+
+6. Data Visualization
+- STRICTLY use Tremor.so components for all charts and data displays
+- MAINTAIN consistent chart styling:
+  * Chart background: transparent
+  * Grid lines: minimal, light gray
+  * Labels: SF Pro Text, 13px
+  * Colors: Use defined color system
+- ENSURE proper spacing around charts
+- IMPLEMENT smooth animations for data updates
+
+7. Layout & Spacing
+- FOLLOW 8-point grid system
+- Spacing scale:
+  * 4px - Minimal spacing
+  * 8px - Default spacing
+  * 16px - Component spacing
+  * 24px - Section spacing
+  * 32px - Large section spacing
+  * 48px - Page section spacing
+- Container widths:
+  * Max width: 1200px
+  * Content width: 800px
+  * Narrow width: 600px
+
+8. Interaction & Animation
+- IMPLEMENT subtle hover states
+- USE spring animations for interactions
+- FOLLOW Apple's animation timing:
+  * Quick: 200ms
+  * Standard: 300ms
+  * Emphasis: 450ms
+- ENSURE smooth transitions between states
+
+9. Responsive Design
+- MAINTAIN consistent experience across devices
+- USE fluid typography
+- IMPLEMENT graceful component scaling
+- ENSURE proper spacing on all viewports
+
+[IMPLEMENTATION RULES]
+1. ALL new components MUST be reviewed against these guidelines
+2. NO custom colors outside the defined palette
+3. ALWAYS use the specified font stack
+4. MAINTAIN consistent spacing throughout
+5. ENSURE accessibility compliance
+6. TEST all animations for performance
+7. VERIFY responsive behavior
+
+[EXAMPLES]
+```tsx
+// Button Component Example
+<button className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98]">
+  Sign up
+</button>
+
+// Card Component Example
+<div className="bg-white/80 backdrop-blur-md rounded-2xl p-6 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300">
+  Content
+</div>
+```
+
+[QUALITY CHECKS]
+Before implementing any design:
+1. VERIFY alignment with Apple's design principles
+2. CHECK color contrast ratios
+3. TEST component scalability
+4. ENSURE consistent spacing
+5. VALIDATE responsive behavior
+6. CONFIRM animation performance
+
+Remember: The goal is to create a premium, Apple-like experience while maintaining Inbest's unique identity through its brand color and investment-focused features. 

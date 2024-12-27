@@ -343,7 +343,6 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading state
     setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -412,27 +411,27 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
         {[1, 2, 3].map((i) => (
           <Card
             key={i}
-            className="bg-white/60 backdrop-blur-sm p-4 ring-1 ring-black/[0.1]"
+            className="bg-white/60 backdrop-blur-sm p-4 ring-1 ring-black/[0.04] shadow-sm rounded-2xl"
           >
             <div className="flex gap-4">
-              <div className="h-10 w-10 rounded-xl bg-gray-200 animate-pulse" />
+              <div className="h-10 w-10 rounded-xl bg-gray-100/80 animate-pulse backdrop-blur-sm ring-1 ring-black/[0.04]" />
               <div className="flex-1 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-xl bg-gray-200 animate-pulse" />
+                      <div className="h-8 w-8 rounded-xl bg-gray-100/80 animate-pulse backdrop-blur-sm ring-1 ring-black/[0.04]" />
                       <div className="space-y-2">
-                        <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                        <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+                        <div className="h-4 w-24 bg-gray-100/80 rounded animate-pulse backdrop-blur-sm ring-1 ring-black/[0.04]" />
+                        <div className="h-3 w-16 bg-gray-100/80 rounded animate-pulse backdrop-blur-sm ring-1 ring-black/[0.04]" />
                       </div>
                     </div>
-                    <div className="h-8 w-32 bg-gray-200 rounded-xl animate-pulse" />
+                    <div className="h-8 w-32 bg-gray-100/80 rounded-xl animate-pulse backdrop-blur-sm ring-1 ring-black/[0.04]" />
                   </div>
                 </div>
-                <div className="h-6 w-3/4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-6 w-3/4 bg-gray-100/80 rounded animate-pulse backdrop-blur-sm ring-1 ring-black/[0.04]" />
                 <div className="flex gap-4">
-                  <div className="h-7 w-16 bg-gray-200 rounded-full animate-pulse" />
-                  <div className="h-7 w-16 bg-gray-200 rounded-full animate-pulse" />
+                  <div className="h-7 w-16 bg-gray-100/80 rounded-full animate-pulse backdrop-blur-sm ring-1 ring-black/[0.04]" />
+                  <div className="h-7 w-16 bg-gray-100/80 rounded-full animate-pulse backdrop-blur-sm ring-1 ring-black/[0.04]" />
                 </div>
               </div>
             </div>
@@ -451,7 +450,7 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Card className="bg-white/60 backdrop-blur-sm p-4 hover:bg-white transition-all duration-300 ring-1 ring-black/[0.1]">
+          <Card className="bg-white/60 backdrop-blur-sm p-4 hover:bg-white transition-all duration-300 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md rounded-2xl">
             <div className="flex gap-4">
               {/* Action Icon */}
               <ActionIcon type={item.action.type} />
@@ -474,16 +473,16 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                         />
                       </div>
                       <div className="flex flex-col">
-                        <Text className="font-semibold text-gray-900 group-hover:text-gray-700">
+                        <Text className="font-medium text-[#1D1D1F] group-hover:text-blue-600 transition-colors duration-200">
                           {item.user.name}
                         </Text>
-                        <Text className="text-gray-500 text-sm">
+                        <Text className="text-sm text-[#6E6E73]">
                           @{item.user.username}
                         </Text>
                       </div>
                     </Link>
 
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50/80 backdrop-blur-sm rounded-xl text-sm text-gray-600 flex-shrink-0 ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-colors duration-200">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50/80 backdrop-blur-sm rounded-xl text-sm text-[#1D1D1F] flex-shrink-0 ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-colors duration-200">
                       <div className="relative h-4 w-4">
                         <Image
                           src={item.action.stockLogo}
@@ -500,7 +499,7 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-[#6E6E73] hover:text-[#1D1D1F] transition-colors duration-200"
                     >
                       <svg
                         className="w-4 h-4"
@@ -511,12 +510,12 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={2}
+                          strokeWidth={1.5}
                           d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
                         />
                       </svg>
                     </motion.button>
-                    <Text className="text-sm text-gray-500">
+                    <Text className="text-sm text-[#6E6E73]">
                       {formatTimeAgo(item.timestamp)}
                     </Text>
                   </div>
@@ -524,7 +523,7 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
 
                 {/* Note */}
                 {item.note && (
-                  <Text className="text-lg text-gray-800 leading-relaxed">
+                  <Text className="text-[17px] leading-[22px] text-[#1D1D1F]">
                     {item.note}
                   </Text>
                 )}
@@ -548,8 +547,8 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                         }
                         className={`w-4 h-4 ${
                           likedPosts.has(item.id)
-                            ? "text-rose-500"
-                            : "text-gray-400 group-hover:text-rose-500"
+                            ? "text-[#FF3B30]"
+                            : "text-[#6E6E73] group-hover:text-[#FF3B30]"
                         } transition-colors duration-200`}
                         viewBox="0 0 24 24"
                         fill={likedPosts.has(item.id) ? "currentColor" : "none"}
@@ -558,7 +557,7 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={2}
+                          strokeWidth={1.5}
                           d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                         />
                       </motion.svg>
@@ -569,8 +568,8 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                       }
                       className={`text-sm font-medium ${
                         likedPosts.has(item.id)
-                          ? "text-rose-500"
-                          : "text-gray-500 group-hover:text-rose-500"
+                          ? "text-[#FF3B30]"
+                          : "text-[#6E6E73] group-hover:text-[#FF3B30]"
                       } transition-colors duration-200`}
                     >
                       {likedPosts.has(item.id) ? item.likes + 1 : item.likes}
@@ -583,7 +582,7 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                   >
                     <div className="h-7 w-7 rounded-full bg-gray-50/80 backdrop-blur-sm group-hover:bg-blue-50/80 flex items-center justify-center transition-colors duration-200 ring-1 ring-black/[0.04]">
                       <svg
-                        className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200"
+                        className="w-4 h-4 text-[#6E6E73] group-hover:text-blue-600 transition-colors duration-200"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -591,21 +590,21 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={2}
+                          strokeWidth={1.5}
                           d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                         />
                       </svg>
                     </div>
-                    <span className="text-sm font-medium text-gray-500 group-hover:text-blue-500 transition-colors duration-200">
+                    <span className="text-sm font-medium text-[#6E6E73] group-hover:text-blue-600 transition-colors duration-200">
                       {item.comments.length}
                     </span>
                   </button>
 
                   {/* Sentiment Indicator */}
                   {item.likes > 1000 && (
-                    <div className="ml-auto flex items-center gap-2 px-2 py-1 rounded-full bg-emerald-50/60 backdrop-blur-sm ring-1 ring-emerald-500/[0.08]">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
-                      <span className="text-xs font-medium text-emerald-600">
+                    <div className="ml-auto flex items-center gap-2 px-2 py-1 rounded-full bg-[#00A852]/[0.08] backdrop-blur-sm ring-1 ring-[#00A852]/[0.08]">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#00A852]"></div>
+                      <span className="text-xs font-medium text-[#00A852]">
                         Trending
                       </span>
                     </div>
@@ -640,18 +639,18 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                           </div>
                           <div className="flex-1 bg-gray-50/80 backdrop-blur-sm group-hover:bg-gray-100/80 rounded-xl p-3 transition-colors duration-200 ring-1 ring-black/[0.04]">
                             <div className="flex items-center gap-2">
-                              <Text className="font-medium text-gray-900">
+                              <Text className="font-medium text-[#1D1D1F]">
                                 {comment.user.name}
                               </Text>
-                              <Text className="text-gray-500 text-sm">
+                              <Text className="text-sm text-[#6E6E73]">
                                 @{comment.user.username}
                               </Text>
-                              <Text className="text-gray-400 text-xs">•</Text>
-                              <Text className="text-gray-400 text-xs">
+                              <Text className="text-[#6E6E73] text-xs">•</Text>
+                              <Text className="text-[#6E6E73] text-xs">
                                 {formatTimeAgo(comment.timestamp)}
                               </Text>
                             </div>
-                            <Text className="text-gray-600 text-sm">
+                            <Text className="text-[15px] leading-[20px] text-[#1D1D1F]">
                               {comment.text}
                             </Text>
                             <button
@@ -661,8 +660,8 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                               <svg
                                 className={`w-3.5 h-3.5 ${
                                   likedComments.has(comment.id)
-                                    ? "text-rose-500"
-                                    : "text-gray-400 group-hover/like:text-rose-500"
+                                    ? "text-[#FF3B30]"
+                                    : "text-[#6E6E73] group-hover/like:text-[#FF3B30]"
                                 } transition-colors duration-200`}
                                 viewBox="0 0 24 24"
                                 fill={
@@ -675,15 +674,15 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                                 <path
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
-                                  strokeWidth={2}
+                                  strokeWidth={1.5}
                                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                                 />
                               </svg>
                               <span
                                 className={`text-xs ${
                                   likedComments.has(comment.id)
-                                    ? "text-rose-500"
-                                    : "text-gray-500 group-hover/like:text-rose-500"
+                                    ? "text-[#FF3B30]"
+                                    : "text-[#6E6E73] group-hover/like:text-[#FF3B30]"
                                 } transition-colors duration-200`}
                               >
                                 {likedComments.has(comment.id)
@@ -706,11 +705,11 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
       {/* End of feed indicator */}
       <div className="pt-4 pb-8 text-center">
         <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gray-50/80 backdrop-blur-sm ring-1 ring-black/[0.04]">
-          <div className="w-1 h-1 rounded-full bg-gray-300" />
-          <span className="text-sm text-gray-500 font-medium">
+          <div className="w-1 h-1 rounded-full bg-[#6E6E73]/30" />
+          <span className="text-sm text-[#6E6E73] font-medium">
             {activeTab === "for-you" ? "You're all caught up" : "End of feed"}
           </span>
-          <div className="w-1 h-1 rounded-full bg-gray-300" />
+          <div className="w-1 h-1 rounded-full bg-[#6E6E73]/30" />
         </div>
       </div>
     </div>

@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import Image from "next/image";
+import { motion } from "framer-motion";
 import {
   Table,
   TableBody,
@@ -9,38 +12,72 @@ import {
   TableRoot,
   TableRow,
 } from "./Table";
-import Link from "next/link";
-import Image from "next/image";
 
 // Trophy icons for top 3
 const TrophyGold = () => (
-  <svg
-    className="w-5 h-5 text-yellow-500"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-  >
-    <path d="M5 16.93a8 8 0 1 1 14 0l-7 4.07-7-4.07ZM12 3c-1.86 0-3.52.83-4.63 2.14A7.95 7.95 0 0 0 4 11h16a7.95 7.95 0 0 0-3.37-5.86A6.96 6.96 0 0 0 12 3Z" />
-  </svg>
+  <div className="h-8 w-8 rounded-full bg-yellow-50/80 backdrop-blur-sm flex items-center justify-center ring-1 ring-black/[0.04]">
+    <svg
+      className="w-5 h-5 text-yellow-500"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </svg>
+  </div>
 );
 
 const TrophySilver = () => (
-  <svg
-    className="w-5 h-5 text-gray-400"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-  >
-    <path d="M5 16.93a8 8 0 1 1 14 0l-7 4.07-7-4.07ZM12 3c-1.86 0-3.52.83-4.63 2.14A7.95 7.95 0 0 0 4 11h16a7.95 7.95 0 0 0-3.37-5.86A6.96 6.96 0 0 0 12 3Z" />
-  </svg>
+  <div className="h-8 w-8 rounded-full bg-gray-50/80 backdrop-blur-sm flex items-center justify-center ring-1 ring-black/[0.04]">
+    <svg
+      className="w-5 h-5 text-gray-400"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </svg>
+  </div>
 );
 
 const TrophyBronze = () => (
-  <svg
-    className="w-5 h-5 text-amber-600"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-  >
-    <path d="M5 16.93a8 8 0 1 1 14 0l-7 4.07-7-4.07ZM12 3c-1.86 0-3.52.83-4.63 2.14A7.95 7.95 0 0 0 4 11h16a7.95 7.95 0 0 0-3.37-5.86A6.96 6.96 0 0 0 12 3Z" />
-  </svg>
+  <div className="h-8 w-8 rounded-full bg-amber-50/80 backdrop-blur-sm flex items-center justify-center ring-1 ring-black/[0.04]">
+    <svg
+      className="w-5 h-5 text-amber-600"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </svg>
+  </div>
 );
 
 const UserPlusIcon = () => (
@@ -140,7 +177,7 @@ const leaderboardData = [
     username: "kocyigit",
     portfolioName: "Portfolio 2",
     avatar:
-      "https://media.licdn.com/dms/image/D4D03AQFGs29qS6A3gg/profile-displayphoto-shrink_200_200/0/1706555428746?e=2147483647&v=beta&t=-VKVt7rkB_K8yNbqZ6l8uAIGJE67rdSBCZOKlgHp6lo",
+      "https://media.licdn.com/dms/image/v2/D4D03AQHeqaS39F_X9Q/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1731703909704?e=2147483647&v=beta&t=FfYf_MXcsLFkWRKQqrJSGEQ6uqRSCw_BpnXuADqrEJY",
     averageReturn: 37.8,
     ytdReturn: 8.9,
     holdings: 15,
@@ -184,7 +221,43 @@ const leaderboardData = [
   },
 ];
 
-export default function LeaderboardTable() {
+interface LeaderboardTableProps {
+  timeFilter: "all" | "year";
+  sortBy: "return" | "followers";
+}
+
+export default function LeaderboardTable({
+  timeFilter,
+  sortBy,
+}: LeaderboardTableProps) {
+  const getReturnValue = (portfolio: (typeof leaderboardData)[0]) => {
+    switch (timeFilter) {
+      case "all":
+        return portfolio.averageReturn;
+      case "year":
+        return portfolio.ytdReturn;
+      default:
+        return portfolio.averageReturn;
+    }
+  };
+
+  const filteredAndSortedData = [...leaderboardData]
+    .map((portfolio) => ({
+      ...portfolio,
+      currentReturn: getReturnValue(portfolio),
+    }))
+    .sort((a, b) => {
+      if (sortBy === "return") {
+        return b.currentReturn - a.currentReturn;
+      } else {
+        return b.followers - a.followers;
+      }
+    })
+    .map((item, index) => ({
+      ...item,
+      rank: index + 1,
+    }));
+
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -194,7 +267,11 @@ export default function LeaderboardTable() {
       case 3:
         return <TrophyBronze />;
       default:
-        return null;
+        return (
+          <div className="h-8 w-8 rounded-full bg-gray-50/80 backdrop-blur-sm flex items-center justify-center ring-1 ring-black/[0.04]">
+            <span className="text-sm font-medium text-[#1D1D1F]">{rank}</span>
+          </div>
+        );
     }
   };
 
@@ -204,7 +281,13 @@ export default function LeaderboardTable() {
   };
 
   const getReturnColorClass = (value: number) => {
-    return value >= 0 ? "text-green-600" : "text-red-600";
+    return value >= 0 ? "text-[#00A852]" : "text-[#FF3B30]";
+  };
+
+  const formatFollowers = (value: number) => {
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+    return value.toString();
   };
 
   return (
@@ -212,29 +295,49 @@ export default function LeaderboardTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Rank</TableHead>
-            <TableHead>Investor / Portfolio</TableHead>
-            <TableHead className="text-right">Average Return</TableHead>
-            <TableHead className="text-right">YTD Return</TableHead>
-            <TableHead className="text-center">Holdings</TableHead>
-            <TableHead className="text-right">Followers</TableHead>
+            <TableHead className="w-[100px] text-sm font-medium text-[#6E6E73]">
+              Rank
+            </TableHead>
+            <TableHead className="text-sm font-medium text-[#6E6E73]">
+              Investor / Portfolio
+            </TableHead>
+            <TableHead className="text-right text-sm font-medium text-[#6E6E73]">
+              {timeFilter === "all" ? "Average Return" : "YTD Return"}
+            </TableHead>
+            {timeFilter === "all" && (
+              <TableHead className="text-right text-sm font-medium text-[#6E6E73]">
+                YTD Return
+              </TableHead>
+            )}
+            <TableHead className="text-center text-sm font-medium text-[#6E6E73]">
+              Holdings
+            </TableHead>
+            <TableHead className="text-right text-sm font-medium text-[#6E6E73]">
+              Followers
+            </TableHead>
             <TableHead className="w-[100px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {leaderboardData.map((portfolio) => (
-            <TableRow key={portfolio.username}>
-              <TableCell className="font-medium">
+          {filteredAndSortedData.map((portfolio, index) => (
+            <motion.tr
+              key={portfolio.username}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              className="group"
+            >
+              <TableCell className="py-4">
                 <div className="flex items-center gap-2">
-                  {getRankIcon(portfolio.rank)}#{portfolio.rank}
+                  {getRankIcon(portfolio.rank)}
                 </div>
               </TableCell>
               <TableCell>
                 <Link
                   href={`/portfolios/${portfolio.username}`}
-                  className="flex items-center gap-3 hover:opacity-80"
+                  className="flex items-center gap-4 group/link"
                 >
-                  <div className="relative h-10 w-10 rounded-full overflow-hidden">
+                  <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
                     <Image
                       src={portfolio.avatar}
                       alt={portfolio.name}
@@ -243,15 +346,15 @@ export default function LeaderboardTable() {
                     />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-[#1D1D1F] group-hover/link:text-blue-600 transition-colors duration-200">
                       {portfolio.name}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-[#6E6E73]">
                         @{portfolio.username}
                       </span>
-                      <span className="text-gray-300">•</span>
-                      <span className="text-sm text-gray-600 font-medium">
+                      <span className="text-[#6E6E73]">•</span>
+                      <span className="text-sm text-[#6E6E73]">
                         {portfolio.portfolioName}
                       </span>
                     </div>
@@ -259,28 +362,33 @@ export default function LeaderboardTable() {
                 </Link>
               </TableCell>
               <TableCell
-                className={`text-right font-medium ${getReturnColorClass(portfolio.averageReturn)}`}
+                className={`text-right font-medium ${getReturnColorClass(portfolio.currentReturn)}`}
               >
-                {formatReturn(portfolio.averageReturn)}
+                {formatReturn(portfolio.currentReturn)}
               </TableCell>
-              <TableCell
-                className={`text-right font-medium ${getReturnColorClass(portfolio.ytdReturn)}`}
-              >
-                {formatReturn(portfolio.ytdReturn)}
-              </TableCell>
+              {timeFilter === "all" && (
+                <TableCell
+                  className={`text-right font-medium ${getReturnColorClass(portfolio.ytdReturn)}`}
+                >
+                  {formatReturn(portfolio.ytdReturn)}
+                </TableCell>
+              )}
               <TableCell className="text-center">
-                {portfolio.holdings}
+                <span className="inline-flex items-center justify-center h-6 min-w-[48px] rounded-full bg-gray-50/80 backdrop-blur-sm text-sm font-medium text-[#1D1D1F] ring-1 ring-black/[0.04]">
+                  {portfolio.holdings}
+                </span>
               </TableCell>
               <TableCell className="text-right">
-                {portfolio.followers.toLocaleString()}
+                <span className="font-medium text-[#1D1D1F]">
+                  {formatFollowers(portfolio.followers)}
+                </span>
               </TableCell>
               <TableCell>
-                <button className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600 hover:bg-blue-100 inline-flex items-center">
-                  <UserPlusIcon />
+                <button className="px-4 py-1.5 rounded-full bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                   Follow
                 </button>
               </TableCell>
-            </TableRow>
+            </motion.tr>
           ))}
         </TableBody>
       </Table>
