@@ -2,7 +2,6 @@
 
 import { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition, Switch } from "@headlessui/react";
-import Image from "next/image";
 
 interface PortfolioSettingsModalProps {
   isOpen: boolean;
@@ -59,7 +58,7 @@ export default function PortfolioSettingsModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -73,43 +72,64 @@ export default function PortfolioSettingsModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                <div>
+              <Dialog.Panel className="relative transform overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
+                  <button
+                    type="button"
+                    className="rounded-full bg-white/80 backdrop-blur-xl text-[#1D1D1F] hover:text-[#1D1D1F]/70 transition-colors p-2"
+                    onClick={onClose}
+                  >
+                    <span className="sr-only">Close</span>
+                    <svg
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="1.5"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="p-8">
                   <Dialog.Title
                     as="h3"
-                    className="text-lg font-semibold text-gray-900 mb-6"
+                    className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F] mb-8"
                   >
                     Portfolio Settings
                   </Dialog.Title>
 
                   <div className="space-y-6">
                     {/* Portfolio Name */}
-                    <div>
+                    <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-xl ring-1 ring-black/[0.04]">
                       <label
                         htmlFor="portfolio-name"
-                        className="block text-sm font-medium text-gray-900"
+                        className="block text-[15px] leading-[20px] font-medium text-[#1D1D1F] mb-2"
                       >
                         Portfolio Name
                       </label>
-                      <div className="mt-2">
-                        <input
-                          type="text"
-                          id="portfolio-name"
-                          value={newName}
-                          onChange={(e) => handleNameChange(e.target.value)}
-                          onBlur={handleSave}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        id="portfolio-name"
+                        value={newName}
+                        onChange={(e) => handleNameChange(e.target.value)}
+                        onBlur={handleSave}
+                        className="block w-full rounded-xl bg-white/60 backdrop-blur-xl border-0 text-[15px] leading-[20px] text-[#1D1D1F] shadow-sm ring-1 ring-black/[0.04] focus:ring-2 focus:ring-blue-500 transition-all p-3"
+                      />
                     </div>
 
                     {/* Visibility Toggle */}
-                    <div className="flex items-center justify-between">
+                    <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-xl ring-1 ring-black/[0.04] flex items-center justify-between">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900">
+                        <h4 className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
                           Portfolio Visibility
                         </h4>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-[13px] leading-[18px] text-[#6E6E73] mt-1">
                           {isPublic
                             ? "Anyone can view this portfolio"
                             : "Only you can view this portfolio"}
@@ -119,7 +139,7 @@ export default function PortfolioSettingsModal({
                         checked={isPublic}
                         onChange={onToggleVisibility}
                         className={`${
-                          isPublic ? "bg-blue-600" : "bg-gray-200"
+                          isPublic ? "bg-blue-600" : "bg-[#1D1D1F]/10"
                         } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                       >
                         <span
@@ -131,42 +151,42 @@ export default function PortfolioSettingsModal({
                     </div>
 
                     {/* Delete Portfolio */}
-                    <div className="flex items-center justify-between">
+                    <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-xl ring-1 ring-black/[0.04] flex items-center justify-between">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900">
+                        <h4 className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
                           Delete Portfolio
                         </h4>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-[13px] leading-[18px] text-[#6E6E73] mt-1">
                           This action cannot be undone.
                         </p>
                       </div>
                       <button
                         onClick={() => setIsDeleteConfirmOpen(true)}
-                        className="inline-flex items-center justify-center rounded-md border border-transparent bg-red-100 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-200"
+                        className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-red-50 text-[15px] leading-[20px] font-medium text-red-600 hover:bg-red-100 transition-colors"
                       >
                         Delete Portfolio
                       </button>
                     </div>
                   </div>
-                </div>
 
-                <div className="mt-8 flex justify-end gap-3">
-                  {hasChanges && (
+                  <div className="mt-8 flex justify-end gap-3">
+                    {hasChanges && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-blue-600 text-[15px] leading-[20px] font-medium text-white shadow-sm hover:bg-blue-700 transition-all"
+                        onClick={handleSave}
+                      >
+                        Save Changes
+                      </button>
+                    )}
                     <button
                       type="button"
-                      className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
-                      onClick={handleSave}
+                      className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-white/80 backdrop-blur-xl text-[15px] leading-[20px] font-medium text-[#1D1D1F] shadow-sm ring-1 ring-black/[0.04] hover:bg-white/90 transition-all"
+                      onClick={onClose}
                     >
-                      Save Changes
+                      Close
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                    onClick={onClose}
-                  >
-                    Close
-                  </button>
+                  </div>
                 </div>
               </Dialog.Panel>
             </Transition.Child>
@@ -175,21 +195,21 @@ export default function PortfolioSettingsModal({
 
         {/* Delete Confirmation Dialog */}
         {isDeleteConfirmOpen && (
-          <div className="relative z-50">
-            <div className="fixed inset-0 bg-black bg-opacity-50" />
+          <div className="relative z-[60]">
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
             <div className="fixed inset-0 flex items-center justify-center">
-              <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
-                <h4 className="text-lg font-semibold text-gray-900">
+              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 max-w-sm mx-4 shadow-xl ring-1 ring-black/[0.04]">
+                <h4 className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F] mb-4">
                   Confirm Delete
                 </h4>
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="text-[15px] leading-[20px] text-[#6E6E73]">
                   Are you sure you want to delete {portfolioName}? This action
                   cannot be undone.
                 </p>
-                <div className="mt-4 flex justify-end gap-3">
+                <div className="mt-8 flex justify-end gap-3">
                   <button
                     onClick={() => setIsDeleteConfirmOpen(false)}
-                    className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                    className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-white/80 backdrop-blur-xl text-[15px] leading-[20px] font-medium text-[#1D1D1F] shadow-sm ring-1 ring-black/[0.04] hover:bg-white/90 transition-all"
                   >
                     Cancel
                   </button>
@@ -199,7 +219,7 @@ export default function PortfolioSettingsModal({
                       setIsDeleteConfirmOpen(false);
                       onClose();
                     }}
-                    className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500"
+                    className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-red-600 text-[15px] leading-[20px] font-medium text-white shadow-sm hover:bg-red-700 transition-all"
                   >
                     Delete
                   </button>

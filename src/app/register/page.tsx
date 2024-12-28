@@ -7,9 +7,34 @@ import { Text } from "@tremor/react";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<
+    boolean | null
+  >(null);
+
+  const checkUsername = async (value: string) => {
+    if (!value) {
+      setIsUsernameAvailable(null);
+      return;
+    }
+
+    setIsCheckingUsername(true);
+    // Simulate API call with a delay
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    // For demo purposes, let's say usernames containing 'test' are taken
+    setIsUsernameAvailable(!value.toLowerCase().includes("test"));
+    setIsCheckingUsername(false);
+  };
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setUsername(value);
+    checkUsername(value);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +43,12 @@ export default function RegisterPage() {
     try {
       // TODO: Implement registration logic
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.log("Registration attempt with:", { name, email, password });
+      console.log("Registration attempt with:", {
+        name,
+        username,
+        email,
+        password,
+      });
     } catch (error) {
       console.error("Registration failed:", error);
     } finally {
@@ -65,6 +95,88 @@ export default function RegisterPage() {
               className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
               placeholder="John Doe"
             />
+          </div>
+
+          {/* Username Input */}
+          <div className="space-y-2">
+            <label
+              htmlFor="username"
+              className="block text-[15px] leading-[20px] font-medium text-[#1D1D1F]"
+            >
+              Username
+            </label>
+            <div className="relative">
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                value={username}
+                onChange={handleUsernameChange}
+                className="w-full h-[44px] px-4 pr-10 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+                placeholder="johndoe"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                {isCheckingUsername && (
+                  <svg
+                    className="animate-spin h-5 w-5 text-[#6E6E73]"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                )}
+                {!isCheckingUsername &&
+                  username &&
+                  (isUsernameAvailable ? (
+                    <svg
+                      className="h-5 w-5 text-[#00A852]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="h-5 w-5 text-[#FF3B30]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  ))}
+              </div>
+            </div>
+            {!isCheckingUsername && username && !isUsernameAvailable && (
+              <Text className="text-[13px] leading-[18px] text-[#FF3B30]">
+                This username is already taken
+              </Text>
+            )}
           </div>
 
           {/* Email Input */}

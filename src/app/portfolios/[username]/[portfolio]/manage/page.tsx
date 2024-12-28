@@ -1,14 +1,16 @@
 "use client";
 
-import { Card } from "@tremor/react";
+import { Card, Text } from "@tremor/react";
 import { useState } from "react";
+import { motion } from "framer-motion";
+import Image from "next/image";
 import ManageableActivityTable from "@/components/ManageableActivityTable";
 import AddStockModal from "@/components/AddStockModal";
 import ShareActionModal from "@/components/ShareActionModal";
 import PortfolioSettingsModal from "@/components/PortfolioSettingsModal";
-import Image from "next/image";
+import PortfolioChart from "@/components/PortfolioChart";
 
-// Mock data - replace with real data later
+// Keep existing mock data
 const portfolioData = {
   name: "Tech Growth",
   username: "samet",
@@ -100,37 +102,42 @@ const portfolioData = {
   ],
 };
 
-const RiskMetricBar = ({
-  value,
-  maxValue,
-  label,
-}: {
-  value: number;
-  maxValue: number;
-  label: string;
-}) => (
-  <div className="space-y-2">
-    <div className="flex justify-between items-center">
-      <span className="text-sm text-gray-600">{label}</span>
-      <span className="text-sm font-medium">{value}</span>
-    </div>
-    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+const StatCard = ({ label, value, subtext, icon, trend = "neutral" }: any) => (
+  <div className="p-6 bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300">
+    <div className="flex items-center gap-3 mb-3">
       <div
-        className="h-full bg-blue-600 rounded-full transition-all duration-500"
-        style={{ width: `${(value / maxValue) * 100}%` }}
-      />
+        className={`h-8 w-8 rounded-full flex items-center justify-center
+        ${
+          trend === "positive"
+            ? "bg-[#00A852]/[0.08]"
+            : trend === "negative"
+              ? "bg-[#FF3B30]/[0.08]"
+              : "bg-[#1D1D1F]/[0.04]"
+        }`}
+      >
+        {icon}
+      </div>
+      <Text className="text-[15px] leading-[20px] text-[#6E6E73]">{label}</Text>
     </div>
+    <Text
+      className={`text-[34px] leading-[40px] font-semibold
+      ${
+        trend === "positive"
+          ? "text-[#00A852]"
+          : trend === "negative"
+            ? "text-[#FF3B30]"
+            : "text-[#1D1D1F]"
+      }`}
+    >
+      {value}
+    </Text>
+    {subtext && (
+      <Text className="text-[13px] leading-[18px] text-[#6E6E73] mt-2">
+        {subtext}
+      </Text>
+    )}
   </div>
 );
-
-// Helper to get top gainers and losers from holdings
-const getTopMovers = (holdings: any[]) => {
-  const sorted = [...holdings].sort((a, b) => b.return - a.return);
-  return {
-    gainers: sorted.filter((h) => h.return > 0).slice(0, 2),
-    losers: sorted.filter((h) => h.return < 0).slice(0, 2),
-  };
-};
 
 export default function ManagePortfolioPage() {
   const [isAddStockModalOpen, setIsAddStockModalOpen] = useState(false);
@@ -139,8 +146,6 @@ export default function ManagePortfolioPage() {
   const [selectedAction, setSelectedAction] = useState<any>(null);
   const [portfolioName, setPortfolioName] = useState(portfolioData.name);
   const [isPublic, setIsPublic] = useState(portfolioData.isPublic);
-
-  const topMovers = getTopMovers(portfolioData.holdings);
 
   const handleStockChange = (changes: any) => {
     // Handle stock changes
@@ -155,7 +160,6 @@ export default function ManagePortfolioPage() {
   const handleAddStock = (stock: any) => {
     // Handle adding new stock
     console.log("Adding stock:", stock);
-    // Automatically open share modal for the new addition
     setSelectedAction({
       type: "start",
       symbol: stock.symbol,
@@ -171,229 +175,296 @@ export default function ManagePortfolioPage() {
     console.log("Deleting portfolio");
   };
 
-  const handlePortfolioNameChange = (newName: string) => {
-    setPortfolioName(newName);
-    // Here you would typically make an API call to update the portfolio name
+  const handlePortfolioNameChange = (name: string) => {
+    setPortfolioName(name);
   };
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">{portfolioName}</h1>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          </button>
-          <button
-            onClick={() => setIsAddStockModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-          >
-            <svg
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Stock
-          </button>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="mb-12"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <Text className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
+                {portfolioName}
+              </Text>
+              <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                {portfolioData.description}
+              </Text>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsAddStockModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Add Stock
+              </button>
+              <button
+                onClick={() => setIsSettingsModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                Settings
+              </button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <StatCard
+            label="Ranking"
+            value={`#${portfolioData.overview.rank.toLocaleString()}`}
+            subtext={`of ${portfolioData.overview.totalUsers.toLocaleString()} investors`}
+            icon={
+              <svg
+                className="w-5 h-5 text-[#1D1D1F]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M16 4v12l-4-2-4 2V4M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Daily Return"
+            value={`${portfolioData.overview.dailyReturn}%`}
+            trend={
+              portfolioData.overview.dailyReturn >= 0 ? "positive" : "negative"
+            }
+            icon={
+              <svg
+                className={`w-5 h-5 ${
+                  portfolioData.overview.dailyReturn >= 0
+                    ? "text-[#00A852]"
+                    : "text-[#FF3B30]"
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d={
+                    portfolioData.overview.dailyReturn >= 0
+                      ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                  }
+                />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Monthly Return"
+            value={`${portfolioData.overview.monthlyReturn}%`}
+            trend={
+              portfolioData.overview.monthlyReturn >= 0
+                ? "positive"
+                : "negative"
+            }
+            icon={
+              <svg
+                className={`w-5 h-5 ${
+                  portfolioData.overview.monthlyReturn >= 0
+                    ? "text-[#00A852]"
+                    : "text-[#FF3B30]"
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d={
+                    portfolioData.overview.monthlyReturn >= 0
+                      ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                  }
+                />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Total Return"
+            value={`${portfolioData.overview.totalReturn}%`}
+            trend={
+              portfolioData.overview.totalReturn >= 0 ? "positive" : "negative"
+            }
+            icon={
+              <svg
+                className={`w-5 h-5 ${
+                  portfolioData.overview.totalReturn >= 0
+                    ? "text-[#00A852]"
+                    : "text-[#FF3B30]"
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d={
+                    portfolioData.overview.totalReturn >= 0
+                      ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                  }
+                />
+              </svg>
+            }
+          />
         </div>
-      </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {/* Portfolio Overview */}
-        <Card className="p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            Portfolio Overview
-          </h3>
-          <div className="mt-4 space-y-4">
-            {/* Rank */}
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Rank on Inbest</span>
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold text-gray-900">
-                  #{portfolioData.overview.rank.toLocaleString()}
-                </span>
-                <span className="text-xs text-gray-500">
-                  of {portfolioData.overview.totalUsers.toLocaleString()}
-                </span>
-              </div>
-            </div>
-            <div className="h-px bg-gray-100" /> {/* Divider */}
-            {/* Returns */}
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Daily Return</span>
-              <span
-                className={`text-sm font-medium ${portfolioData.overview.dailyReturn >= 0 ? "text-green-600" : "text-red-600"}`}
-              >
-                {portfolioData.overview.dailyReturn >= 0 ? "+" : ""}
-                {portfolioData.overview.dailyReturn}%
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Monthly Return</span>
-              <span
-                className={`text-sm font-medium ${portfolioData.overview.monthlyReturn >= 0 ? "text-green-600" : "text-red-600"}`}
-              >
-                {portfolioData.overview.monthlyReturn >= 0 ? "+" : ""}
-                {portfolioData.overview.monthlyReturn}%
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Total Return</span>
-              <span
-                className={`text-sm font-medium ${portfolioData.overview.totalReturn >= 0 ? "text-green-600" : "text-red-600"}`}
-              >
-                {portfolioData.overview.totalReturn >= 0 ? "+" : ""}
-                {portfolioData.overview.totalReturn}%
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        {/* Daily Movers */}
-        <Card className="p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Daily Movers</h3>
-          <div className="mt-4 space-y-4">
-            <div>
-              <span className="text-xs text-gray-500">Top Gainers</span>
-              {topMovers.gainers.map((stock) => (
-                <div
-                  key={stock.symbol}
-                  className="flex justify-between items-center mt-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="relative h-5 w-5">
-                      <Image
-                        src={stock.logo}
-                        alt={stock.symbol}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <span className="text-sm font-medium">{stock.symbol}</span>
-                  </div>
-                  <span className="text-sm text-green-600">
-                    +{stock.return.toFixed(1)}%
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div>
-              <span className="text-xs text-gray-500">Top Losers</span>
-              {topMovers.losers.map((stock) => (
-                <div
-                  key={stock.symbol}
-                  className="flex justify-between items-center mt-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="relative h-5 w-5">
-                      <Image
-                        src={stock.logo}
-                        alt={stock.symbol}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <span className="text-sm font-medium">{stock.symbol}</span>
-                  </div>
-                  <span className="text-sm text-red-600">
-                    {stock.return.toFixed(1)}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
+        {/* Portfolio Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="mb-12"
+        >
+          <Card className="p-6 bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
+            <PortfolioChart />
+          </Card>
+        </motion.div>
 
         {/* Risk Metrics */}
-        <Card className="p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Risk Metrics</h3>
-          <div className="mt-4 space-y-6">
-            <RiskMetricBar
-              value={portfolioData.riskMetrics.beta}
-              maxValue={2}
-              label="Beta (vs S&P 500)"
-            />
-            <RiskMetricBar
-              value={portfolioData.riskMetrics.sharpeRatio}
-              maxValue={3}
-              label="Sharpe Ratio"
-            />
-            <RiskMetricBar
-              value={portfolioData.riskMetrics.volatility}
-              maxValue={50}
-              label="Volatility %"
-            />
-          </div>
-        </Card>
-      </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.15 }}
+          className="mb-12"
+        >
+          <Card className="overflow-hidden bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
+            <div className="p-6 border-b border-black/[0.04]">
+              <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                Risk Metrics
+              </Text>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
+                    Beta (vs S&P 500)
+                  </Text>
+                  <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                    {portfolioData.riskMetrics.beta.toFixed(2)}
+                  </Text>
+                </div>
+                <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
+                    Sharpe Ratio
+                  </Text>
+                  <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                    {portfolioData.riskMetrics.sharpeRatio.toFixed(2)}
+                  </Text>
+                </div>
+                <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
+                    Volatility
+                  </Text>
+                  <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                    {portfolioData.riskMetrics.volatility.toFixed(1)}%
+                  </Text>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
 
-      {/* Holdings Table */}
-      <Card className="p-6">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Holdings</h2>
-          <p className="text-sm text-gray-600">
-            Manage your portfolio allocations
-          </p>
-        </div>
-        <ManageableActivityTable
-          data={portfolioData.holdings}
-          onChange={handleStockChange}
-          onShare={handleShareAction}
-          portfolioName={portfolioName}
-          onPortfolioNameChange={handlePortfolioNameChange}
+        {/* Holdings Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="mb-12"
+        >
+          <Card className="overflow-hidden bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
+            <div className="p-6 border-b border-black/[0.04]">
+              <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                Holdings
+              </Text>
+            </div>
+            <div className="p-6">
+              <ManageableActivityTable
+                data={portfolioData.holdings}
+                onChange={handleStockChange}
+                onShare={handleShareAction}
+                portfolioName={portfolioName}
+                onPortfolioNameChange={handlePortfolioNameChange}
+              />
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Modals */}
+        <AddStockModal
+          isOpen={isAddStockModalOpen}
+          onClose={() => setIsAddStockModalOpen(false)}
+          onAddStock={handleAddStock}
         />
-      </Card>
-
-      {/* Modals */}
-      <AddStockModal
-        isOpen={isAddStockModalOpen}
-        onClose={() => setIsAddStockModalOpen(false)}
-        onAddStock={handleAddStock}
-      />
-      <ShareActionModal
-        isOpen={isShareActionModalOpen}
-        onClose={() => setIsShareActionModalOpen(false)}
-        action={selectedAction}
-      />
-      <PortfolioSettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        portfolioName={portfolioName}
-        isPublic={isPublic}
-        onToggleVisibility={setIsPublic}
-        onDelete={handleDeletePortfolio}
-        onRename={handlePortfolioNameChange}
-      />
-    </main>
+        <ShareActionModal
+          isOpen={isShareActionModalOpen}
+          onClose={() => setIsShareActionModalOpen(false)}
+          action={selectedAction}
+        />
+        <PortfolioSettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          portfolioName={portfolioName}
+          isPublic={isPublic}
+          onToggleVisibility={setIsPublic}
+          onDelete={handleDeletePortfolio}
+          onRename={handlePortfolioNameChange}
+        />
+      </div>
+    </div>
   );
 }
