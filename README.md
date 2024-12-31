@@ -18,5 +18,6 @@ Pages
 - http://localhost:3000/login
 - http://localhost:3000/register
 - http://localhost:3000/best-portfolios
-- http://localhost:3000/portfolios/warrenbuffett
-- http://localhost:3000/portfolios/warrenbuffett/value-investing/manage
+- http://localhost:3000/warrenbuffett
+- http://localhost:3000/warrenbuffett/value-investing
+- http://localhost:3000/warrenbuffett/value-investing/manage

@@ -1,96 +1,91 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { Text } from "@tremor/react";
 
 export default function Header() {
-  const pathname = usePathname();
-  const isManagePage = pathname?.includes("/manage");
-
-  const userData = {
-    name: "Warren Buffett",
-    avatar:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfPqLD2DHAh-b4RqasJvR4SOHB_JNAq-wuRA&s",
-  };
+  const searchParams = useSearchParams();
+  const isAuthenticated = searchParams.get("auth") === "1";
 
   return (
-    <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 border-b border-black/[0.04]">
-      <div className="mx-auto max-w-[1200px]">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Logo section */}
-          <div className="flex-shrink-0">
-            <Link
-              href="/"
-              className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F] tracking-tight hover:text-blue-600 transition-colors duration-200"
-            >
-              Inbest
-            </Link>
-          </div>
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link
+            href="/"
+            className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]"
+          >
+            Inbest
+          </Link>
 
-          {/* Desktop navigation */}
-          <nav className="hidden md:flex md:flex-1 md:justify-center">
-            <div className="flex items-center gap-8">
-              <Link
-                href="/best-portfolios"
-                className={`text-[17px] font-medium transition-colors duration-200 ${
-                  pathname === "/best-portfolios"
-                    ? "text-[#1D1D1F]"
-                    : "text-[#6E6E73] hover:text-[#1D1D1F]"
-                }`}
-              >
-                Best Portfolios
-              </Link>
-              <Link
-                href="/opinions"
-                className={`text-[17px] font-medium transition-colors duration-200 ${
-                  pathname === "/opinions"
-                    ? "text-[#1D1D1F]"
-                    : "text-[#6E6E73] hover:text-[#1D1D1F]"
-                }`}
-              >
-                Opinions
-              </Link>
-            </div>
+          {/* Navigation */}
+          <nav className="flex items-center gap-8">
+            <Link
+              href="/best-portfolios"
+              className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
+            >
+              Best Portfolios
+            </Link>
+            <Link
+              href="/opinions"
+              className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
+            >
+              Opinions
+            </Link>
           </nav>
 
-          {/* Right section */}
-          {isManagePage ? (
-            <div className="flex items-center gap-4">
-              <button className="text-[17px] font-medium text-[#6E6E73] hover:text-[#1D1D1F] transition-colors duration-200">
-                Share
-              </button>
-              <div className="h-4 w-px bg-black/[0.04]" />
-              <div className="flex items-center gap-3">
-                <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
-                  <Image
-                    src={userData.avatar}
-                    alt={userData.name}
-                    fill
-                    className="object-cover"
-                  />
+          {/* Auth Buttons */}
+          <div className="flex items-center gap-3">
+            {isAuthenticated ? (
+              <div className="relative group">
+                <div className="flex items-center gap-3">
+                  <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                    Mert Gunes
+                  </Text>
+                  <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
+                    <Image
+                      src="https://pbs.twimg.com/profile_images/965317696639459328/pRPM9a9H_400x400.jpg"
+                      alt="Profile"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
                 </div>
-                <span className="text-[17px] font-medium text-[#1D1D1F]">
-                  {userData.name}
-                </span>
+                <div className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-xl shadow-lg ring-1 ring-black/[0.04] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <Link
+                    href="/samet?auth=1"
+                    className="block px-4 py-2 text-[15px] leading-[20px] text-[#1D1D1F] hover:bg-gray-50"
+                  >
+                    Profile
+                  </Link>
+                  <button
+                    onClick={() => (window.location.href = "/?auth=0")}
+                    className="w-full text-left px-4 py-2 text-[15px] leading-[20px] text-[#FF3B30] hover:bg-gray-50"
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="hidden items-center justify-end gap-6 md:flex md:flex-shrink-0">
-              <Link
-                href="/login"
-                className="text-[17px] font-medium text-[#6E6E73] hover:text-[#1D1D1F] transition-colors duration-200"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-1.5 text-[17px] font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Sign up
-              </Link>
-            </div>
-          )}
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors"
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </header>

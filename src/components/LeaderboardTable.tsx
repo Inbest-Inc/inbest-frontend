@@ -334,7 +334,7 @@ export default function LeaderboardTable({
               </TableCell>
               <TableCell>
                 <Link
-                  href={`/portfolios/${portfolio.username}`}
+                  href={`/${portfolio.username}`}
                   className="flex items-center gap-4 group/link"
                 >
                   <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">

@@ -461,7 +461,7 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <Link
-                      href={`/portfolios/${item.user.username}`}
+                      href={`/${item.user.username}`}
                       className="group flex items-center gap-3 flex-shrink-0"
                     >
                       <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">

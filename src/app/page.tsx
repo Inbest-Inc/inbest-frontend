@@ -458,7 +458,7 @@ export default function Home() {
                 transition={{ duration: 0.3, delay: index * 0.1 }}
               >
                 <Link
-                  href={`/portfolios/${portfolio.user.toLowerCase().replace(" ", "-")}`}
+                  href={`/${portfolio.user.toLowerCase().replace(" ", "-")}`}
                 >
                   <Card className="bg-white/60 backdrop-blur-sm p-6 hover:bg-white transition-all duration-300 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md rounded-2xl h-full">
                     <div className="flex flex-col h-full">
@@ -551,9 +551,7 @@ export default function Home() {
                   key={trade.id}
                   className="p-6 min-w-[380px] bg-white/60 backdrop-blur-sm hover:bg-white transition-all duration-300 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md rounded-2xl"
                 >
-                  <Link
-                    href={`/portfolio/${trade.user.toLowerCase().replace(" ", "-")}`}
-                  >
+                  <Link href={`/${trade.user.toLowerCase().replace(" ", "-")}`}>
                     <div className="space-y-6">
                       <div className="flex items-center gap-4">
                         <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
@@ -617,9 +615,7 @@ export default function Home() {
                   key={`${trade.id}-duplicate`}
                   className="p-6 min-w-[380px] bg-white/60 backdrop-blur-sm hover:bg-white transition-all duration-300 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md rounded-2xl"
                 >
-                  <Link
-                    href={`/portfolio/${trade.user.toLowerCase().replace(" ", "-")}`}
-                  >
+                  <Link href={`/${trade.user.toLowerCase().replace(" ", "-")}`}>
                     <div className="space-y-6">
                       <div className="flex items-center gap-4">
                         <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">

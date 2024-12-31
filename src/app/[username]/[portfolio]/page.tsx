@@ -379,7 +379,7 @@ export default function PortfolioPage() {
           className="mb-12"
         >
           <Card className="p-6 bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
-            <PortfolioChart />
+            <PortfolioChart showCompare={true} />
           </Card>
         </motion.div>
 
