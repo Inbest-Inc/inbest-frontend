@@ -19,7 +19,7 @@ export default function Footer() {
           {/* Product Links */}
           <div>
             <Text className="text-[13px] leading-[18px] font-semibold text-[#1D1D1F] mb-4">
-              Product
+              For Investors
             </Text>
             <ul className="space-y-3">
               <li>
@@ -38,14 +38,6 @@ export default function Footer() {
                   Opinions
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/pricing"
-                  className="text-[15px] leading-[20px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
-                >
-                  Pricing
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -57,7 +49,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="/about"
+                  href="/"
                   className="text-[15px] leading-[20px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
                 >
                   About
@@ -65,7 +57,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/careers"
+                  href="/"
                   className="text-[15px] leading-[20px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
                 >
                   Careers
@@ -73,7 +65,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/blog"
+                  href="/"
                   className="text-[15px] leading-[20px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
                 >
                   Blog
@@ -90,7 +82,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="/privacy"
+                  href="/"
                   className="text-[15px] leading-[20px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
                 >
                   Privacy Policy
@@ -98,7 +90,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/terms"
+                  href="/"
                   className="text-[15px] leading-[20px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
                 >
                   Terms of Service
@@ -106,7 +98,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/cookies"
+                  href="/"
                   className="text-[15px] leading-[20px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
                 >
                   Cookie Policy

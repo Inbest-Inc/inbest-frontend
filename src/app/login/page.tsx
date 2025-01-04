@@ -4,22 +4,48 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Text } from "@tremor/react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const router = useRouter();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
     try {
-      // TODO: Implement login logic
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.log("Login attempt with:", { email, password });
+      const response = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Invalid username or password");
+      }
+
+      // Store the token and username
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("username", username);
+
+      // Redirect to profile page with a full page refresh
+      window.location.href = `/${username}`;
     } catch (error) {
       console.error("Login failed:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to login. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -45,24 +71,35 @@ export default function LoginPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email Input */}
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-100">
+              <Text className="text-[15px] leading-[20px] text-red-600">
+                {error}
+              </Text>
+            </div>
+          )}
+
+          {/* Username Input */}
           <div className="space-y-2">
             <label
-              htmlFor="email"
+              htmlFor="username"
               className="block text-[15px] leading-[20px] font-medium text-[#1D1D1F]"
             >
-              Email
+              Username
             </label>
             <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
+              id="username"
+              name="username"
+              type="text"
+              autoComplete="username"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
-              placeholder="you@example.com"
+              placeholder="your_username"
+              minLength={3}
+              maxLength={50}
             />
           </div>
 
@@ -84,6 +121,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
               placeholder="••••••••"
+              minLength={6}
             />
           </div>
 

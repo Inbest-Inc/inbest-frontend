@@ -1,13 +1,44 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Text } from "@tremor/react";
+import { useRouter } from "next/navigation";
 
 export default function Header() {
-  const searchParams = useSearchParams();
-  const isAuthenticated = searchParams.get("auth") === "1";
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    // For demo purposes: Check only username in localStorage
+    // TODO: Implement proper token validation:
+    // 1. Send a request to /api/auth/validate with the token in Authorization header
+    // 2. If token is invalid/expired, clear localStorage and redirect to login
+    // 3. If valid, keep the user logged in
+    const storedUsername = localStorage.getItem("username");
+    setIsAuthenticated(!!storedUsername);
+    setUsername(storedUsername || "");
+
+    // Listen for storage changes (logout from other tabs)
+    const handleStorageChange = () => {
+      const currentUsername = localStorage.getItem("username");
+      setIsAuthenticated(!!currentUsername);
+      setUsername(currentUsername || "");
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    setIsAuthenticated(false);
+    setUsername("");
+    window.location.href = "/";
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
@@ -43,7 +74,7 @@ export default function Header() {
               <div className="relative group">
                 <div className="flex items-center gap-3">
                   <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                    Mert Gunes
+                    {username}
                   </Text>
                   <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
                     <Image
@@ -56,13 +87,13 @@ export default function Header() {
                 </div>
                 <div className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-xl shadow-lg ring-1 ring-black/[0.04] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                   <Link
-                    href="/samet?auth=1"
+                    href={`/${username}`}
                     className="block px-4 py-2 text-[15px] leading-[20px] text-[#1D1D1F] hover:bg-gray-50"
                   >
                     Profile
                   </Link>
                   <button
-                    onClick={() => (window.location.href = "/?auth=0")}
+                    onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-[15px] leading-[20px] text-[#FF3B30] hover:bg-gray-50"
                   >
                     Logout
