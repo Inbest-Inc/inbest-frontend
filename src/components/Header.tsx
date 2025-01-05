@@ -6,22 +6,24 @@ import Image from "next/image";
 import { Text } from "@tremor/react";
 import { useRouter } from "next/navigation";
 
+const DEFAULT_AVATAR =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
+
 export default function Header() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // For demo purposes: Check only username in localStorage
-    // TODO: Implement proper token validation:
-    // 1. Send a request to /api/auth/validate with the token in Authorization header
-    // 2. If token is invalid/expired, clear localStorage and redirect to login
-    // 3. If valid, keep the user logged in
     const storedUsername = localStorage.getItem("username");
     setIsAuthenticated(!!storedUsername);
     setUsername(storedUsername || "");
+    // Use RAF to ensure smooth transition
+    requestAnimationFrame(() => {
+      setIsLoading(false);
+    });
 
-    // Listen for storage changes (logout from other tabs)
     const handleStorageChange = () => {
       const currentUsername = localStorage.getItem("username");
       setIsAuthenticated(!!currentUsername);
@@ -47,13 +49,13 @@ export default function Header() {
           {/* Logo */}
           <Link
             href="/"
-            className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]"
+            className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F] shrink-0"
           >
             Inbest
           </Link>
 
           {/* Navigation */}
-          <nav className="flex items-center gap-8">
+          <nav className="flex items-center gap-8 mx-auto">
             <Link
               href="/best-portfolios"
               className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
@@ -69,53 +71,57 @@ export default function Header() {
           </nav>
 
           {/* Auth Buttons */}
-          <div className="flex items-center gap-3">
-            {isAuthenticated ? (
-              <div className="relative group">
-                <div className="flex items-center gap-3">
-                  <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                    {username}
-                  </Text>
-                  <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
-                    <Image
-                      src="https://pbs.twimg.com/profile_images/965317696639459328/pRPM9a9H_400x400.jpg"
-                      alt="Profile"
-                      fill
-                      className="object-cover"
-                    />
+          <div className="flex items-center shrink-0 min-w-[180px] justify-end">
+            <div
+              className={`transition-opacity duration-200 ${isLoading ? "opacity-0" : "opacity-100"}`}
+            >
+              {isAuthenticated ? (
+                <div className="relative group">
+                  <div className="flex items-center gap-3">
+                    <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                      {username}
+                    </Text>
+                    <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08] bg-[#F5F5F7]">
+                      <Image
+                        src={DEFAULT_AVATAR}
+                        alt="Profile"
+                        fill
+                        className="object-cover p-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-xl shadow-lg ring-1 ring-black/[0.04] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                    <Link
+                      href={`/${username}`}
+                      className="block px-4 py-2 text-[15px] leading-[20px] text-[#1D1D1F] hover:bg-gray-50"
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-[15px] leading-[20px] text-[#FF3B30] hover:bg-gray-50"
+                    >
+                      Logout
+                    </button>
                   </div>
                 </div>
-                <div className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-xl shadow-lg ring-1 ring-black/[0.04] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              ) : (
+                <div className="flex items-center gap-3">
                   <Link
-                    href={`/${username}`}
-                    className="block px-4 py-2 text-[15px] leading-[20px] text-[#1D1D1F] hover:bg-gray-50"
+                    href="/login"
+                    className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
                   >
-                    Profile
+                    Log in
                   </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-[15px] leading-[20px] text-[#FF3B30] hover:bg-gray-50"
+                  <Link
+                    href="/register"
+                    className="inline-flex items-center px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors"
                   >
-                    Logout
-                  </button>
+                    Sign up
+                  </Link>
                 </div>
-              </div>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
-                >
-                  Log in
-                </Link>
-                <Link
-                  href="/register"
-                  className="inline-flex items-center px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors"
-                >
-                  Sign up
-                </Link>
-              </>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>

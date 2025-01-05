@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, Text } from "@tremor/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
 import OpinionsFeed from "@/components/OpinionsFeed";
+
+const DEFAULT_AVATAR =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
 
 // Mock data - replace with real data later
 const userData = {
@@ -15,8 +18,6 @@ const userData = {
   username: "skraatz416",
   email: "mert@example.com",
   followers: 1243,
-  avatar:
-    "https://pbs.twimg.com/profile_images/965317696639459328/pRPM9a9H_400x400.jpg",
   portfolios: [
     {
       id: "tech-growth",
@@ -32,6 +33,7 @@ const userData = {
     },
   ],
 };
+
 const SocialButton = ({
   icon,
   label,
@@ -51,10 +53,9 @@ const SocialButton = ({
 );
 
 export default function UserProfilePage() {
-  const searchParams = useSearchParams();
-  const isAuthenticated = searchParams.get("auth") === "1";
-  const isOwnProfile = isAuthenticated; // In real app, compare with logged in user
-
+  const params = useParams();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loggedInUsername, setLoggedInUsername] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editMode, setEditMode] = useState<"profile" | "password">("profile");
   const [formData, setFormData] = useState({
@@ -66,16 +67,25 @@ export default function UserProfilePage() {
     confirmPassword: "",
   });
 
+  useEffect(() => {
+    const storedUsername = localStorage.getItem("username");
+    setIsAuthenticated(!!storedUsername);
+    setLoggedInUsername(storedUsername || "");
+  }, []);
+
+  // Check if the profile being viewed belongs to the logged-in user
+  const isOwnProfile = isAuthenticated && params.username === loggedInUsername;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement save logic
+    // TODO: Implement save logic when API is ready
     setIsEditing(false);
     setEditMode("profile");
   };
 
-  // Filter portfolios based on authentication
+  // Filter portfolios based on ownership and privacy
   const visiblePortfolios = userData.portfolios.filter(
-    (p) => isAuthenticated || p.isPublic
+    (p) => p.isPublic || isOwnProfile
   );
 
   return (
@@ -91,12 +101,12 @@ export default function UserProfilePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div className="relative">
-                <div className="relative w-24 h-24 rounded-2xl overflow-hidden ring-1 ring-black/[0.08]">
+                <div className="relative w-24 h-24 rounded-2xl overflow-hidden ring-1 ring-black/[0.08] bg-[#F5F5F7]">
                   <Image
-                    src={userData.avatar}
+                    src={DEFAULT_AVATAR}
                     alt={userData.name}
                     fill
-                    className="object-cover"
+                    className="object-cover p-2"
                   />
                 </div>
                 {isOwnProfile && (
