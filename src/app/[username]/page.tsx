@@ -276,7 +276,7 @@ export default function UserProfilePage() {
               className="mb-8"
             >
               <Link
-                href={`/${params.username}/${portfolio.portfolioId}/manage`}
+                href={`/${params.username}/${portfolio.portfolioId}${isOwnProfile ? "/manage" : ""}`}
                 className="block group"
               >
                 <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl">

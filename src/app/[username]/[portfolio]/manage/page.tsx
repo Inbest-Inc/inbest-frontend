@@ -14,8 +14,12 @@ import {
   updatePortfolio,
   getPortfolio,
   getPortfolioHoldings,
+  addStockToPortfolio,
+  updateStockQuantity,
+  deleteStockFromPortfolio,
 } from "@/services/portfolioService";
 import { useParams, useRouter } from "next/navigation";
+import { Toaster, toast } from "react-hot-toast";
 
 // Keep existing mock data
 const portfolioData = {
@@ -149,6 +153,33 @@ export default function ManagePortfolioPage() {
   const router = useRouter();
   const portfolioId = parseInt(params.portfolio as string);
 
+  useEffect(() => {
+    const checkAccess = async () => {
+      const token = localStorage.getItem("token");
+      const currentUsername = localStorage.getItem("username");
+
+      // If no token or username doesn't match the URL, redirect to non-manage view
+      if (!token || currentUsername !== params.username) {
+        router.push(`/${params.username}/${params.portfolio}`);
+        return;
+      }
+
+      try {
+        // Check if user owns this portfolio
+        const portfolioResponse = await getPortfolio(portfolioId);
+        if (portfolioResponse.status !== "success") {
+          router.push(`/${params.username}/${params.portfolio}`);
+          return;
+        }
+      } catch (error) {
+        router.push(`/${params.username}/${params.portfolio}`);
+        return;
+      }
+    };
+
+    checkAccess();
+  }, [params.username, params.portfolio, portfolioId, router]);
+
   const [isAddStockModalOpen, setIsAddStockModalOpen] = useState(false);
   const [isShareActionModalOpen, setIsShareActionModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -158,60 +189,81 @@ export default function ManagePortfolioPage() {
   const [error, setError] = useState<string | null>(null);
   const [holdings, setHoldings] = useState<any[]>([]);
   const [isLoadingHoldings, setIsLoadingHoldings] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Unified refresh function for consistent data updates
+  const refreshPortfolioData = async () => {
+    setIsLoadingHoldings(true);
+    try {
+      const [portfolioResponse, holdingsResponse] = await Promise.all([
+        getPortfolio(portfolioId),
+        getPortfolioHoldings(portfolioId),
+      ]);
+
+      if (portfolioResponse.status === "success" && portfolioResponse.data) {
+        setPortfolioName(portfolioResponse.data.portfolioName);
+        setIsPublic(portfolioResponse.data.visibility === "public");
+      }
+
+      if (holdingsResponse.status === "success") {
+        setHoldings(holdingsResponse.data.holdings);
+      }
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast.error("Failed to refresh portfolio data");
+    } finally {
+      setIsLoadingHoldings(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch portfolio details
-        const portfolioResponse = await getPortfolio(portfolioId);
-        if (portfolioResponse.status === "success" && portfolioResponse.data) {
-          setPortfolioName(portfolioResponse.data.portfolioName);
-          setIsPublic(portfolioResponse.data.visibility === "public");
-        } else {
-          setError(
-            portfolioResponse.message || "Failed to load portfolio data"
-          );
-        }
-
-        // Fetch holdings
-        const holdingsResponse = await getPortfolioHoldings(portfolioId);
-        if (holdingsResponse.status === "success") {
-          setHoldings(holdingsResponse.data.holdings);
-        }
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message);
-        } else {
-          setError("An unexpected error occurred");
-        }
-        console.error("Error fetching data:", error);
-      } finally {
-        setIsLoadingHoldings(false);
-      }
-    };
-
-    fetchData();
+    refreshPortfolioData();
   }, [portfolioId]);
 
-  // Only show error if it's a critical error that prevents the page from functioning
-  if (error === "Portfolio not found or access denied") {
-    router.push(`/${params.username}`);
-    return null;
-  }
+  const handlePortfolioUpdate = async (data: {
+    portfolioName: string;
+    visibility: "public" | "private";
+  }) => {
+    setIsUpdating(true);
 
-  const handleStockChange = (changes: any) => {
-    // Handle stock changes
-    console.log(changes);
+    // Store previous state in case we need to revert
+    const previousName = portfolioName;
+    const previousVisibility = isPublic;
+
+    // Optimistically update the UI immediately
+    setPortfolioName(data.portfolioName);
+    setIsPublic(data.visibility === "public");
+    setIsSettingsModalOpen(false);
+
+    try {
+      const response = await updatePortfolio(portfolioId, {
+        portfolioName: data.portfolioName,
+        visibility: data.visibility,
+      });
+
+      if (response.status !== "success") {
+        // Revert to previous state if update failed
+        setPortfolioName(previousName);
+        setIsPublic(previousVisibility);
+        setError("Failed to update portfolio settings");
+        toast.error("Failed to update portfolio settings");
+        console.error("Failed to update portfolio:", response.message);
+      }
+    } catch (error) {
+      // Revert to previous state on error
+      setPortfolioName(previousName);
+      setIsPublic(previousVisibility);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update portfolio";
+      console.error("Error updating portfolio:", error);
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const handleShareAction = (action: any) => {
-    setSelectedAction(action);
-    setIsShareActionModalOpen(true);
-  };
-
-  const handleAddStock = (stock: any) => {
-    // Handle adding new stock
-    console.log("Adding stock:", stock);
+  const handleAddStock = async (stock: any) => {
     setSelectedAction({
       type: "start",
       symbol: stock.symbol,
@@ -219,45 +271,100 @@ export default function ManagePortfolioPage() {
       logo: stock.logo,
       newShares: 0,
     });
+    setIsAddStockModalOpen(false);
     setIsShareActionModalOpen(true);
   };
+
+  const handleShareAction = async (action: any) => {
+    if (!action?.newShares || action.newShares <= 0) return;
+
+    setIsShareActionModalOpen(false); // Close modal first
+    setIsLoadingHoldings(true); // Show loading state
+
+    try {
+      let success = false;
+
+      if (action.type === "start") {
+        const result = await addStockToPortfolio(
+          portfolioId,
+          action.symbol,
+          action.newShares
+        );
+        success = result.status === "success";
+      } else if (action.type === "update") {
+        const result = await updateStockQuantity(
+          portfolioId,
+          action.symbol,
+          action.newShares
+        );
+        success = result.status === "success";
+      }
+
+      if (success) {
+        const holdingsResponse = await getPortfolioHoldings(portfolioId);
+        if (holdingsResponse.status === "success") {
+          setHoldings(holdingsResponse.data.holdings);
+        }
+      }
+    } catch (error) {
+      console.error("Error handling share action:", error);
+      toast.error("Failed to update stock");
+    } finally {
+      setIsLoadingHoldings(false);
+    }
+  };
+
+  const handleStockChange = async (changes: any) => {
+    try {
+      if (changes.type === "add") {
+        await addStockToPortfolio(
+          portfolioId,
+          changes.symbol,
+          changes.quantity
+        );
+        await refreshPortfolioData();
+      } else if (changes.type === "update") {
+        await updateStockQuantity(
+          portfolioId,
+          changes.symbol,
+          changes.quantity
+        );
+        await refreshPortfolioData();
+      } else if (changes.type === "delete") {
+        await deleteStockFromPortfolio(portfolioId, changes.symbol);
+        await refreshPortfolioData();
+      }
+    } catch (error) {
+      console.error("Error handling stock change:", error);
+      toast.error("Failed to update stock");
+    }
+  };
+
+  // Only show error if it's a critical error that prevents the page from functioning
+  if (error === "Portfolio not found or access denied") {
+    router.push(`/${params.username}`);
+    return null;
+  }
 
   const handleDeletePortfolio = async () => {
     try {
       const response = await deletePortfolio(portfolioId);
       if (response.status === "success") {
+        toast.success("Portfolio deleted successfully");
         // Get the username from localStorage to ensure we redirect to the correct profile
         const username = localStorage.getItem("username");
         if (username) {
           router.push(`/${username}`);
         }
       } else {
+        toast.error("Failed to delete portfolio");
         console.error("Failed to delete portfolio:", response.message);
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete portfolio";
+      toast.error(errorMessage);
       console.error("Error deleting portfolio:", error);
-    }
-  };
-
-  const handlePortfolioUpdate = async (data: {
-    portfolioName: string;
-    visibility: "public" | "private";
-  }) => {
-    try {
-      const response = await updatePortfolio(portfolioId, {
-        portfolioName: data.portfolioName,
-        visibility: data.visibility,
-      });
-
-      if (response.status === "success" && response.data) {
-        setIsSettingsModalOpen(false);
-        // Force a hard refresh
-        window.location.reload();
-      } else {
-        console.error("Failed to update portfolio:", response.message);
-      }
-    } catch (error) {
-      console.error("Error updating portfolio:", error);
     }
   };
 
@@ -267,6 +374,29 @@ export default function ManagePortfolioPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+            borderRadius: "12px",
+          },
+          success: {
+            iconTheme: {
+              primary: "#00A852",
+              secondary: "#fff",
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: "#FF3B30",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <motion.div
@@ -278,7 +408,9 @@ export default function ManagePortfolioPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
-                {portfolioName || "..."}
+                {portfolioName || (
+                  <div className="h-[40px] w-[180px] bg-gray-100 rounded-lg animate-pulse" />
+                )}
               </div>
               <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
                 {portfolioData.description}
@@ -334,7 +466,12 @@ export default function ManagePortfolioPage() {
         </motion.div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2, delay: 0.1 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+        >
           <StatCard
             label="Ranking"
             value={`#${portfolioData.overview.rank.toLocaleString()}`}
@@ -447,7 +584,7 @@ export default function ManagePortfolioPage() {
               </svg>
             }
           />
-        </div>
+        </motion.div>
 
         {/* Portfolio Chart */}
         <motion.div

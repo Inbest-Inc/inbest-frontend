@@ -1,17 +1,40 @@
+import { toast } from "react-hot-toast";
+
 const API_URL = "http://localhost:8080";
+
+// Helper function to handle API errors
+const handleApiError = (error: any): never => {
+  const message =
+    error instanceof Error ? error.message : "An unexpected error occurred";
+  toast.error(message);
+  throw error;
+};
+
+// Helper function to show loading toast
+const showLoadingToast = (message: string) => {
+  return toast.loading(message, {
+    style: {
+      background: "#1D1D1F",
+      color: "#fff",
+      borderRadius: "12px",
+    },
+  });
+};
 
 export interface PortfolioDTO {
   portfolioName: string;
-  visibility: "public" | "private";
+  visibility: string;
 }
 
 export async function createPortfolio(portfolio: PortfolioDTO): Promise<any> {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
+  const loadingToast = showLoadingToast("Creating portfolio...");
 
   try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
     const response = await fetch(`${API_URL}/api/portfolio/create`, {
       method: "POST",
       headers: {
@@ -26,9 +49,14 @@ export async function createPortfolio(portfolio: PortfolioDTO): Promise<any> {
       throw new Error(error.message || "Failed to create portfolio");
     }
 
-    return response.json();
+    const result = await response.json();
+    toast.success("Portfolio created successfully", { id: loadingToast });
+    return result;
   } catch (error) {
-    console.error("Error creating portfolio:", error);
+    toast.error(
+      error instanceof Error ? error.message : "Failed to create portfolio",
+      { id: loadingToast }
+    );
     throw error;
   }
 }
@@ -50,14 +78,16 @@ export async function updatePortfolio(
   id: number,
   portfolio: PortfolioDTO
 ): Promise<UpdatePortfolioResponse> {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
+  const loadingToast = showLoadingToast("Saving portfolio settings...");
 
   try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
     const response = await fetch(`${API_URL}/api/portfolio/update/${id}`, {
-      method: "PUT",
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -67,13 +97,19 @@ export async function updatePortfolio(
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to update portfolio");
+      throw new Error(errorData.message || "Couldn't save portfolio settings");
     }
 
     const data = await response.json();
+    toast.success("Portfolio settings saved", { id: loadingToast });
     return data;
   } catch (error) {
-    console.error("Error updating portfolio:", error);
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Couldn't save portfolio settings",
+      { id: loadingToast }
+    );
     throw error;
   }
 }
@@ -165,17 +201,15 @@ interface PortfolioListResponse {
 export async function getPortfoliosByUsername(
   username: string
 ): Promise<PortfolioListResponse> {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
-
   try {
     const response = await fetch(
       `${API_URL}/api/portfolio/list-by-username/${username}`,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+          // Only add Authorization header if token exists
+          ...(localStorage.getItem("token") && {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          }),
         },
       }
     );
@@ -198,17 +232,25 @@ interface AddStockResponse {
   data?: any;
 }
 
+// Add a new type for the refresh callback
+type RefreshCallback = () => Promise<void>;
+
 export async function addStockToPortfolio(
   portfolioId: number,
   tickerName: string,
-  quantity: number
+  quantity: number,
+  onSuccess?: RefreshCallback
 ): Promise<AddStockResponse> {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
+  const loadingToast = showLoadingToast(
+    `Adding ${tickerName} to your portfolio...`
+  );
 
   try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
     const response = await fetch(
       `${API_URL}/api/portfolio-stock/add?portfolioId=${portfolioId}&tickerName=${tickerName}&quantity=${quantity}`,
       {
@@ -221,16 +263,28 @@ export async function addStockToPortfolio(
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(text || "Failed to add stock to portfolio");
+      throw new Error(text || "Couldn't add stock to portfolio");
     }
 
-    // If successful, return a default success response since the endpoint doesn't return data
+    // Call the refresh callback before showing success message
+    if (onSuccess) {
+      await onSuccess();
+    }
+
+    toast.success(`Added ${quantity} shares of ${tickerName} to portfolio`, {
+      id: loadingToast,
+    });
     return {
       status: "success",
       message: "Stock added successfully",
     };
   } catch (error) {
-    console.error("Error adding stock to portfolio:", error);
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Couldn't add stock to portfolio",
+      { id: loadingToast }
+    );
     throw error;
   }
 }
@@ -344,14 +398,17 @@ export interface UpdateStockQuantityResponse {
 export async function updateStockQuantity(
   portfolioId: number,
   tickerName: string,
-  quantity: number
+  quantity: number,
+  onSuccess?: RefreshCallback
 ): Promise<UpdateStockQuantityResponse> {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
+  const loadingToast = showLoadingToast(`Updating ${tickerName} shares...`);
 
   try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
     const response = await fetch(
       `${API_URL}/api/portfolio-stock/update/quantity?portfolioId=${portfolioId}&tickerName=${tickerName}&quantity=${quantity}`,
       {
@@ -363,16 +420,26 @@ export async function updateStockQuantity(
     );
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || "Failed to update stock quantity");
+      throw new Error("Couldn't update shares quantity");
     }
 
-    return {
-      status: "success",
-      message: "Stock quantity updated successfully",
-    };
+    const data = await response.json();
+
+    if (onSuccess) {
+      await onSuccess();
+    }
+
+    toast.success(`Updated ${tickerName} to ${quantity} shares`, {
+      id: loadingToast,
+    });
+    return data;
   } catch (error) {
-    console.error("Error updating stock quantity:", error);
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Couldn't update shares quantity",
+      { id: loadingToast }
+    );
     throw error;
   }
 }
@@ -384,14 +451,19 @@ export interface DeleteStockResponse {
 
 export async function deleteStockFromPortfolio(
   portfolioId: number,
-  tickerName: string
+  tickerName: string,
+  onSuccess?: RefreshCallback
 ): Promise<DeleteStockResponse> {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
+  const loadingToast = showLoadingToast(
+    `Deleting ${tickerName} from portfolio...`
+  );
 
   try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
     const response = await fetch(
       `${API_URL}/api/portfolio-stock/delete?portfolioId=${portfolioId}&tickerName=${tickerName}`,
       {
@@ -403,16 +475,42 @@ export async function deleteStockFromPortfolio(
     );
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || "Failed to delete stock from portfolio");
+      throw new Error("Couldn't delete stock from portfolio");
     }
 
-    return {
-      status: "success",
-      message: "Stock deleted successfully",
-    };
+    const data = await response.json();
+
+    // Call the refresh callback before showing success message
+    if (onSuccess) {
+      await onSuccess();
+    }
+
+    toast.success(`Deleted ${tickerName} from portfolio`, { id: loadingToast });
+    return data;
   } catch (error) {
-    console.error("Error deleting stock from portfolio:", error);
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Couldn't delete stock from portfolio",
+      { id: loadingToast }
+    );
     throw error;
   }
+}
+
+export interface AuthenticationResponse {
+  token: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  name: string;
+  surname: string;
+}
+
+export interface AuthenticationRequest {
+  username: string;
+  password: string;
 }
