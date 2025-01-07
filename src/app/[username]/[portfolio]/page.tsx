@@ -15,7 +15,7 @@ const userData = {
   avatar:
     "https://pbs.twimg.com/profile_images/965317696639459328/pRPM9a9H_400x400.jpg",
   ranking: {
-    position: 31,
+    position: 30,
     totalUsers: 763927,
   },
   returns: {

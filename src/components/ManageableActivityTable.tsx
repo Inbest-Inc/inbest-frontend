@@ -12,6 +12,11 @@ import {
   TableRoot,
   TableRow,
 } from "./Table";
+import StockQuantityModal from "./StockQuantityModal";
+import {
+  updateStockQuantity,
+  deleteStockFromPortfolio,
+} from "@/services/portfolioService";
 
 interface Holding {
   symbol: string;
@@ -22,6 +27,7 @@ interface Holding {
   currentPrice: number;
   return: number;
   logo: string;
+  stock_id: number;
 }
 
 interface ManageableActivityTableProps {
@@ -30,6 +36,7 @@ interface ManageableActivityTableProps {
   onShare: (action: any) => void;
   portfolioName: string;
   onPortfolioNameChange: (name: string) => void;
+  portfolioId: number;
 }
 
 const PencilIcon = () => (
@@ -55,6 +62,7 @@ interface DeleteConfirmModalProps {
   stock: {
     symbol: string;
     name: string;
+    logo: string;
   };
 }
 
@@ -89,34 +97,45 @@ const DeleteConfirmModal = ({
             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
-            <Dialog.Panel className="relative transform rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+            <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
               <div>
-                <Dialog.Title
-                  as="h3"
-                  className="text-lg font-semibold text-gray-900"
-                >
-                  Confirm Delete
-                </Dialog.Title>
-                <div className="mt-4">
-                  <p className="text-sm text-gray-500">
-                    Tech Growth will record this as a{" "}
-                    <span className="font-bold text-red-600">SELL</span> for the
-                    entire position in ${stock.symbol}
-                  </p>
+                <div className="mx-auto flex items-center justify-center">
+                  <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-50">
+                    <Image
+                      src={stock.logo}
+                      alt={stock.name}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3 text-center sm:mt-5">
+                  <Dialog.Title
+                    as="h3"
+                    className="text-base font-semibold leading-6 text-gray-900"
+                  >
+                    Delete ${stock.symbol}
+                  </Dialog.Title>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      Are you sure you want to delete {stock.name} ($
+                      {stock.symbol}) from your portfolio? This action cannot be
+                      undone.
+                    </p>
+                  </div>
                 </div>
               </div>
-
-              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+              <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                 <button
                   type="button"
-                  className="inline-flex w-full justify-center rounded-full bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 sm:ml-3 sm:w-auto"
+                  className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 sm:col-start-2"
                   onClick={onConfirm}
                 >
                   Delete
                 </button>
                 <button
                   type="button"
-                  className="mt-3 inline-flex w-full justify-center rounded-full bg-white px-3 py-2 text-sm font-medium text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
                   onClick={onClose}
                 >
                   Cancel
@@ -136,8 +155,11 @@ export default function ManageableActivityTable({
   data,
   onChange,
   onShare,
+  portfolioId,
 }: ManageableActivityTableProps) {
   const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [selectedStock, setSelectedStock] = useState<Holding | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
   const [holdings, setHoldings] = useState(() => {
     const totalValue = data.reduce(
       (sum, h) => sum + h.shares * h.currentPrice,
@@ -153,7 +175,7 @@ export default function ManageableActivityTable({
 
   const [deleteConfirmStock, setDeleteConfirmStock] = useState<{
     isOpen: boolean;
-    stock: { symbol: string; name: string } | null;
+    stock: { symbol: string; name: string; logo: string } | null;
   }>({
     isOpen: false,
     stock: null,
@@ -317,163 +339,193 @@ export default function ManageableActivityTable({
     }
   };
 
-  const handleDelete = (stock: { symbol: string; name: string }) => {
+  const handleDelete = (stock: Holding) => {
     setDeleteConfirmStock({ isOpen: true, stock });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteConfirmStock.stock) return;
 
-    const holding = holdings.find(
-      (h) => h.symbol === deleteConfirmStock.stock?.symbol
-    );
-    if (!holding) return;
+    try {
+      await deleteStockFromPortfolio(
+        portfolioId,
+        deleteConfirmStock.stock.symbol
+      );
 
-    handleSharesChange(
-      holding.symbol,
-      0,
-      holding.shares,
-      holding.allocation,
-      0,
-      DEMO_USERNAME,
-      "decrease"
-    );
+      const holding = holdings.find(
+        (h) => h.symbol === deleteConfirmStock.stock?.symbol
+      );
+      if (!holding) return;
 
-    const newHoldings = holdings.filter(
-      (h) => h.symbol !== deleteConfirmStock.stock?.symbol
-    );
-    setHoldings(newHoldings);
-    onChange(newHoldings);
-    setDeleteConfirmStock({ isOpen: false, stock: null });
+      handleSharesChange(
+        holding.symbol,
+        0,
+        holding.shares,
+        holding.allocation,
+        0,
+        DEMO_USERNAME,
+        "decrease"
+      );
+
+      const newHoldings = holdings.filter(
+        (h) => h.symbol !== deleteConfirmStock.stock?.symbol
+      );
+      setHoldings(newHoldings);
+      onChange(newHoldings);
+      setDeleteConfirmStock({ isOpen: false, stock: null });
+    } catch (error) {
+      console.error("Error deleting stock:", error);
+      // You might want to show an error message to the user here
+    }
+  };
+
+  const handleQuantityUpdate = async (quantity: number) => {
+    if (!selectedStock) return;
+
+    try {
+      await updateStockQuantity(portfolioId, selectedStock.symbol, quantity);
+
+      const updatedHoldings = updateHoldings(
+        selectedStock.symbol,
+        quantity,
+        selectedStock.shares
+      );
+      setHoldings(updatedHoldings);
+      onChange(updatedHoldings);
+      setSelectedStock(null);
+      setUpdateError(null);
+    } catch (error) {
+      setUpdateError(
+        error instanceof Error ? error.message : "Failed to update quantity"
+      );
+    }
   };
 
   return (
-    <TableRoot>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Asset</TableHead>
-            <TableHead className="text-right">
-              <div className="flex items-center justify-end gap-1">
-                Shares
-                <PencilIcon />
-              </div>
-            </TableHead>
-            <TableHead className="text-right">Allocation %</TableHead>
-            <TableHead className="text-right">Avg Price</TableHead>
-            <TableHead className="text-right">Current Price</TableHead>
-            <TableHead className="text-right">Return</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {holdings.map((holding) => (
-            <TableRow key={holding.symbol}>
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  <div className="relative h-8 w-8">
-                    <Image
-                      src={holding.logo}
-                      alt={holding.name}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">
-                      {holding.symbol}
-                    </div>
-                    <div className="text-sm text-gray-500">{holding.name}</div>
-                  </div>
+    <>
+      <TableRoot>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Asset</TableHead>
+              <TableHead className="text-right">
+                <div className="flex items-center justify-end gap-1">
+                  Shares
                 </div>
-              </TableCell>
-              <TableCell className="text-right">
-                {editingCell === `${holding.symbol}-shares` ? (
-                  <input
-                    type="number"
-                    value={holding.shares || ""}
-                    onChange={(e) => {
-                      const newValue =
-                        e.target.value === "" ? 0 : parseFloat(e.target.value);
-                      if (!isNaN(newValue)) {
-                        setHoldings(
-                          holdings.map((h) =>
-                            h.symbol === holding.symbol
-                              ? { ...h, shares: newValue }
-                              : h
-                          )
-                        );
-                      }
-                    }}
-                    onKeyDown={(e) =>
-                      handleShareKeyDown(
-                        e,
-                        holding.symbol,
-                        holding.shares,
-                        data.find((h) => h.symbol === holding.symbol)?.shares ||
-                          0
-                      )
-                    }
-                    onBlur={() => {
-                      setEditingCell(null);
-                      setHoldings(data);
-                    }}
-                    className="w-20 text-right border rounded px-2 py-1"
-                    autoFocus
-                  />
-                ) : (
-                  <button
-                    onClick={() => setEditingCell(`${holding.symbol}-shares`)}
-                    className="flex items-center justify-end gap-1 w-full hover:text-gray-700"
-                  >
-                    <span>{holding.shares}</span>
-                    <PencilIcon />
-                  </button>
-                )}
-              </TableCell>
-              <TableCell className="text-right">
-                {holding.allocation.toFixed(1)}%
-              </TableCell>
-              <TableCell className="text-right">
-                ${holding.averagePrice.toFixed(2)}
-              </TableCell>
-              <TableCell className="text-right">
-                ${holding.currentPrice.toFixed(2)}
-              </TableCell>
-              <TableCell
-                className={`text-right font-medium ${
-                  holding.return >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {holding.return >= 0 ? "+" : ""}
-                {holding.return.toFixed(2)}%
-              </TableCell>
-              <TableCell>
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => handleDelete(holding)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </TableCell>
+              </TableHead>
+              <TableHead className="text-right">Allocation %</TableHead>
+              <TableHead className="text-right">Avg Price</TableHead>
+              <TableHead className="text-right">Current Price</TableHead>
+              <TableHead className="text-right">Return</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {holdings.map((holding) => (
+              <TableRow key={holding.symbol}>
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-8 h-8 rounded-xl  overflow-hidden bg-gray-50">
+                      <Image
+                        src={holding.logo}
+                        alt={holding.name}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#1D1D1F]">
+                        {holding.symbol}
+                      </div>
+                      <div className="text-[13px] leading-[18px] text-[#6E6E73]">
+                        {holding.name}
+                      </div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <span>{holding.shares}</span>
+                    <button
+                      onClick={() => setSelectedStock(holding)}
+                      className="p-1 text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  {holding.allocation.toFixed(1)}%
+                </TableCell>
+                <TableCell className="text-right">
+                  ${holding.averagePrice.toFixed(2)}
+                </TableCell>
+                <TableCell className="text-right">
+                  ${holding.currentPrice.toFixed(2)}
+                </TableCell>
+                <TableCell
+                  className={`text-right font-medium ${
+                    holding.return >= 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {holding.return >= 0 ? "+" : ""}
+                  {holding.return.toFixed(2)}%
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => handleDelete(holding)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableRoot>
+
+      {/* Stock Quantity Update Modal */}
+      {selectedStock && (
+        <StockQuantityModal
+          isOpen={!!selectedStock}
+          onClose={() => {
+            setSelectedStock(null);
+            setUpdateError(null);
+          }}
+          onConfirm={handleQuantityUpdate}
+          stock={selectedStock}
+          initialQuantity={selectedStock.shares}
+          error={updateError}
+          title="Update Quantity"
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmStock.stock && (
@@ -484,6 +536,6 @@ export default function ManageableActivityTable({
           stock={deleteConfirmStock.stock}
         />
       )}
-    </TableRoot>
+    </>
   );
 }

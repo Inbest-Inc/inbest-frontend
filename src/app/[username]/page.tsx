@@ -5,33 +5,24 @@ import { Card, Text } from "@tremor/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
 import OpinionsFeed from "@/components/OpinionsFeed";
+import CreatePortfolioModal from "@/components/CreatePortfolioModal";
+import {
+  createPortfolio,
+  getPortfoliosByUsername,
+} from "@/services/portfolioService";
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
 
-// Mock data - replace with real data later
+// Update mock data to only include non-portfolio data
 const userData = {
   name: "Mert Gunes",
   username: "skraatz416",
   email: "mert@example.com",
   followers: 1243,
-  portfolios: [
-    {
-      id: "tech-growth",
-      name: "Tech Growth",
-      subtitle: "Growth Portfolio",
-      isPublic: true,
-    },
-    {
-      id: "dividend-kings",
-      name: "Dividend Kings",
-      subtitle: "Income Portfolio",
-      isPublic: false,
-    },
-  ],
 };
 
 const SocialButton = ({
@@ -54,10 +45,23 @@ const SocialButton = ({
 
 export default function UserProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loggedInUsername, setLoggedInUsername] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editMode, setEditMode] = useState<"profile" | "password">("profile");
+  const [showCreatePortfolioModal, setShowCreatePortfolioModal] =
+    useState(false);
+  const [portfolios, setPortfolios] = useState<
+    Array<{
+      portfolioId: number;
+      portfolioName: string;
+      visibility: "public" | "private";
+    }>
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     name: userData.name,
     username: userData.username,
@@ -73,6 +77,33 @@ export default function UserProfilePage() {
     setLoggedInUsername(storedUsername || "");
   }, []);
 
+  useEffect(() => {
+    const fetchPortfolios = async () => {
+      const username = params.username;
+      if (!username || Array.isArray(username)) return;
+
+      try {
+        const response = await getPortfoliosByUsername(username);
+        if (response.status === "success" && response.data) {
+          setPortfolios(response.data);
+        } else {
+          setError(response.message || "Failed to load portfolios");
+        }
+      } catch (error) {
+        console.error("Error fetching portfolios:", error);
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError("An unexpected error occurred");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPortfolios();
+  }, [params.username]);
+
   // Check if the profile being viewed belongs to the logged-in user
   const isOwnProfile = isAuthenticated && params.username === loggedInUsername;
 
@@ -84,9 +115,25 @@ export default function UserProfilePage() {
   };
 
   // Filter portfolios based on ownership and privacy
-  const visiblePortfolios = userData.portfolios.filter(
-    (p) => p.isPublic || isOwnProfile
+  const visiblePortfolios = portfolios.filter(
+    (p) => p.visibility === "public" || isOwnProfile
   );
+
+  const handleCreatePortfolio = async (data: {
+    portfolioName: string;
+    visibility: "public" | "private";
+  }) => {
+    try {
+      const response = await createPortfolio(data);
+      // After successful creation, redirect to manage portfolio page
+      if (response.portfolioId) {
+        router.push(`/${loggedInUsername}/${response.portfolioId}/manage`);
+      }
+    } catch (error) {
+      console.error("Failed to create portfolio:", error);
+      throw error;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
@@ -219,33 +266,125 @@ export default function UserProfilePage() {
           </div>
         </motion.div>
 
-        {/* Portfolio Performance */}
-        {visiblePortfolios.map((portfolio, index) => (
+        {visiblePortfolios.length > 0 ? (
+          visiblePortfolios.map((portfolio, index) => (
+            <motion.div
+              key={portfolio.portfolioId}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 * (index + 1) }}
+              className="mb-8"
+            >
+              <Link
+                href={`/${params.username}/${portfolio.portfolioId}/manage`}
+                className="block group"
+              >
+                <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl">
+                  <PortfolioChart
+                    title={portfolio.portfolioName}
+                    subtitle={portfolio.visibility === "public" ? "" : ""}
+                    showSocials={false}
+                    privacy={portfolio.visibility}
+                    showCompare={false}
+                  />
+                </Card>
+              </Link>
+            </motion.div>
+          ))
+        ) : !isOwnProfile && !isLoading ? (
           <motion.div
-            key={portfolio.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 * (index + 1) }}
+            transition={{ duration: 0.3 }}
             className="mb-8"
           >
-            <Link
-              href={`/${userData.username}/${portfolio.id}`}
-              className="block group"
-            >
-              <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl">
-                <PortfolioChart
-                  title={portfolio.name}
-                  subtitle={portfolio.subtitle}
-                  showSocials={false}
-                  privacy={portfolio.isPublic ? "public" : "private"}
-                  showCompare={false}
-                />
-              </Card>
-            </Link>
+            <Card className="bg-white/60 backdrop-blur-md p-12 ring-1 ring-black/[0.04] shadow-sm rounded-2xl">
+              <div className="flex flex-col items-center justify-center text-center space-y-4">
+                <div className="h-16 w-16 rounded-2xl bg-gray-50/80 backdrop-blur-sm flex items-center justify-center ring-1 ring-black/[0.04] shadow-sm">
+                  <svg
+                    className="w-8 h-8 text-[#6E6E73]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                    />
+                  </svg>
+                </div>
+                <div className="space-y-2">
+                  <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                    No public portfolios
+                  </Text>
+                  <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                    {params.username} hasn't shared any portfolios yet
+                  </Text>
+                </div>
+              </div>
+            </Card>
           </motion.div>
-        ))}
+        ) : isLoading ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-center py-12"
+          >
+            <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+              Loading portfolios...
+            </Text>
+          </motion.div>
+        ) : null}
 
         {/* Recent Activity */}
+
+        {/* Portfolio Performance */}
+        {isOwnProfile && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mb-8"
+          >
+            <button
+              onClick={() => setShowCreatePortfolioModal(true)}
+              className="w-full"
+            >
+              <Card className="bg-white/60 backdrop-blur-md p-12 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl group">
+                <div className="flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="h-16 w-16 rounded-2xl bg-gray-50/80 backdrop-blur-sm flex items-center justify-center ring-1 ring-black/[0.04] shadow-sm group-hover:scale-110 transition-transform duration-300">
+                    <svg
+                      className="w-8 h-8 text-[#1D1D1F]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 4.5v15m7.5-7.5h-15"
+                      />
+                    </svg>
+                  </div>
+                  <div className="space-y-2">
+                    <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                      Create new portfolio
+                    </Text>
+                    <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                      Start tracking your investments and share your success
+                      with others
+                    </Text>
+                  </div>
+                </div>
+              </Card>
+            </button>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -436,6 +575,13 @@ export default function UserProfilePage() {
             </div>
           </div>
         )}
+
+        {/* Create Portfolio Modal */}
+        <CreatePortfolioModal
+          isOpen={showCreatePortfolioModal}
+          onClose={() => setShowCreatePortfolioModal(false)}
+          onSubmit={handleCreatePortfolio}
+        />
       </div>
     </div>
   );

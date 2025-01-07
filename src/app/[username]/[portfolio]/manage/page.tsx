@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, Text } from "@tremor/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import ManageableActivityTable from "@/components/ManageableActivityTable";
@@ -9,12 +9,17 @@ import AddStockModal from "@/components/AddStockModal";
 import ShareActionModal from "@/components/ShareActionModal";
 import PortfolioSettingsModal from "@/components/PortfolioSettingsModal";
 import PortfolioChart from "@/components/PortfolioChart";
+import {
+  deletePortfolio,
+  updatePortfolio,
+  getPortfolio,
+  getPortfolioHoldings,
+} from "@/services/portfolioService";
+import { useParams, useRouter } from "next/navigation";
 
 // Keep existing mock data
 const portfolioData = {
-  name: "Tech Growth",
-  username: "samet",
-  description: "Focus on high-growth technology companies",
+  description: "Portfolio",
   isPublic: true,
   overview: {
     dailyReturn: 2.5,
@@ -140,12 +145,59 @@ const StatCard = ({ label, value, subtext, icon, trend = "neutral" }: any) => (
 );
 
 export default function ManagePortfolioPage() {
+  const params = useParams();
+  const router = useRouter();
+  const portfolioId = parseInt(params.portfolio as string);
+
   const [isAddStockModalOpen, setIsAddStockModalOpen] = useState(false);
   const [isShareActionModalOpen, setIsShareActionModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<any>(null);
-  const [portfolioName, setPortfolioName] = useState(portfolioData.name);
+  const [portfolioName, setPortfolioName] = useState<string>("");
   const [isPublic, setIsPublic] = useState(portfolioData.isPublic);
+  const [error, setError] = useState<string | null>(null);
+  const [holdings, setHoldings] = useState<any[]>([]);
+  const [isLoadingHoldings, setIsLoadingHoldings] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch portfolio details
+        const portfolioResponse = await getPortfolio(portfolioId);
+        if (portfolioResponse.status === "success" && portfolioResponse.data) {
+          setPortfolioName(portfolioResponse.data.portfolioName);
+          setIsPublic(portfolioResponse.data.visibility === "public");
+        } else {
+          setError(
+            portfolioResponse.message || "Failed to load portfolio data"
+          );
+        }
+
+        // Fetch holdings
+        const holdingsResponse = await getPortfolioHoldings(portfolioId);
+        if (holdingsResponse.status === "success") {
+          setHoldings(holdingsResponse.data.holdings);
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError("An unexpected error occurred");
+        }
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoadingHoldings(false);
+      }
+    };
+
+    fetchData();
+  }, [portfolioId]);
+
+  // Only show error if it's a critical error that prevents the page from functioning
+  if (error === "Portfolio not found or access denied") {
+    router.push(`/${params.username}`);
+    return null;
+  }
 
   const handleStockChange = (changes: any) => {
     // Handle stock changes
@@ -170,9 +222,43 @@ export default function ManagePortfolioPage() {
     setIsShareActionModalOpen(true);
   };
 
-  const handleDeletePortfolio = () => {
-    // Handle portfolio deletion
-    console.log("Deleting portfolio");
+  const handleDeletePortfolio = async () => {
+    try {
+      const response = await deletePortfolio(portfolioId);
+      if (response.status === "success") {
+        // Get the username from localStorage to ensure we redirect to the correct profile
+        const username = localStorage.getItem("username");
+        if (username) {
+          router.push(`/${username}`);
+        }
+      } else {
+        console.error("Failed to delete portfolio:", response.message);
+      }
+    } catch (error) {
+      console.error("Error deleting portfolio:", error);
+    }
+  };
+
+  const handlePortfolioUpdate = async (data: {
+    portfolioName: string;
+    visibility: "public" | "private";
+  }) => {
+    try {
+      const response = await updatePortfolio(portfolioId, {
+        portfolioName: data.portfolioName,
+        visibility: data.visibility,
+      });
+
+      if (response.status === "success" && response.data) {
+        setIsSettingsModalOpen(false);
+        // Force a hard refresh
+        window.location.reload();
+      } else {
+        console.error("Failed to update portfolio:", response.message);
+      }
+    } catch (error) {
+      console.error("Error updating portfolio:", error);
+    }
   };
 
   const handlePortfolioNameChange = (name: string) => {
@@ -191,9 +277,9 @@ export default function ManagePortfolioPage() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <Text className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
-                {portfolioName}
-              </Text>
+              <div className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
+                {portfolioName || "..."}
+              </div>
               <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
                 {portfolioData.description}
               </Text>
@@ -433,13 +519,63 @@ export default function ManagePortfolioPage() {
               </Text>
             </div>
             <div className="p-6">
-              <ManageableActivityTable
-                data={portfolioData.holdings}
-                onChange={handleStockChange}
-                onShare={handleShareAction}
-                portfolioName={portfolioName}
-                onPortfolioNameChange={handlePortfolioNameChange}
-              />
+              {isLoadingHoldings ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : holdings.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 mb-4 rounded-full bg-gray-50 flex items-center justify-center">
+                    <svg
+                      className="w-8 h-8 text-[#6E6E73]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                  </div>
+                  <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F] mb-2">
+                    No Stocks Yet
+                  </Text>
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-6">
+                    Start building your portfolio by adding some stocks
+                  </Text>
+                  <button
+                    onClick={() => setIsAddStockModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                    Add Your First Stock
+                  </button>
+                </div>
+              ) : (
+                <ManageableActivityTable
+                  data={holdings}
+                  onChange={handleStockChange}
+                  onShare={handleShareAction}
+                  portfolioName={portfolioName}
+                  onPortfolioNameChange={handlePortfolioNameChange}
+                  portfolioId={portfolioId}
+                />
+              )}
             </div>
           </Card>
         </motion.div>
@@ -449,6 +585,7 @@ export default function ManagePortfolioPage() {
           isOpen={isAddStockModalOpen}
           onClose={() => setIsAddStockModalOpen(false)}
           onAddStock={handleAddStock}
+          portfolioId={portfolioId}
         />
         <ShareActionModal
           isOpen={isShareActionModalOpen}
@@ -458,11 +595,12 @@ export default function ManagePortfolioPage() {
         <PortfolioSettingsModal
           isOpen={isSettingsModalOpen}
           onClose={() => setIsSettingsModalOpen(false)}
-          portfolioName={portfolioName}
-          isPublic={isPublic}
-          onToggleVisibility={setIsPublic}
           onDelete={handleDeletePortfolio}
-          onRename={handlePortfolioNameChange}
+          onSubmit={handlePortfolioUpdate}
+          initialData={{
+            portfolioName: portfolioName,
+            visibility: isPublic ? "public" : "private",
+          }}
         />
       </div>
     </div>

@@ -1,46 +1,24 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Text } from "@tremor/react";
 
-interface PortfolioSettingsModalProps {
+interface CreatePortfolioModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: {
     portfolioName: string;
     visibility: "public" | "private";
   }) => Promise<void>;
-  onDelete: () => Promise<void>;
-  initialData?: {
-    portfolioName: string;
-    visibility: "public" | "private";
-  };
 }
 
-export default function PortfolioSettingsModal({
+export default function CreatePortfolioModal({
   isOpen,
   onClose,
   onSubmit,
-  onDelete,
-  initialData = {
-    portfolioName: "",
-    visibility: "public" as const,
-  },
-}: PortfolioSettingsModalProps) {
-  const [portfolioName, setPortfolioName] = useState(initialData.portfolioName);
-  const [visibility, setVisibility] = useState<"public" | "private">(
-    initialData.visibility
-  );
+}: CreatePortfolioModalProps) {
+  const [portfolioName, setPortfolioName] = useState("");
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    if (initialData) {
-      setPortfolioName(initialData.portfolioName);
-      setVisibility(initialData.visibility);
-    }
-  }, [initialData]);
 
   if (!isOpen) return null;
 
@@ -73,35 +51,15 @@ export default function PortfolioSettingsModal({
     setIsLoading(true);
     try {
       await onSubmit({ portfolioName: portfolioName.trim(), visibility });
+      setPortfolioName("");
+      setVisibility("public");
       onClose();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to update portfolio"
+        err instanceof Error ? err.message : "Failed to create portfolio"
       );
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this portfolio? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
-
-    setIsDeleting(true);
-    try {
-      await onDelete();
-      onClose();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete portfolio"
-      );
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -116,12 +74,12 @@ export default function PortfolioSettingsModal({
         <div className="relative w-full max-w-lg transform rounded-2xl bg-white p-6 text-left shadow-xl transition-all">
           <div className="flex items-center justify-between mb-6">
             <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-              Portfolio Settings
+              Create Portfolio
             </Text>
             <button
               onClick={onClose}
               className="rounded-full p-2 hover:bg-gray-100 transition-colors"
-              disabled={isLoading || isDeleting}
+              disabled={isLoading}
             >
               <svg
                 className="w-5 h-5 text-[#1D1D1F]"
@@ -155,7 +113,7 @@ export default function PortfolioSettingsModal({
                 className="w-full px-4 py-2 text-[17px] leading-[22px] text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-xl ring-1 ring-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-600/50 transition-all duration-200"
                 required
                 maxLength={50}
-                disabled={isLoading || isDeleting}
+                disabled={isLoading}
               />
               {error && (
                 <Text className="text-[13px] leading-[18px] text-red-600">
@@ -172,7 +130,7 @@ export default function PortfolioSettingsModal({
                 <button
                   type="button"
                   onClick={() => setVisibility("public")}
-                  disabled={isLoading || isDeleting}
+                  disabled={isLoading}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl ring-1 transition-all duration-200 ${
                     visibility === "public"
                       ? "bg-blue-600 ring-blue-600 text-white"
@@ -203,7 +161,7 @@ export default function PortfolioSettingsModal({
                 <button
                   type="button"
                   onClick={() => setVisibility("private")}
-                  disabled={isLoading || isDeleting}
+                  disabled={isLoading}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl ring-1 transition-all duration-200 ${
                     visibility === "private"
                       ? "bg-blue-600 ring-blue-600 text-white"
@@ -228,36 +186,24 @@ export default function PortfolioSettingsModal({
               </div>
             </div>
 
-            <div className="flex justify-between items-center gap-3 pt-6">
+            <div className="flex justify-end gap-3 pt-6">
               <button
                 type="button"
-                onClick={handleDelete}
-                disabled={isLoading || isDeleting}
-                className="px-6 py-2 text-[15px] leading-[20px] font-medium text-red-600 bg-red-50/80 backdrop-blur-sm rounded-full ring-1 ring-red-600/[0.08] hover:bg-red-100/80 transition-all duration-200"
+                onClick={onClose}
+                disabled={isLoading}
+                className="px-6 py-2 text-[15px] leading-[20px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.08] hover:bg-gray-100/80 transition-all duration-200"
               >
-                {isDeleting ? "Deleting..." : "Delete Portfolio"}
+                Cancel
               </button>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isLoading || isDeleting}
-                  className="px-6 py-2 text-[15px] leading-[20px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.08] hover:bg-gray-100/80 transition-all duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading || isDeleting}
-                  className={`px-6 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 rounded-full shadow-sm transition-all duration-200 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] ${
-                    isLoading || isDeleting
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }`}
-                >
-                  {isLoading ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`px-6 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 rounded-full shadow-sm transition-all duration-200 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] ${
+                  isLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {isLoading ? "Creating..." : "Create Portfolio"}
+              </button>
             </div>
           </form>
         </div>
