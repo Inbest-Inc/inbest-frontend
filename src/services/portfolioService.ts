@@ -1,6 +1,7 @@
 import { toast } from "react-hot-toast";
+import { getApiUrl } from "@/config/env";
 
-const API_URL = "http://localhost:8080";
+const API_URL = getApiUrl();
 
 // Helper function to handle API errors
 const handleApiError = (error: any): never => {

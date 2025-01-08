@@ -5,6 +5,9 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Text } from "@tremor/react";
 import { useRouter } from "next/navigation";
+import { getApiUrl } from "@/config/env";
+
+const API_URL = getApiUrl();
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,7 +22,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/login", {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
