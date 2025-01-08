@@ -28,10 +28,18 @@ const nextConfig = {
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name(module) {
-              const packageName = module.context.match(
-                /[\\/]node_modules[\\/](.*?)([\\/]|$)/
-              )[1];
-              return `npm.${packageName.replace("@", "")}`;
+              try {
+                // Get the name of the package
+                const match = module.context?.match(
+                  /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+                );
+                const packageName = match?.[1];
+                return packageName
+                  ? `npm.${packageName.replace("@", "")}`
+                  : "vendor";
+              } catch (e) {
+                return "vendor";
+              }
             },
             priority: 20,
           },
