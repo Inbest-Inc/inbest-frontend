@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone", // Changed from 'standalone' to 'export'
+  output: "standalone",
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -11,48 +11,52 @@ const nextConfig = {
     ],
   },
   webpack: (config) => {
-    // Optimize the bundle size
     config.optimization = {
       ...config.optimization,
       minimize: true,
       splitChunks: {
         chunks: "all",
-        maxSize: 20000000, // 20MB
-        minSize: 10000,
+        maxInitialRequests: 25,
+        minSize: 20000,
+        maxSize: 24000000, // 24MB to stay safely under 25MB limit
         cacheGroups: {
           default: false,
           vendors: false,
-          // Framework chunk
           framework: {
+            chunks: "all",
             name: "framework",
             test: /[\\/]node_modules[\\/](react|react-dom|next)[\\/]/,
             priority: 40,
             enforce: true,
-            chunks: "all",
           },
-          // Library chunk
+          commons: {
+            chunks: "all",
+            name: "commons",
+            minChunks: 2,
+            priority: 20,
+          },
           lib: {
+            chunks: "all",
+            name: "lib",
             test: /[\\/]node_modules[\\/]/,
             priority: 30,
-            chunks: "all",
-            name(module) {
-              const packageName = module.context.match(
-                /[\\/]node_modules[\\/](.*?)([\\/]|$)/
-              )[1];
-              return `lib.${packageName.replace("@", "")}`;
-            },
           },
-          // Components chunk
           components: {
+            chunks: "all",
             name: "components",
             test: /[\\/]components[\\/]/,
-            priority: 20,
+            priority: 10,
+          },
+          styles: {
+            name: "styles",
+            test: /\.css$/,
             chunks: "all",
+            enforce: true,
+            priority: 50,
           },
         },
       },
     };
-
     return config;
   },
   transpilePackages: ["@tremor/react"],
