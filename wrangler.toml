@@ -3,13 +3,13 @@ compatibility_date = "2024-01-01"
 node_compat = true
 
 [build]
-command = "npm install && npm run build"
+command = "npm install && NEXT_TELEMETRY_DISABLED=1 npm run build"
 
 [build.upload]
 format = "directory"
 
 [site]
-bucket = ".next"
+bucket = ".next/standalone"
 
 [pages]
-pages_build_output_dir = ".next" 
+pages_build_output_dir = ".next/standalone" 
