@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
+  output: "standalone",
   distDir: "dist",
+  trailingSlash: false,
   images: {
     unoptimized: true,
     domains: ["*"],
