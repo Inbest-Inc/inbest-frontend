@@ -1,0 +1,15 @@
+name = "inbest-frontend-demo"
+compatibility_date = "2024-01-01"
+node_compat = true
+
+[build]
+command = "npm install && npm run build"
+
+[build.upload]
+format = "directory"
+
+[site]
+bucket = ".next"
+
+[pages]
+pages_build_output_dir = ".next" 
