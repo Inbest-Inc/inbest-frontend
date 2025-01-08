@@ -15,56 +15,55 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   swcMinify: true,
-  webpack: (config, { isServer }) => {
-    // Optimize both client and server bundles
+  webpack: (config) => {
+    config.cache = false; // Disable webpack caching
     config.optimization = {
-      ...config.optimization,
       minimize: true,
-      minimizer: [...(config.optimization.minimizer || [])],
+      moduleIds: "deterministic",
+      chunkIds: "deterministic",
       splitChunks: {
         chunks: "all",
-        maxInitialRequests: Infinity,
+        maxInitialRequests: 50,
         minSize: 0,
-        maxSize: 10 * 1024 * 1024, // 10MB max chunk size
+        maxSize: 5 * 1024 * 1024, // 5MB max chunk size
         cacheGroups: {
-          default: false,
-          vendors: false,
-          // Small packages
-          smallVendors: {
-            name: "smallVendors",
-            test: /[\\/]node_modules[\\/]/,
+          // Break up node_modules
+          vendor: {
             chunks: "all",
-            priority: 20,
+            test: /[\\/]node_modules[\\/]/,
+            maxSize: 5 * 1024 * 1024,
+            minSize: 0,
+            minChunks: 1,
             enforce: true,
-            maxSize: 5 * 1024 * 1024, // 5MB
-          },
-          // Core framework
-          framework: {
-            name: "framework",
-            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|next|@next)[\\/]/,
-            priority: 40,
-            enforce: true,
-          },
-          // Larger UI libraries
-          ui: {
-            name: "ui",
-            test: /[\\/]node_modules[\\/](@tremor|framer-motion|chart\.js)[\\/]/,
-            priority: 30,
-            enforce: true,
-            maxSize: 5 * 1024 * 1024, // 5MB
-          },
-          // Reused code
-          commons: {
-            name: "commons",
-            minChunks: 2,
-            priority: 10,
             reuseExistingChunk: true,
-            maxSize: 5 * 1024 * 1024, // 5MB
+            name(module) {
+              // Extract package name
+              const match = module.context?.match(
+                /[\\/]node_modules[\\/](.*?)(?:[\\/]|$)/
+              );
+              const name = match?.[1]?.replace("@", "");
+              return name ? `vendor-${name}` : "vendor";
+            },
+          },
+          // Separate chunk for each page
+          pages: {
+            name: "pages",
+            test: /[\\/]pages[\\/]/,
+            chunks: "all",
+            maxSize: 5 * 1024 * 1024,
+            priority: -20,
+          },
+          // Components as separate chunks
+          components: {
+            name: "components",
+            test: /[\\/]components[\\/]/,
+            chunks: "all",
+            maxSize: 5 * 1024 * 1024,
+            priority: -30,
           },
         },
       },
     };
-
     return config;
   },
 };
