@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
+  distDir: "dist",
   images: {
     unoptimized: true,
     domains: ["*"],
@@ -25,6 +27,10 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
+  productionBrowserSourceMaps: false,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  compress: true,
 };
 
 module.exports = nextConfig;

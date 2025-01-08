@@ -10,6 +10,9 @@
 /.next/
 /out/
 
+# dist
+/dist
+
 # production
 /build
 
@@ -33,3 +36,7 @@ pnpm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SWC platform-specific binaries
+**/node_modules/@next/swc-*
+**/node_modules/.pnpm/@next/swc-*
