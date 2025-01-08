@@ -154,12 +154,6 @@ interface StockOperation {
   shares: number;
 }
 
-export async function generateStaticParams() {
-  // This is a placeholder that will generate no static paths
-  // The actual paths will be handled by client-side routing
-  return [];
-}
-
 export default function ManagePortfolioPage() {
   const params = useParams();
   const router = useRouter();
