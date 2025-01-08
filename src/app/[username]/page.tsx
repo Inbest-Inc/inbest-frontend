@@ -102,6 +102,26 @@ export default function UserProfilePage() {
     fetchPortfolios();
   }, [params.username]);
 
+  // Add error display
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-gray-50/50 to-white">
+        <div className="w-full max-w-2xl p-6 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm ring-1 ring-black/[0.04]">
+          <h1 className="text-2xl font-bold text-red-800 mb-4">Error</h1>
+          <pre className="text-sm text-red-600 whitespace-pre-wrap break-words bg-red-50 p-4 rounded-lg">
+            {error}
+          </pre>
+          <button
+            onClick={() => setError(null)}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Check if the profile being viewed belongs to the logged-in user
   const isOwnProfile = isAuthenticated && params.username === loggedInUsername;
 
