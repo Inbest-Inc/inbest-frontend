@@ -36,15 +36,6 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
-  onError: (err) => {
-    console.error("Next.js Error:", err);
-  },
-  logging: {
-    fetches: {
-      fullUrl: true,
-    },
-    level: "debug",
-  },
 };
 
 export default nextConfig;
