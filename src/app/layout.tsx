@@ -1,21 +1,10 @@
-"use client";
-
 import "./globals.css";
 import { Inter } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Toaster } from "react-hot-toast";
+import { Providers } from "@/components/Providers";
 
 const inter = Inter({ subsets: ["latin"] });
-
-function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      {children}
-      <Toaster position="bottom-right" />
-    </>
-  );
-}
 
 export default function RootLayout({
   children,

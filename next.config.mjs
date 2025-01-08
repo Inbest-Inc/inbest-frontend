@@ -42,10 +42,9 @@ const nextConfig = {
       fullUrl: true,
     },
   },
-  staticPageGenerationTimeout: 300,
+  output: "standalone",
   experimental: {
     serverActions: true,
-    serverComponentsExternalPackages: [],
   },
 };
 
