@@ -29,15 +29,6 @@ importers:
       '@types/d3':
         specifier: ^7.4.3
         version: 7.4.3
-      '@types/node':
-        specifier: ^20.17.12
-        version: 20.17.12
-      '@types/react':
-        specifier: ^18.3.18
-        version: 18.3.18
-      '@types/react-dom':
-        specifier: ^18.2.18
-        version: 18.3.5(@types/react@18.3.18)
       autoprefixer:
         specifier: ^10.4.17
         version: 10.4.20(postcss@8.4.49)
@@ -86,13 +77,22 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.17(ts-node@10.9.1(@types/node@20.17.12)(typescript@5.7.2)))
-      typescript:
-        specifier: ^5.7.2
-        version: 5.7.2
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: ^1.13.7
         version: 1.13.7(vercel@39.2.6)(wrangler@3.100.0)
+      '@types/node':
+        specifier: ^20.17.12
+        version: 20.17.12
+      '@types/react':
+        specifier: ^18.3.18
+        version: 18.3.18
+      '@types/react-dom':
+        specifier: ^18.2.18
+        version: 18.3.5(@types/react@18.3.18)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
       wrangler:
         specifier: ^3.22.1
         version: 3.100.0
