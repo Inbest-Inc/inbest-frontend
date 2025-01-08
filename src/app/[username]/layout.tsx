@@ -1,14 +1,11 @@
-export function generateStaticParams() {
-  // Provide a base path for static generation
-  return [{ username: "_" }];
-}
+"use client";
 
-export default function Layout({
+export default function UsernameLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
   params: { username: string };
 }) {
-  return children;
+  return <div className="username-layout">{children}</div>;
 }

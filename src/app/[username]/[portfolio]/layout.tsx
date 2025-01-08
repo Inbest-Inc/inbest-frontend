@@ -1,14 +1,11 @@
-export function generateStaticParams() {
-  // Provide a base path for static generation
-  return [{ username: "_", portfolio: "_" }];
-}
+"use client";
 
-export default function Layout({
+export default function PortfolioLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
   params: { username: string; portfolio: string };
 }) {
-  return children;
+  return <div className="portfolio-layout">{children}</div>;
 }
