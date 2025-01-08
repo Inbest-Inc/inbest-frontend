@@ -42,6 +42,11 @@ const nextConfig = {
       fullUrl: true,
     },
   },
+  staticPageGenerationTimeout: 300,
+  experimental: {
+    serverActions: true,
+    serverComponentsExternalPackages: [],
+  },
 };
 
 export default nextConfig;
