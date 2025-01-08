@@ -1,5 +1,4 @@
 name = "inbest-frontend"
 compatibility_date = "2024-01-30"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".vercel/output/static"
-main = ".vercel/output/static/index.js" 
+pages_build_output_dir = ".vercel/output/static" 
