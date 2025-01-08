@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   images: {
     unoptimized: true,
     domains: ["*"],
@@ -13,54 +14,18 @@ const nextConfig = {
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  webpack: (config, { isServer }) => {
-    // Optimize bundle size
-    config.optimization.splitChunks = {
-      chunks: "all",
-      maxInitialRequests: 25,
-      minSize: 20000,
-      maxSize: 24000000, // 24MB to stay safely under 25MB limit
-      cacheGroups: {
-        default: false,
-        vendors: false,
-        framework: {
-          chunks: "all",
-          name: "framework",
-          test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
-          priority: 40,
-          enforce: true,
-        },
-        commons: {
-          name: "commons",
-          chunks: "all",
-          minChunks: 2,
-          priority: 20,
-        },
-        lib: {
-          test(module) {
-            return (
-              module.size() > 160000 &&
-              /node_modules[/\\]/.test(module.identifier())
-            );
-          },
-          name(module) {
-            // Simplified naming strategy without crypto
-            const moduleName = module
-              .identifier()
-              .split("/")
-              .slice(-1)[0]
-              .replace(/\W+/g, "_");
-            return `lib-${moduleName.substring(0, 8)}`;
-          },
-          priority: 30,
-          minChunks: 1,
-          reuseExistingChunk: true,
-        },
-      },
-    };
-    return config;
+  experimental: {
+    optimizePackageImports: [
+      "@mui/material",
+      "@mui/icons-material",
+      "chart.js",
+      "@tremor/react",
+    ],
   },
-  output: "standalone",
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production",
+  },
 };
 
 module.exports = nextConfig;

@@ -1,15 +1,11 @@
-name = "inbest-frontend-demo"
-compatibility_date = "2024-01-01"
-node_compat = true
-
 [build]
-command = "npm install && NEXT_TELEMETRY_DISABLED=1 npm run build"
-
-[build.upload]
-format = "directory"
+command = "npm install && NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production npm run build"
+output_directory = ".next/standalone"
 
 [site]
 bucket = ".next/standalone"
 
-[pages]
-pages_build_output_dir = ".next/standalone" 
+[env.production]
+name = "inbest-frontend-demo"
+compatibility_date = "2024-01-01"
+node_compat = true 
