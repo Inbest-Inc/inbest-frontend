@@ -90,7 +90,7 @@ const chartData = [
   },
 ];
 
-const categories = ["Portfolio", "S&P 500", "Gold", "Bill Gates"];
+const categories = ["Portfolio", "S&P 500", "Bill Gates", "Gold"];
 
 interface PortfolioChartProps {
   title?: string;

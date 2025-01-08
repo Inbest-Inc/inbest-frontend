@@ -227,27 +227,10 @@ export default function AddStockModal({
 
   const handleQuantityConfirm = async (quantity: number) => {
     if (selectedStock) {
-      try {
-        const response = await addStockToPortfolio(
-          portfolioId,
-          selectedStock.symbol,
-          quantity
-        );
-
-        if (response.status === "success") {
-          onAddStock({ ...selectedStock, quantity });
-          setSelectedStock(null);
-          setError(null);
-          onClose();
-        } else {
-          setError(response.message || "Failed to add stock");
-        }
-      } catch (error) {
-        setError(
-          error instanceof Error ? error.message : "Failed to add stock"
-        );
-        console.error("Error adding stock:", error);
-      }
+      onAddStock({ ...selectedStock, quantity });
+      setSelectedStock(null);
+      setError(null);
+      onClose();
     }
   };
 

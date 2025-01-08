@@ -17,13 +17,9 @@ import {
 const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
 
-// Update mock data to only include non-portfolio data
-const userData = {
-  name: "Mert Gunes",
-  username: "skraatz416",
-  email: "mert@example.com",
-  followers: 1243,
-};
+// Update mock data
+const DEFAULT_NAME = "John Doe";
+const DEFAULT_FOLLOWERS = 0;
 
 const SocialButton = ({
   icon,
@@ -63,9 +59,9 @@ export default function UserProfilePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    name: userData.name,
-    username: userData.username,
-    email: userData.email,
+    name: DEFAULT_NAME,
+    username: params.username as string,
+    email: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
@@ -151,7 +147,7 @@ export default function UserProfilePage() {
                 <div className="relative w-24 h-24 rounded-2xl overflow-hidden ring-1 ring-black/[0.08] bg-[#F5F5F7]">
                   <Image
                     src={DEFAULT_AVATAR}
-                    alt={userData.name}
+                    alt={DEFAULT_NAME}
                     fill
                     className="object-cover p-2"
                   />
@@ -176,11 +172,11 @@ export default function UserProfilePage() {
               </div>
               <div>
                 <Text className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
-                  {userData.name}
+                  {DEFAULT_NAME}
                 </Text>
                 <div className="flex items-center gap-4">
                   <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
-                    @{userData.username}
+                    @{params.username}
                   </Text>
                   <div className="flex items-center text-[17px] leading-[22px] text-[#6E6E73]">
                     <svg
@@ -196,7 +192,7 @@ export default function UserProfilePage() {
                         d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                       />
                     </svg>
-                    {userData.followers.toLocaleString()} followers
+                    {DEFAULT_FOLLOWERS.toLocaleString()} followers
                   </div>
                 </div>
               </div>

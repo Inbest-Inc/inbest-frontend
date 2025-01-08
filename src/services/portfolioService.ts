@@ -341,17 +341,15 @@ interface PortfolioHoldingsResponse {
 export async function getPortfolioHoldings(
   portfolioId: number
 ): Promise<PortfolioHoldingsResponse> {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
-
   try {
     const response = await fetch(
       `${API_URL}/api/portfolio/stock/metric/${portfolioId}`,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+          // Only add Authorization header if token exists
+          ...(localStorage.getItem("token") && {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          }),
         },
       }
     );

@@ -483,7 +483,7 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                     </Link>
 
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50/80 backdrop-blur-sm rounded-xl text-sm text-[#1D1D1F] flex-shrink-0 ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-colors duration-200">
-                      <div className="relative h-4 w-4">
+                      <div className="relative h-4 w-4 rounded-md overflow-hidden ring-1 ring-black/[0.04]">
                         <Image
                           src={item.action.stockLogo}
                           alt={item.action.stock}

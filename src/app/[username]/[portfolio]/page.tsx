@@ -3,119 +3,13 @@
 import { Card, Text } from "@tremor/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
 import ActivityTable from "@/components/ActivityTable";
 import OpinionsFeed from "@/components/OpinionsFeed";
-
-// Keep the existing mock data
-const userData = {
-  name: "Mert Gunes",
-  username: "skraatz416",
-  location: "Ankara, TR",
-  avatar:
-    "https://pbs.twimg.com/profile_images/965317696639459328/pRPM9a9H_400x400.jpg",
-  ranking: {
-    position: 30,
-    totalUsers: 763927,
-  },
-  returns: {
-    lastTrade: 87.2,
-    monthly: -2.3,
-  },
-  holdings: [
-    {
-      symbol: "TSLA",
-      name: "Tesla, Inc.",
-      allocation: 22.5,
-      averagePrice: 180.5,
-      currentPrice: 202.64,
-      return: 12.27,
-      lastTransaction: {
-        type: "sell" as const,
-        date: "Mar 15, 2024",
-      },
-      logo: `https://assets.parqet.com/logos/symbol/TSLA?format=svg`,
-    },
-    {
-      symbol: "NVDA",
-      name: "NVIDIA Corporation",
-      allocation: 18.3,
-      averagePrice: 420.75,
-      currentPrice: 878.35,
-      return: 108.76,
-      lastTransaction: {
-        type: "increase" as const,
-        date: "Mar 14, 2024",
-      },
-      logo: `https://assets.parqet.com/logos/symbol/NVDA?format=svg`,
-    },
-    {
-      symbol: "PLTR",
-      name: "Palantir Technologies",
-      allocation: 15.2,
-      averagePrice: 12.45,
-      currentPrice: 24.89,
-      return: 99.92,
-      lastTransaction: {
-        type: "start" as const,
-        date: "Mar 10, 2024",
-      },
-      logo: `https://assets.parqet.com/logos/symbol/PLTR?format=svg`,
-    },
-    {
-      symbol: "GOOG",
-      name: "Alphabet Inc Class C",
-      allocation: 12.8,
-      averagePrice: 7.85,
-      currentPrice: 7.52,
-      return: -4.2,
-      lastTransaction: {
-        type: "decrease" as const,
-        date: "Mar 8, 2024",
-      },
-      logo: `https://assets.parqet.com/logos/symbol/GOOG?format=svg`,
-    },
-    {
-      symbol: "AMZN",
-      name: "Amazon.com Inc",
-      allocation: 11.4,
-      averagePrice: 145.3,
-      currentPrice: 179.84,
-      return: 23.77,
-      lastTransaction: {
-        type: "increase" as const,
-        date: "Mar 7, 2024",
-      },
-      logo: `https://assets.parqet.com/logos/symbol/AMZN?format=svg`,
-    },
-    {
-      symbol: "CRWD",
-      name: "CrowdStrike Holdings",
-      allocation: 10.5,
-      averagePrice: 280.45,
-      currentPrice: 315.65,
-      return: 12.55,
-      lastTransaction: {
-        type: "buy" as const,
-        date: "Mar 5, 2024",
-      },
-      logo: `https://assets.parqet.com/logos/symbol/CRWD?format=svg`,
-    },
-    {
-      symbol: "PATH",
-      name: "UiPath Inc.",
-      allocation: 9.3,
-      averagePrice: 22.15,
-      currentPrice: 23.45,
-      return: 5.87,
-      lastTransaction: {
-        type: "start" as const,
-        date: "Mar 1, 2024",
-      },
-      logo: `https://assets.parqet.com/logos/symbol/PATH?format=svg`,
-    },
-  ],
-};
+import { getPortfolioHoldings } from "@/services/portfolioService";
+import Link from "next/link";
 
 const portfolioReturns = {
   "1M": -2.3,
@@ -194,6 +88,54 @@ const SocialButton = ({
 );
 
 export default function PortfolioPage() {
+  const params = useParams();
+  const [holdings, setHoldings] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
+
+  // Default user data
+  const userData = {
+    name: "John Doe",
+    username: params.username as string,
+    followers: "0",
+    avatar:
+      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E",
+    ranking: {
+      position: 30,
+      totalUsers: 763927,
+    },
+    returns: {
+      lastTrade: 87.2,
+      monthly: -2.3,
+    },
+  };
+
+  useEffect(() => {
+    const checkOwnership = () => {
+      const currentUsername = localStorage.getItem("username");
+      setIsOwnProfile(currentUsername === params.username);
+    };
+
+    checkOwnership();
+  }, [params.username]);
+
+  useEffect(() => {
+    const fetchHoldings = async () => {
+      try {
+        const response = await getPortfolioHoldings(Number(params.portfolio));
+        if (response.status === "success") {
+          setHoldings(response.data.holdings);
+        }
+      } catch (error) {
+        console.error("Error fetching holdings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHoldings();
+  }, [params.portfolio]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -233,22 +175,20 @@ export default function PortfolioPage() {
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                       />
                     </svg>
-                    {userData.location}
+                    {userData.followers} followers
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <SocialButton
-                icon={
+              {isOwnProfile ? (
+                <Link
+                  href={`/${params.username}/${params.portfolio}/manage`}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200"
+                >
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -259,12 +199,31 @@ export default function PortfolioPage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={1.5}
-                      d="M12 4.5v15m7.5-7.5h-15"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
                     />
                   </svg>
-                }
-                label="Follow"
-              />
+                  Manage
+                </Link>
+              ) : (
+                <SocialButton
+                  icon={
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 4.5v15m7.5-7.5h-15"
+                      />
+                    </svg>
+                  }
+                  label="Follow"
+                />
+              )}
               <SocialButton
                 icon={
                   <svg
@@ -379,7 +338,7 @@ export default function PortfolioPage() {
           className="mb-12"
         >
           <Card className="p-6 bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
-            <PortfolioChart showCompare={true} />
+            <PortfolioChart showCompare={true} showSocials={false} />
           </Card>
         </motion.div>
 
@@ -555,98 +514,71 @@ export default function PortfolioPage() {
               </Text>
             </div>
             <div className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {userData.holdings.map((holding) => (
-                  <div
-                    key={holding.symbol}
-                    className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04] hover:bg-white/60 transition-all duration-300"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="relative h-10 w-10 rounded-xl overflow-hidden ring-1 ring-black/[0.04]">
-                        <Image
-                          src={holding.logo}
-                          alt={holding.name}
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                      <div>
-                        <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                          {holding.symbol}
-                        </Text>
-                        <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                          {holding.name}
-                        </Text>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                          Allocation
-                        </Text>
-                        <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                          {holding.allocation}%
-                        </Text>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                          Return
-                        </Text>
-                        <Text
-                          className={`text-[15px] leading-[20px] font-medium ${
-                            holding.return >= 0
-                              ? "text-[#00A852]"
-                              : "text-[#FF3B30]"
-                          }`}
-                        >
-                          {holding.return >= 0 ? "+" : ""}
-                          {holding.return}%
-                        </Text>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                          Last Action
-                        </Text>
-                        <div className="flex items-center gap-1">
-                          {holding.lastTransaction.type === "sell" && (
-                            <svg
-                              className="w-4 h-4 text-[#FF3B30]"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.5}
-                                d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                              />
-                            </svg>
-                          )}
-                          {holding.lastTransaction.type === "buy" && (
-                            <svg
-                              className="w-4 h-4 text-[#00A852]"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.5}
-                                d="M5 10l7-7m0 0l7 7m-7-7v18"
-                              />
-                            </svg>
-                          )}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : holdings.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                    No holdings found
+                  </Text>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {holdings.map((holding) => (
+                    <div
+                      key={holding.symbol}
+                      className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04] hover:bg-white/60 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="relative h-10 w-10 rounded-xl overflow-hidden ring-1 ring-black/[0.04]">
+                          <Image
+                            src={holding.logo}
+                            alt={holding.name}
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                        <div>
+                          <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                            {holding.symbol}
+                          </Text>
                           <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                            {holding.lastTransaction.date}
+                            {holding.name}
                           </Text>
                         </div>
                       </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
+                            Allocation
+                          </Text>
+                          <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                            {holding.allocation}%
+                          </Text>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
+                            Return
+                          </Text>
+                          <Text
+                            className={`text-[15px] leading-[20px] font-medium ${
+                              holding.return >= 0
+                                ? "text-[#00A852]"
+                                : "text-[#FF3B30]"
+                            }`}
+                          >
+                            {holding.return >= 0 ? "+" : ""}
+                            {holding.return}%
+                          </Text>
+                        </div>
+                        {/* Last Action row commented out as requested */}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
         </motion.div>
