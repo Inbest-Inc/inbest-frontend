@@ -33,19 +33,6 @@ const nextConfig = {
     };
     return config;
   },
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    NEXT_PUBLIC_DEBUG: process.env.NEXT_PUBLIC_DEBUG || "false",
-  },
-  logging: {
-    fetches: {
-      fullUrl: true,
-    },
-  },
-  output: "standalone",
-  experimental: {
-    serverActions: true,
-  },
 };
 
 export default nextConfig;
