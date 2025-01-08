@@ -82,7 +82,7 @@ importers:
         specifier: ^1.13.7
         version: 1.13.7(vercel@39.2.6)(wrangler@3.100.0)
       '@types/node':
-        specifier: ^20.11.5
+        specifier: ^20.17.12
         version: 20.17.12
       '@types/react':
         specifier: ^18.3.18
