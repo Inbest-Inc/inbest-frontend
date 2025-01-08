@@ -1,7 +1,5 @@
 "use client";
 
-export const runtime = "edge";
-
 import { useState, useEffect } from "react";
 import { Card, Text } from "@tremor/react";
 import Image from "next/image";
@@ -81,18 +79,28 @@ export default function UserProfilePage() {
       if (!username || Array.isArray(username)) return;
 
       try {
+        console.log("Fetching portfolios for:", username);
         const response = await getPortfoliosByUsername(username);
+        console.log("API Response:", response);
+
         if (response.status === "success" && response.data) {
           setPortfolios(response.data);
         } else {
+          console.error("API Error Response:", response);
           setError(response.message || "Failed to load portfolios");
         }
       } catch (error) {
-        console.error("Error fetching portfolios:", error);
+        console.error("Error fetching portfolios:", {
+          error,
+          message: error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         if (error instanceof Error) {
-          setError(error.message);
+          setError(`Error: ${error.message}`);
         } else {
-          setError("An unexpected error occurred");
+          setError(
+            "An unexpected error occurred. Please check the console for details."
+          );
         }
       } finally {
         setIsLoading(false);
