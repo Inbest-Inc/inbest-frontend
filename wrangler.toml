@@ -9,7 +9,7 @@ command = "pnpm install && NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production pnpm ru
 format = "directory"
 
 [site]
-bucket = "dist"
+bucket = "dist/standalone"
 
 [pages]
-pages_build_output_dir = "dist" 
+pages_build_output_dir = "dist/standalone" 
