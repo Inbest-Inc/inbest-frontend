@@ -44,9 +44,13 @@ const nextConfig = {
             );
           },
           name(module) {
-            const hash = crypto.createHash("sha1");
-            hash.update(module.identifier());
-            return "lib-" + hash.digest("hex").substring(0, 8);
+            // Simplified naming strategy without crypto
+            const moduleName = module
+              .identifier()
+              .split("/")
+              .slice(-1)[0]
+              .replace(/\W+/g, "_");
+            return `lib-${moduleName.substring(0, 8)}`;
           },
           priority: 30,
           minChunks: 1,
@@ -56,6 +60,7 @@ const nextConfig = {
     };
     return config;
   },
+  output: "standalone",
 };
 
 module.exports = nextConfig;
