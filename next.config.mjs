@@ -16,17 +16,7 @@ const nextConfig = {
       },
     ],
     dangerouslyAllowSVG: true,
-    contentDispositionType: "attachment",
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    formats: [
-      "image/webp",
-      "image/avif",
-      "image/svg+xml",
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-    ],
-    minimumCacheTTL: 60,
+    unoptimized: true,
   },
   experimental: {
     optimizePackageImports: ["@tremor/react"],
