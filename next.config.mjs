@@ -19,6 +19,10 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["@tremor/react"],
   },
+  webpack: (config) => {
+    config.resolve.fallback = { fs: false, path: false };
+    return config;
+  },
 };
 
 if (process.env.NODE_ENV === "development") {
