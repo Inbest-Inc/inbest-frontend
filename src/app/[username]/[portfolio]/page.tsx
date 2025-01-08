@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = "edge";
+
 import { Card, Text } from "@tremor/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
