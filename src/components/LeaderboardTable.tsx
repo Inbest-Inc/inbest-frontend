@@ -103,15 +103,15 @@ const UserPlusIcon = () => (
 const leaderboardData = [
   {
     rank: 1,
-    name: "Warren Buffett",
+    name: "You Know Who",
     username: "warrenbuffett",
-    portfolioName: "Value Investing",
+    portfolioName: "Secret Portfolio",
     avatar:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfPqLD2DHAh-b4RqasJvR4SOHB_JNAq-wuRA&s",
+      "https://img.freepik.com/premium-vector/yellow-light-bulb-with-smile-it_410516-80048.jpg",
     averageReturn: 52.4,
     ytdReturn: 18.7,
     holdings: 12,
-    followers: 152890,
+    followers: 85000000,
   },
   {
     rank: 2,
@@ -128,7 +128,7 @@ const leaderboardData = [
     rank: 3,
     name: "Enes Cakmak",
     username: "enes_cakmak_2003",
-    portfolioName: "My Portfolio",
+    portfolioName: "Gold and Silver",
     avatar:
       "https://media.licdn.com/dms/image/D4D03AQE3zS1U-n_r9A/profile-displayphoto-shrink_200_200/0/1716110426777?e=2147483647&v=beta&t=tU0lNTciq1IDw6eS_vgCzYoQu_ZLbAXsuhVf8zDjfOs",
     averageReturn: 45.7,
@@ -140,7 +140,7 @@ const leaderboardData = [
     rank: 4,
     name: "Sude Akarcay",
     username: "pm",
-    portfolioName: "All Weather",
+    portfolioName: "My Portfolio",
     avatar: "https://i.ytimg.com/vi/m0XpDRhnTN8/maxresdefault.jpg",
     averageReturn: 42.1,
     ytdReturn: -12.4,
@@ -151,19 +151,19 @@ const leaderboardData = [
     rank: 5,
     name: "Mert Gunes",
     username: "skraatz416",
-    portfolioName: "Bet",
+    portfolioName: "Betting on my ÖÇP earnings",
     avatar:
       "https://pbs.twimg.com/profile_images/965317696639459328/pRPM9a9H_400x400.jpg",
     averageReturn: 40.1,
     ytdReturn: 13.4,
     holdings: 2,
-    followers: 29,
+    followers: 3,
   },
   {
     rank: 6,
-    name: "Mehmet Timsek",
-    username: "hazineningulu",
-    portfolioName: "Justice and Development",
+    name: "Mehmet Yıldırım",
+    username: "faizsebep",
+    portfolioName: "Enflasyon't Touch This Portfolio",
     avatar:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBgTAXz-EbpmyMVUcrO6ra6DolsQxJaF11uA&s",
     averageReturn: 38.0,
@@ -175,7 +175,7 @@ const leaderboardData = [
     rank: 7,
     name: "Mehmet Kocyigit",
     username: "kocyigit",
-    portfolioName: "Portfolio 2",
+    portfolioName: "Fethiye Portfolio Management",
     avatar:
       "https://media.licdn.com/dms/image/v2/D4D03AQHeqaS39F_X9Q/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1731703909704?e=2147483647&v=beta&t=FfYf_MXcsLFkWRKQqrJSGEQ6uqRSCw_BpnXuADqrEJY",
     averageReturn: 37.8,
@@ -199,7 +199,7 @@ const leaderboardData = [
     rank: 9,
     name: "Ercan Uchar",
     username: "ctisadmin",
-    portfolioName: "My Portfolio",
+    portfolioName: "Later Than Ever, Richer Than Most",
     avatar:
       "https://pbs.twimg.com/profile_images/1316982158578298880/BRoYwo1W_400x400.jpg",
     averageReturn: 32.0,
@@ -209,11 +209,11 @@ const leaderboardData = [
   },
   {
     rank: 10,
-    name: "Nancy Pelosi",
-    portfolioName: "Like I didn't know",
-    username: "insidertrader",
+    name: "Serdar Genc",
+    portfolioName: "The One Who Stocks",
+    username: "phpsgenc",
     avatar:
-      "https://cdn.britannica.com/93/204193-050-16E326DA/Nancy-Pelosi-2018.jpg",
+      "https://i1.rgstatic.net/ii/profile.image/11431281283013872-1728568858685_Q512/Serkan-Genc.jpg",
     averageReturn: 23.0,
     ytdReturn: 8.2,
     holdings: 25,

@@ -478,7 +478,7 @@ export default function Home() {
                 Get Started
               </Link>
               <Link
-                href="/learn-more"
+                href="/best-portfolios"
                 className="inline-flex items-center px-8 py-4 text-[17px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
               >
                 Learn More →
@@ -1080,7 +1080,7 @@ export default function Home() {
                 Create your account
               </Link>
               <Link
-                href="/learn-more"
+                href="/best-portfolios"
                 className="inline-flex items-center px-8 py-4 text-[17px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
               >
                 Learn More →
