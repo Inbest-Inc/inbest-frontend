@@ -126,9 +126,8 @@ export default function PortfolioPage() {
     const fetchUserInfo = async () => {
       try {
         const response = await getUserInfo(params.username as string);
-        if (response.status === "success" && response.data) {
-          const fullName = `${response.data.name} ${response.data.surname}`;
-          setUserInfo({ name: fullName });
+        if (response.name) {
+          setUserInfo({ name: response.name });
         }
       } catch (error) {
         console.error("Error fetching user info:", error);

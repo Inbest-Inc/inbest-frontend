@@ -515,12 +515,7 @@ export interface AuthenticationRequest {
 }
 
 export interface UserInfoResponse {
-  status: string;
-  message: string;
-  data: {
-    name: string;
-    surname: string;
-  };
+  name: string;
 }
 
 export async function getUserInfo(username: string): Promise<UserInfoResponse> {
