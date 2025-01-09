@@ -346,7 +346,7 @@ export default function ManagePortfolioPage() {
     try {
       await deletePortfolio(portfolioId);
       toast.success("Portfolio deleted successfully");
-      router.push("/dashboard");
+      router.push(`/${params.username}`);
     } catch (error) {
       console.error("Error deleting portfolio:", error);
       toast.error(
