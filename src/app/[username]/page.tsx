@@ -61,6 +61,7 @@ export default function UserProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState({ name: DEFAULT_NAME });
+  const [isUserInfoLoading, setIsUserInfoLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     name: DEFAULT_NAME,
@@ -79,6 +80,7 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     const fetchUserInfo = async () => {
+      setIsUserInfoLoading(true);
       try {
         const response = await getUserInfo(params.username as string);
         if (response.name) {
@@ -87,6 +89,8 @@ export default function UserProfilePage() {
         }
       } catch (error) {
         console.error("Error fetching user info:", error);
+      } finally {
+        setIsUserInfoLoading(false);
       }
     };
 
@@ -167,12 +171,14 @@ export default function UserProfilePage() {
             <div className="flex items-center gap-6">
               <div className="relative">
                 <div className="relative w-24 h-24 rounded-2xl overflow-hidden ring-1 ring-black/[0.08] bg-[#F5F5F7]">
-                  <Image
-                    src={DEFAULT_AVATAR}
-                    alt={userInfo.name}
-                    fill
-                    className="object-cover p-2"
-                  />
+                  {!isUserInfoLoading && (
+                    <Image
+                      src={DEFAULT_AVATAR}
+                      alt={userInfo.name}
+                      fill
+                      className="object-cover p-2"
+                    />
+                  )}
                 </div>
                 {isOwnProfile && (
                   <button className="absolute bottom-2 right-2 p-1.5 bg-white rounded-full shadow-sm ring-1 ring-black/[0.08] hover:bg-gray-50 transition-colors">
@@ -193,30 +199,39 @@ export default function UserProfilePage() {
                 )}
               </div>
               <div>
-                <Text className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
-                  {userInfo.name}
-                </Text>
-                <div className="flex items-center gap-4">
-                  <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
-                    @{params.username}
-                  </Text>
-                  <div className="flex items-center text-[17px] leading-[22px] text-[#6E6E73]">
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
-                    {DEFAULT_FOLLOWERS.toLocaleString()} followers
+                {!isUserInfoLoading ? (
+                  <>
+                    <Text className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
+                      {userInfo.name}
+                    </Text>
+                    <div className="flex items-center gap-4">
+                      <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                        @{params.username}
+                      </Text>
+                      <div className="flex items-center text-[17px] leading-[22px] text-[#6E6E73]">
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                        {DEFAULT_FOLLOWERS.toLocaleString()} followers
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="animate-pulse">
+                    <div className="h-10 w-48 bg-gray-200 rounded-lg mb-2"></div>
+                    <div className="h-6 w-32 bg-gray-200 rounded-lg"></div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3">
