@@ -513,3 +513,26 @@ export interface AuthenticationRequest {
   username: string;
   password: string;
 }
+
+export interface UserInfoResponse {
+  status: string;
+  message: string;
+  data: {
+    name: string;
+    surname: string;
+  };
+}
+
+export async function getUserInfo(username: string): Promise<UserInfoResponse> {
+  try {
+    const response = await fetch(`${API_URL}/api/user/${username}`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch user info");
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching user info:", error);
+    throw error;
+  }
+}

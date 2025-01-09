@@ -10,7 +10,7 @@ import { useParams } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
 import ActivityTable from "@/components/ActivityTable";
 import OpinionsFeed from "@/components/OpinionsFeed";
-import { getPortfolioHoldings } from "@/services/portfolioService";
+import { getPortfolioHoldings, getUserInfo } from "@/services/portfolioService";
 import Link from "next/link";
 
 const portfolioReturns = {
@@ -94,6 +94,7 @@ export default function PortfolioPage() {
   const [holdings, setHoldings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [userInfo, setUserInfo] = useState({ name: "John Doe" });
 
   // Default user data
   const userData = {
@@ -119,6 +120,24 @@ export default function PortfolioPage() {
     };
 
     checkOwnership();
+  }, [params.username]);
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const response = await getUserInfo(params.username as string);
+        if (response.status === "success" && response.data) {
+          const fullName = `${response.data.name} ${response.data.surname}`;
+          setUserInfo({ name: fullName });
+        }
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+      }
+    };
+
+    if (params.username) {
+      fetchUserInfo();
+    }
   }, [params.username]);
 
   useEffect(() => {
@@ -153,14 +172,14 @@ export default function PortfolioPage() {
               <div className="relative w-24 h-24">
                 <Image
                   src={userData.avatar}
-                  alt={userData.name}
+                  alt={userInfo.name}
                   fill
                   className="object-cover rounded-2xl ring-1 ring-black/[0.04]"
                 />
               </div>
               <div>
                 <Text className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
-                  {userData.name}
+                  {userInfo.name}
                 </Text>
                 <div className="flex items-center gap-4">
                   <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
