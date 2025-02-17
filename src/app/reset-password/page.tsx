@@ -4,12 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Text } from "@tremor/react";
-import { useSearchParams } from "next/navigation";
 import { getApiUrl } from "@/config/env";
 
 export default function ResetPasswordPage() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const token =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("token")
+      : null;
   const [passwords, setPasswords] = useState({
     newPassword: "",
     confirmPassword: "",
