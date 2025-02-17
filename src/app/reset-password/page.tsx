@@ -4,48 +4,109 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Text } from "@tremor/react";
+import { useSearchParams } from "next/navigation";
 import { getApiUrl } from "@/config/env";
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+export default function ResetPasswordPage() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  const [passwords, setPasswords] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
+
+    // Validate passwords match
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    // Validate password length
+    if (passwords.newPassword.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const response = await fetch(
-        `${getApiUrl()}/api/auth/forgot-password?email=${encodeURIComponent(email)}`,
+        `${getApiUrl()}/api/auth/reset-password?token=${token}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ password: passwords.newPassword }),
         }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to send reset instructions");
+        throw new Error(data.message || "Failed to reset password");
       }
 
       setIsSubmitted(true);
     } catch (error) {
-      console.error("Password reset request failed:", error);
+      console.error("Password reset failed:", error);
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to send reset instructions"
+        error instanceof Error ? error.message : "Failed to reset password"
       );
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!token) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full max-w-[400px] space-y-8 text-center"
+        >
+          <div className="flex justify-center">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-red-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+          </div>
+          <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F] tracking-tight">
+            Invalid or expired token
+          </Text>
+          <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
+            Please request a new password reset link
+          </Text>
+          <Link
+            href="/forgot-password"
+            className="inline-block text-[15px] leading-[20px] text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            Back to forgot password
+          </Link>
+        </motion.div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
@@ -60,10 +121,10 @@ export default function ForgotPasswordPage() {
             {/* Header */}
             <div className="text-center space-y-4">
               <Text className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] tracking-tight">
-                Forgot your password?
+                Create new password
               </Text>
               <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
-                Enter your email to receive reset instructions
+                Please enter your new password below
               </Text>
             </div>
 
@@ -78,24 +139,54 @@ export default function ForgotPasswordPage() {
                 </div>
               )}
 
-              {/* Email Input */}
+              {/* New Password Input */}
               <div className="space-y-2">
                 <label
-                  htmlFor="email"
+                  htmlFor="newPassword"
                   className="block text-[15px] leading-[20px] font-medium text-[#1D1D1F]"
                 >
-                  Email
+                  New Password
                 </label>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  autoComplete="new-password"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={passwords.newPassword}
+                  onChange={(e) =>
+                    setPasswords({ ...passwords, newPassword: e.target.value })
+                  }
                   className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
-                  placeholder="you@example.com"
+                  placeholder="••••••••"
+                  minLength={6}
+                />
+              </div>
+
+              {/* Confirm Password Input */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-[15px] leading-[20px] font-medium text-[#1D1D1F]"
+                >
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={passwords.confirmPassword}
+                  onChange={(e) =>
+                    setPasswords({
+                      ...passwords,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                  className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+                  placeholder="••••••••"
+                  minLength={6}
                 />
               </div>
 
@@ -127,10 +218,10 @@ export default function ForgotPasswordPage() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    Sending instructions...
+                    Resetting password...
                   </div>
                 ) : (
-                  "Send instructions"
+                  "Reset password"
                 )}
               </button>
 
@@ -170,10 +261,10 @@ export default function ForgotPasswordPage() {
                 </div>
               </div>
               <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F] tracking-tight">
-                Check your email
+                Password reset successful
               </Text>
               <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
-                We've sent password reset instructions to {email}
+                Your password has been reset successfully
               </Text>
               <Link
                 href="/login"
