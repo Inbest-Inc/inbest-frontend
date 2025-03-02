@@ -4,7 +4,7 @@ export const API_URL =
 // Helper function to get the API URL based on environment
 export function getApiUrl() {
   if (process.env.NODE_ENV === "production") {
-    return "http://63.176.12.43:8080";
+    return "https://api.tryinbest.com";
   }
   return "http://localhost:8080";
 }

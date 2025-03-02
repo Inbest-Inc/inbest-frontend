@@ -110,7 +110,7 @@ export default function Footer() {
 
         <div className="mt-12 pt-8 border-t border-black/[0.04]">
           <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-            © 2024 Inbest. All rights reserved.
+            © 2025 Inbest. All rights reserved.
           </Text>
         </div>
       </div>

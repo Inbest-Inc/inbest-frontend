@@ -18,8 +18,6 @@ import {
   TableCell,
 } from "@tremor/react";
 
-import TreemapChart from "@/components/TreemapChart";
-
 import {
   AvailableChartColors,
   AvailableChartColorsKeys,
@@ -168,6 +166,9 @@ const featuredPortfolios = [
     ],
     monthlyReturn: "+12.4%",
     followers: "124K",
+    yearlyReturn: "+42.8%",
+    topStock: "AAPL",
+    topStockReturn: "+31.2%",
   },
   {
     user: "Ercan Uchar",
@@ -181,6 +182,9 @@ const featuredPortfolios = [
     ],
     monthlyReturn: "+8.9%",
     followers: "89K",
+    yearlyReturn: "+36.5%",
+    topStock: "COIN",
+    topStockReturn: "+47.3%",
   },
 ];
 
@@ -452,9 +456,9 @@ export default function Home() {
               transition={{ duration: 0.3 }}
               className="text-[56px] leading-[64px] font-semibold text-[#1D1D1F] tracking-tight"
             >
-              Share your portfolio.
+              Invest like the best.
               <br />
-              Learn from the best.
+              Outperform the market.
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -475,23 +479,23 @@ export default function Home() {
                 href="/register"
                 className="inline-flex items-center px-8 py-4 text-[17px] font-medium text-white bg-blue-600 rounded-full shadow-sm transition-all duration-200 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98]"
               >
-                Get Started
+                Create your portfolio
               </Link>
               <Link
                 href="/best-portfolios"
                 className="inline-flex items-center px-8 py-4 text-[17px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
               >
-                Learn More →
+                See best portfolios →
               </Link>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Learn from Top Investors Section */}
-      <section className="bg-white py-20">
+      {/* Learn from Top Investors Section - Minimalist Design */}
+      <section className="bg-white py-16">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-end mb-8">
+          <div className="flex justify-between items-end mb-16">
             <div className="space-y-4">
               <motion.h2
                 initial={{ opacity: 0, y: 20 }}
@@ -507,75 +511,373 @@ export default function Home() {
                 transition={{ duration: 0.3, delay: 0.1 }}
                 className="text-[22px] leading-[28px] text-[#6E6E73] max-w-2xl"
               >
-                Follow successful investors and replicate their winning
-                strategies
+                Follow successful investors
               </motion.p>
             </div>
+            {/* <Link
+              href="/investors"
+              className="text-[17px] font-medium text-[#1D1D1F] hover:text-[#0071E3] transition-colors duration-200 flex items-center gap-1 group"
+            >
+              <span>View all investors</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transform group-hover:translate-x-1 transition-transform duration-200"
+              >
+                <path d="M5 12h14"></path>
+                <path d="m12 5 7 7-7 7"></path>
+              </svg>
+            </Link> */}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Minimalist Investor List */}
+          <div className="space-y-8">
             {featuredPortfolios.map((portfolio, index) => (
               <motion.div
                 key={portfolio.user}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
               >
                 <Link
                   href={`/${portfolio.user.toLowerCase().replace(" ", "-")}`}
+                  className="block group"
                 >
-                  <Card className="bg-white/60 backdrop-blur-sm p-6 hover:bg-white transition-all duration-300 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md rounded-2xl h-full">
-                    <div className="flex flex-col h-full">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
-                          <Image
-                            src={portfolio.avatar}
-                            alt={portfolio.user}
-                            fill
-                            loading="lazy"
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F]">
-                            {portfolio.user}
-                          </Text>
-                          <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
-                            {portfolio.followers} followers
-                          </Text>
-                        </div>
-                        <div className="ml-auto">
-                          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#00A852]/[0.08] backdrop-blur-sm rounded-full ring-1 ring-[#00A852]/[0.08]">
-                            <span className="text-sm font-medium text-[#00A852]">
-                              {portfolio.monthlyReturn}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex-1">
-                        <TreemapChart
-                          data={portfolio.allocation.map((holding) => ({
-                            ...holding,
-                            logo: getStockLogo(holding.name),
-                          }))}
-                          width={600}
-                          height={400}
+                  <div className="flex flex-col md:flex-row md:items-center py-8 px-4 hover:bg-[#F5F5F7] rounded-xl transition-colors duration-300">
+                    {/* Investor Info */}
+                    <div className="flex items-center gap-5 mb-6 md:mb-0 md:w-64 md:flex-shrink-0">
+                      <div className="relative h-16 w-16 rounded-xl overflow-hidden border border-[#E5E5E5]">
+                        <Image
+                          src={portfolio.avatar}
+                          alt={portfolio.user}
+                          fill
+                          loading="lazy"
+                          className="object-cover"
                         />
                       </div>
+                      <div>
+                        <div className="text-xl font-semibold text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors duration-200">
+                          {portfolio.user}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4 text-[#6E6E73]"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                          </svg>
+                          <span className="text-sm text-[#6E6E73]">
+                            {portfolio.followers} followers
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </Card>
+
+                    {/* Performance */}
+                    <div className="flex gap-8 mb-6 md:mb-0 md:ml-8 md:flex-shrink-0">
+                      <div>
+                        <div className="text-sm text-[#6E6E73]">Monthly</div>
+                        <div className="text-lg font-semibold text-green-600">
+                          {portfolio.monthlyReturn}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[#6E6E73]">Yearly</div>
+                        <div className="text-lg font-semibold text-green-600">
+                          {portfolio.yearlyReturn}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Top Holdings */}
+                    <div className="flex-grow md:ml-12">
+                      <div className="text-sm text-[#6E6E73] mb-3">
+                        Top Holdings
+                      </div>
+                      <div className="flex flex-wrap gap-3">
+                        {portfolio.allocation.map((holding) => (
+                          <div
+                            key={holding.name}
+                            className="flex items-center gap-2"
+                          >
+                            <div className="relative h-6 w-6 rounded-md overflow-hidden bg-white border border-[#E5E5E5]">
+                              <Image
+                                src={holding.logo}
+                                alt={holding.name}
+                                fill
+                                loading="lazy"
+                                className="object-contain p-0.5"
+                              />
+                            </div>
+                            <div className="text-sm font-medium text-[#1D1D1F]">
+                              {holding.name}
+                            </div>
+                            <div className="text-xs text-[#6E6E73]">
+                              {holding.value}%
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Arrow */}
+                    <div className="hidden md:flex md:w-8 md:flex-shrink-0 md:justify-end md:items-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-[#6E6E73] group-hover:text-[#0071E3] transform group-hover:translate-x-1 transition-all duration-200"
+                      >
+                        <path d="M5 12h14"></path>
+                        <path d="m12 5 7 7-7 7"></path>
+                      </svg>
+                    </div>
+                  </div>
                 </Link>
               </motion.div>
             ))}
           </div>
+
+          {/* Add the "See More" button */}
+          <div className="flex justify-center mt-16">
+            <Link href="/investors" className="group relative overflow-hidden">
+              <div className="relative px-8 py-4 bg-white border border-[#D2D2D7] rounded-full z-10 flex items-center gap-2 group-hover:border-[#0071E3] transition-colors duration-300">
+                <span className="text-[17px] font-medium text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors duration-300">
+                  Discover more investors
+                </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transform group-hover:translate-x-1 transition-transform duration-200"
+                >
+                  <path d="M5 12h14"></path>
+                  <path d="m12 5 7 7-7 7"></path>
+                </svg>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0071E3]/0 via-[#0071E3]/10 to-[#0071E3]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full"></div>
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Best Trades Section */}
-      <section className="bg-gradient-to-b from-gray-50/50 to-white">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-32">
-          <div className="flex justify-between items-end mb-12">
+      {/* Best Trades Section - Minimalist Horizontal Layout */}
+      <section className="py-16 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#f5f5f7] to-white -z-10"></div>
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 relative">
+          {/* Section Header */}
+          <div className="mb-16">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] tracking-tight"
+            >
+              Best trades this month
+            </motion.h2>
+            <div className="flex justify-between items-end mt-4">
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="text-[22px] leading-[28px] text-[#6E6E73] max-w-2xl"
+              >
+                Discover the most successful trades
+              </motion.p>
+              {/* <Link
+                href="/trades"
+                className="text-[17px] font-medium text-[#1D1D1F] hover:text-[#0071E3] transition-colors duration-200 flex items-center gap-1 group"
+              >
+                <span>View all trades</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transform group-hover:translate-x-1 transition-transform duration-200"
+                >
+                  <path d="M5 12h14"></path>
+                  <path d="m12 5 7 7-7 7"></path>
+                </svg>
+              </Link> */}
+            </div>
+          </div>
+
+          {/* Minimalist Horizontal Trade List */}
+          <div className="space-y-6">
+            {topTrades.slice(0, 5).map((trade, index) => (
+              <motion.div
+                key={trade.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+              >
+                <Link
+                  href={`/${trade.user.toLowerCase().replace(" ", "-")}`}
+                  className="block group"
+                >
+                  <div className="flex items-center py-6 px-4 hover:bg-white rounded-xl transition-colors duration-300 border border-transparent hover:border-[#E5E5E5]">
+                    {/* Rank */}
+                    <div className="w-12 flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-[#F5F5F7] flex items-center justify-center text-lg font-semibold text-[#0071E3]">
+                        {index + 1}
+                      </div>
+                    </div>
+
+                    {/* Stock Info */}
+                    <div className="flex items-center gap-4 w-64 flex-shrink-0">
+                      <div className="relative h-10 w-10 rounded-lg overflow-hidden bg-white border border-[#E5E5E5]">
+                        <Image
+                          src={trade.stockLogo}
+                          alt={trade.stock}
+                          fill
+                          loading="lazy"
+                          className="object-contain p-1"
+                        />
+                      </div>
+                      <div>
+                        <div className="text-lg font-semibold text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors duration-200">
+                          {trade.stock}
+                        </div>
+                        <div className="text-sm text-[#6E6E73]">
+                          {trade.stockName.length > 20
+                            ? `${trade.stockName.substring(0, 20)}...`
+                            : trade.stockName}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Return */}
+                    <div className="w-32 flex-shrink-0">
+                      <div className="text-xl font-semibold text-green-600">
+                        {trade.return}
+                      </div>
+                    </div>
+
+                    {/* Price Change */}
+                    <div className="flex items-center gap-3 flex-grow">
+                      <div className="text-base text-[#6E6E73]">
+                        ${trade.chartData[0].value}
+                      </div>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-[#6E6E73]"
+                      >
+                        <path d="M5 12h14"></path>
+                        <path d="m12 5 7 7-7 7"></path>
+                      </svg>
+                      <div className="text-base text-[#1D1D1F]">
+                        ${trade.chartData[trade.chartData.length - 1].value}
+                      </div>
+                    </div>
+
+                    {/* Investor */}
+                    <div className="flex items-center gap-3 w-48 flex-shrink-0">
+                      <div className="relative h-8 w-8 rounded-xl overflow-hidden">
+                        <Image
+                          src={trade.avatar}
+                          alt={trade.user}
+                          fill
+                          loading="lazy"
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="text-sm font-medium text-[#1D1D1F]">
+                        {trade.user}
+                      </div>
+                    </div>
+
+                    {/* Arrow */}
+                    <div className="w-8 flex-shrink-0 flex justify-end">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-[#6E6E73] group-hover:text-[#0071E3] transform group-hover:translate-x-1 transition-all duration-200"
+                      >
+                        <path d="M5 12h14"></path>
+                        <path d="m12 5 7 7-7 7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Add the "See More" button */}
+          <div className="flex justify-center mt-16">
+            <Link href="/trades" className="group relative overflow-hidden">
+              <div className="relative px-8 py-4 bg-white border border-[#D2D2D7] rounded-full z-10 flex items-center gap-2 group-hover:border-[#0071E3] transition-colors duration-300">
+                <span className="text-[17px] font-medium text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors duration-300">
+                  Explore more trades
+                </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transform group-hover:translate-x-1 transition-transform duration-200"
+                >
+                  <path d="M5 12h14"></path>
+                  <path d="m12 5 7 7-7 7"></path>
+                </svg>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0071E3]/0 via-[#0071E3]/10 to-[#0071E3]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full"></div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Portfolio Performance Section - Minimalist Design */}
+      <section className="bg-white py-16">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-end mb-16">
             <div className="space-y-4">
               <motion.h2
                 initial={{ opacity: 0, y: 20 }}
@@ -583,7 +885,7 @@ export default function Home() {
                 transition={{ duration: 0.3 }}
                 className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] tracking-tight"
               >
-                Best trades this month
+                Beat the market
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -591,415 +893,126 @@ export default function Home() {
                 transition={{ duration: 0.3, delay: 0.1 }}
                 className="text-[22px] leading-[28px] text-[#6E6E73] max-w-2xl"
               >
-                Discover the most successful trades and learn from their timing
+                Monitor your portfolio performance
               </motion.p>
             </div>
-            <Link
-              href="/trades"
-              className="text-[17px] font-medium text-blue-600 hover:text-blue-700"
+            {/* <Link
+              href="/performance"
+              className="text-[17px] font-medium text-[#1D1D1F] hover:text-[#0071E3] transition-colors duration-200 flex items-center gap-1 group"
             >
-              View all trades <span className="ml-1">→</span>
-            </Link>
-          </div>
-
-          <div className="relative overflow-hidden">
-            <div
-              className="flex gap-6 animate-marquee hover:pause-animation"
-              style={{
-                width: "fit-content",
-                animation: "marquee 30s linear infinite",
-              }}
-            >
-              {/* First set of cards */}
-              {topTrades.map((trade) => (
-                <Card
-                  key={trade.id}
-                  className="p-6 min-w-[380px] bg-white/60 backdrop-blur-sm hover:bg-white transition-all duration-300 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md rounded-2xl"
-                >
-                  <Link href={`/${trade.user.toLowerCase().replace(" ", "-")}`}>
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
-                          <Image
-                            src={trade.stockLogo}
-                            alt={trade.stock}
-                            fill
-                            loading="lazy"
-                            className="object-contain"
-                          />
-                        </div>
-                        <div>
-                          <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F]">
-                            {trade.stock}
-                          </Text>
-                          <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
-                            {trade.stockName}
-                          </Text>
-                        </div>
-                        <div className="ml-auto">
-                          <Text className="text-[28px] leading-[34px] font-semibold text-[#00A852]">
-                            {trade.return}
-                          </Text>
-                        </div>
-                      </div>
-
-                      <div className="h-[160px]">
-                        <AreaChart
-                          data={trade.chartData}
-                          index="date"
-                          categories={["value"]}
-                          colors={["emerald"]}
-                          showXAxis={false}
-                          showYAxis={false}
-                          showLegend={false}
-                          showGridLines={false}
-                          showAnimation={true}
-                          className="h-[160px]"
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-end gap-3">
-                        <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
-                          <Image
-                            src={trade.avatar}
-                            alt={trade.user}
-                            fill
-                            loading="lazy"
-                            className="object-cover"
-                          />
-                        </div>
-                        <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
-                          by {trade.user}
-                        </Text>
-                      </div>
-                    </div>
-                  </Link>
-                </Card>
-              ))}
-              {/* Duplicate set for seamless loop */}
-              {topTrades.map((trade) => (
-                <Card
-                  key={`${trade.id}-duplicate`}
-                  className="p-6 min-w-[380px] bg-white/60 backdrop-blur-sm hover:bg-white transition-all duration-300 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md rounded-2xl"
-                >
-                  <Link href={`/${trade.user.toLowerCase().replace(" ", "-")}`}>
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
-                          <Image
-                            src={trade.stockLogo}
-                            alt={trade.stock}
-                            fill
-                            loading="lazy"
-                            className="object-contain"
-                          />
-                        </div>
-                        <div>
-                          <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F]">
-                            {trade.stock}
-                          </Text>
-                          <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
-                            {trade.stockName}
-                          </Text>
-                        </div>
-                        <div className="ml-auto">
-                          <Text className="text-[28px] leading-[34px] font-semibold text-[#00A852]">
-                            {trade.return}
-                          </Text>
-                        </div>
-                      </div>
-
-                      <div className="h-[160px]">
-                        <AreaChart
-                          data={trade.chartData}
-                          index="date"
-                          categories={["value"]}
-                          colors={["emerald"]}
-                          showXAxis={false}
-                          showYAxis={false}
-                          showLegend={false}
-                          showGridLines={false}
-                          showAnimation={true}
-                          className="h-[160px]"
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-end gap-3">
-                        <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
-                          <Image
-                            src={trade.avatar}
-                            alt={trade.user}
-                            fill
-                            loading="lazy"
-                            className="object-cover"
-                          />
-                        </div>
-                        <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
-                          by {trade.user}
-                        </Text>
-                      </div>
-                    </div>
-                  </Link>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Portfolio Performance Section */}
-      <section className="bg-white">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-32">
-          <div className="flex flex-col space-y-4 mb-12">
-            <div className="flex justify-between items-center">
-              <div className="space-y-4">
-                <motion.h2
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] tracking-tight"
-                >
-                  Beat the market
-                </motion.h2>
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                  className="text-[22px] leading-[28px] text-[#6E6E73] max-w-2xl"
-                >
-                  Monitor your portfolio performance and compare with market
-                  benchmarks
-                </motion.p>
-              </div>
-              <Link
-                href="/performance"
-                className="text-[17px] font-medium text-blue-600 hover:text-blue-700"
+              <span>View detailed stats</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transform group-hover:translate-x-1 transition-transform duration-200"
               >
-                View detailed stats <span className="ml-1">→</span>
-              </Link>
+                <path d="M5 12h14"></path>
+                <path d="m12 5 7 7-7 7"></path>
+              </svg>
+            </Link> */}
+          </div>
+
+          {/* Performance Overview */}
+          <div className="mb-16">
+            <div className="flex flex-wrap gap-8 mb-8">
+              <div className="flex-1 min-w-[240px]">
+                <div className="text-sm text-[#6E6E73] mb-2">Total Return</div>
+                <div className="text-4xl font-semibold text-green-600">
+                  +195%
+                </div>
+                <div className="text-sm text-[#6E6E73] mt-1">
+                  Since inception
+                </div>
+              </div>
+              <div className="flex-1 min-w-[240px]">
+                <div className="text-sm text-[#6E6E73] mb-2">Annual Return</div>
+                <div className="text-4xl font-semibold text-green-600">
+                  +45.3%
+                </div>
+                <div className="text-sm text-[#6E6E73] mt-1">
+                  Last 12 months
+                </div>
+              </div>
+              <div className="flex-1 min-w-[240px]">
+                <div className="text-sm text-[#6E6E73] mb-2">Growth</div>
+                <div className="text-4xl font-semibold text-[#1D1D1F]">
+                  $29,500
+                </div>
+                <div className="text-sm text-[#6E6E73] mt-1">
+                  From $10,000 initial investment
+                </div>
+              </div>
             </div>
           </div>
 
-          <Card className="bg-white/60 backdrop-blur-sm p-8 hover:bg-white transition-all duration-300 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md rounded-2xl">
-            <div className="space-y-8">
-              <div className="flex justify-between items-start">
-                <div>
-                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
-                    Portfolio Performance
-                  </Text>
-                  <Text className="text-[17px] leading-[22px] text-[#1D1D1F]">
-                    +195% growth from $10,000 initial investment
-                  </Text>
-                </div>
+          {/* Chart Section */}
+          <div className="bg-white rounded-2xl p-8 mb-16 border border-[#E5E5E5]">
+            <div className="flex items-center justify-between mb-8">
+              <div className="text-xl font-semibold text-[#1D1D1F]">
+                Performance Comparison
               </div>
-
-              <div className="h-[400px] mt-8">
-                <div className="flex items-center justify-end gap-6 mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[#00A852]"></div>
-                    <span className="text-[15px] leading-[20px] text-[#6E6E73]">
-                      Your Portfolio
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                    <span className="text-[15px] leading-[20px] text-[#6E6E73]">
-                      S&P 500
-                    </span>
-                  </div>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#0071E3]"></div>
+                  <span className="text-sm text-[#6E6E73]">Your Portfolio</span>
                 </div>
-                <AreaChart
-                  data={performanceData}
-                  index="date"
-                  categories={["Portfolio", "S&P 500"]}
-                  colors={["emerald", "blue"]}
-                  valueFormatter={(number) =>
-                    `$${number.toLocaleString("en-US")}`
-                  }
-                  showAnimation={true}
-                  className="h-[400px]"
-                  yAxisWidth={80}
-                  showLegend={false}
-                />
-              </div>
-
-              <div className="mt-12 border-t border-gray-100 pt-12">
-                <div className="grid grid-cols-2 gap-6 mb-8">
-                  <div className="p-8 bg-white/90 backdrop-blur-sm rounded-2xl ring-1 ring-black/[0.08] shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="h-8 w-8 rounded-full bg-[#00A852]/[0.08] flex items-center justify-center">
-                        <svg
-                          className="w-5 h-5 text-[#00A852]"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                          />
-                        </svg>
-                      </div>
-                      <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
-                        Total Return
-                      </Text>
-                    </div>
-                    <Text className="text-[34px] leading-[40px] font-semibold text-[#00A852]">
-                      +195%
-                    </Text>
-                    <Text className="text-[13px] leading-[18px] text-[#6E6E73] mt-2">
-                      Since inception
-                    </Text>
-                  </div>
-                  <div className="p-8 bg-white/90 backdrop-blur-sm rounded-2xl ring-1 ring-black/[0.08] shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="h-8 w-8 rounded-full bg-[#00A852]/[0.08] flex items-center justify-center">
-                        <svg
-                          className="w-5 h-5 text-[#00A852]"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M16 8v8m-4-5v5M8 8v8m-4-5v5"
-                          />
-                        </svg>
-                      </div>
-                      <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
-                        Annual Return
-                      </Text>
-                    </div>
-                    <Text className="text-[34px] leading-[40px] font-semibold text-[#00A852]">
-                      +45.3%
-                    </Text>
-                    <Text className="text-[13px] leading-[18px] text-[#6E6E73] mt-2">
-                      Last 12 months
-                    </Text>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-6">
-                  <div className="p-6 bg-white/90 backdrop-blur-sm rounded-2xl ring-1 ring-black/[0.08] shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="h-6 w-6 rounded-full bg-[#1D1D1F]/[0.04] flex items-center justify-center">
-                        <svg
-                          className="w-4 h-4 text-[#1D1D1F]"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M5 10l7-7m0 0l7 7m-7-7v18"
-                          />
-                        </svg>
-                      </div>
-                      <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                        Best Month
-                      </Text>
-                    </div>
-                    <Text className="text-[22px] leading-[28px] text-[#1D1D1F]">
-                      +24.3%
-                    </Text>
-                    <Text className="text-[13px] leading-[18px] text-[#6E6E73] mt-2">
-                      March 2024
-                    </Text>
-                  </div>
-                  <div className="p-6 bg-white/90 backdrop-blur-sm rounded-2xl ring-1 ring-black/[0.08] shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="h-6 w-6 rounded-full bg-[#1D1D1F]/[0.04] flex items-center justify-center">
-                        <svg
-                          className="w-4 h-4 text-[#1D1D1F]"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                          />
-                        </svg>
-                      </div>
-                      <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                        Worst Month
-                      </Text>
-                    </div>
-                    <Text className="text-[22px] leading-[28px] text-[#1D1D1F] mt-1">
-                      -8.2%
-                    </Text>
-                    <Text className="text-[13px] leading-[18px] text-[#6E6E73] mt-1">
-                      January 2024
-                    </Text>
-                  </div>
-                  <div className="p-6 bg-white/90 backdrop-blur-sm rounded-2xl ring-1 ring-black/[0.08] shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="h-6 w-6 rounded-full bg-[#1D1D1F]/[0.04] flex items-center justify-center">
-                        <svg
-                          className="w-4 h-4 text-[#1D1D1F]"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </div>
-                      <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                        Risk Score
-                      </Text>
-                    </div>
-                    <Text className="text-[22px] leading-[28px] text-[#1D1D1F] mt-1">
-                      Moderate
-                    </Text>
-                    <Text className="text-[13px] leading-[18px] text-[#6E6E73] mt-1">
-                      Well balanced
-                    </Text>
-                  </div>
-                  <div className="p-6 bg-white/90 backdrop-blur-sm rounded-2xl ring-1 ring-black/[0.08] shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="h-6 w-6 rounded-full bg-[#1D1D1F]/[0.04] flex items-center justify-center">
-                        <svg
-                          className="w-4 h-4 text-[#1D1D1F]"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                          />
-                        </svg>
-                      </div>
-                      <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                        Beta
-                      </Text>
-                    </div>
-                    <Text className="text-[22px] leading-[28px] text-[#1D1D1F] mt-1">
-                      0.85
-                    </Text>
-                    <Text className="text-[13px] leading-[18px] text-[#6E6E73] mt-1">
-                      vs S&P 500
-                    </Text>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#86868B]"></div>
+                  <span className="text-sm text-[#6E6E73]">S&P 500</span>
                 </div>
               </div>
             </div>
-          </Card>
+            <div className="h-[400px]">
+              <AreaChart
+                data={performanceData}
+                index="date"
+                categories={["Portfolio", "S&P 500"]}
+                colors={["blue", "gray"]}
+                valueFormatter={(number) =>
+                  `$${number.toLocaleString("en-US")}`
+                }
+                showAnimation={true}
+                className="h-[400px]"
+                yAxisWidth={80}
+                showLegend={false}
+              />
+            </div>
+          </div>
+
+          {/* Key Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="py-6">
+              <div className="text-sm text-[#6E6E73] mb-2">Best Month</div>
+              <div className="text-2xl font-semibold text-green-600">
+                +24.3%
+              </div>
+              <div className="text-sm text-[#6E6E73] mt-1">March 2024</div>
+            </div>
+            <div className="py-6">
+              <div className="text-sm text-[#6E6E73] mb-2">Worst Month</div>
+              <div className="text-2xl font-semibold text-red-600">-8.2%</div>
+              <div className="text-sm text-[#6E6E73] mt-1">January 2024</div>
+            </div>
+            <div className="py-6">
+              <div className="text-sm text-[#6E6E73] mb-2">Risk Score</div>
+              <div className="text-2xl font-semibold text-[#1D1D1F]">
+                Moderate
+              </div>
+              <div className="text-sm text-[#6E6E73] mt-1">Well balanced</div>
+            </div>
+            <div className="py-6">
+              <div className="text-sm text-[#6E6E73] mb-2">Beta</div>
+              <div className="text-2xl font-semibold text-[#1D1D1F]">0.85</div>
+              <div className="text-sm text-[#6E6E73] mt-1">vs S&P 500</div>
+            </div>
+          </div>
         </div>
       </section>
 
