@@ -19,9 +19,32 @@ export default function ResetPasswordPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
 
+  const validatePassword = (password: string) => {
+    const errors = [];
+    if (password.length < 6) {
+      errors.push("Password must be at least 6 characters long");
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push("Password must contain at least one uppercase letter");
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push("Password must contain at least one lowercase letter");
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push("Password must contain at least one number");
+    }
+    return errors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Validate token
+    if (!token) {
+      setError("Invalid or expired reset token");
+      return;
+    }
 
     // Validate passwords match
     if (passwords.newPassword !== passwords.confirmPassword) {
@@ -29,9 +52,10 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    // Validate password length
-    if (passwords.newPassword.length < 6) {
-      setError("Password must be at least 6 characters long");
+    // Validate password strength
+    const passwordErrors = validatePassword(passwords.newPassword);
+    if (passwordErrors.length > 0) {
+      setError(passwordErrors.join(". "));
       return;
     }
 
@@ -39,7 +63,7 @@ export default function ResetPasswordPage() {
 
     try {
       const response = await fetch(
-        `${getApiUrl()}/api/auth/reset-password?token=${token}`,
+        `${getApiUrl()}/api/auth/reset-password?token=${encodeURIComponent(token)}`,
         {
           method: "POST",
           headers: {
@@ -49,17 +73,27 @@ export default function ResetPasswordPage() {
         }
       );
 
-      const data = await response.json();
+      const data = await response.text(); // Response is plain text
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to reset password");
+        throw new Error(data || "Failed to reset password");
+      }
+
+      if (data === "Invalid or expired token") {
+        throw new Error(data);
       }
 
       setIsSubmitted(true);
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 2000);
     } catch (error) {
       console.error("Password reset failed:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to reset password"
+        error instanceof Error
+          ? error.message
+          : "An error occurred while resetting your password. Please try again later."
       );
     } finally {
       setIsLoading(false);

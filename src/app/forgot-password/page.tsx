@@ -12,10 +12,24 @@ export default function ForgotPasswordPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
 
+  const validateEmail = (email: string) => {
+    // RFC 5322 compliant email regex
+    const emailRegex =
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    return emailRegex.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+
+    // Validate email
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -28,9 +42,8 @@ export default function ForgotPasswordPage() {
         }
       );
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.message || "Failed to send reset instructions");
       }
 
@@ -40,7 +53,7 @@ export default function ForgotPasswordPage() {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to send reset instructions"
+          : "An error occurred while sending reset instructions. Please try again later."
       );
     } finally {
       setIsLoading(false);
