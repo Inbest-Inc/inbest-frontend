@@ -2,7 +2,7 @@
 
 export const runtime = "edge";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, Text } from "@tremor/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -16,6 +16,10 @@ import {
   getPortfoliosByUsername,
   getUserInfo,
 } from "@/services/portfolioService";
+import {
+  uploadProfilePhoto,
+  getProfilePhoto,
+} from "@/services/fileUploadService";
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
@@ -45,6 +49,7 @@ const SocialButton = ({
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loggedInUsername, setLoggedInUsername] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -62,6 +67,8 @@ export default function UserProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState({ name: DEFAULT_NAME });
   const [isUserInfoLoading, setIsUserInfoLoading] = useState(true);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [isPhotoUploading, setIsPhotoUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: DEFAULT_NAME,
@@ -157,6 +164,43 @@ export default function UserProfilePage() {
     }
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input value to allow uploading the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    setIsPhotoUploading(true);
+
+    try {
+      // Validate file size before uploading (client-side check)
+      if (file.size === 0) {
+        throw new Error("File is empty");
+      }
+
+      const response = await uploadProfilePhoto(file);
+
+      if (response.status === "error") {
+        throw new Error(response.message || "Failed to upload profile photo");
+      }
+
+      // For now, we'll use a hardcoded user ID of 1 as per requirements
+      const photoUrl = await getProfilePhoto(1);
+      setProfilePhoto(photoUrl);
+
+      // Dispatch a custom event to notify other components that the profile photo has been updated
+      window.dispatchEvent(new Event("profilePhotoUpdated"));
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      // Error is already shown via toast in the service
+    } finally {
+      setIsPhotoUploading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -170,32 +214,81 @@ export default function UserProfilePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div className="relative">
-                <div className="relative w-24 h-24 rounded-2xl overflow-hidden ring-1 ring-black/[0.08] bg-[#F5F5F7]">
+                <div
+                  className="relative w-24 h-24 rounded-2xl overflow-hidden ring-1 ring-black/[0.08] bg-[#F5F5F7] cursor-pointer"
+                  onClick={() =>
+                    isOwnProfile &&
+                    !isPhotoUploading &&
+                    fileInputRef.current?.click()
+                  }
+                >
                   {!isUserInfoLoading && (
-                    <Image
-                      src={DEFAULT_AVATAR}
-                      alt={userInfo.name}
-                      fill
-                      className="object-cover p-2"
-                    />
+                    <>
+                      <Image
+                        src={profilePhoto || DEFAULT_AVATAR}
+                        alt={userInfo.name}
+                        fill
+                        className={`object-cover p-2 ${isPhotoUploading ? "opacity-30" : "opacity-100"} transition-opacity`}
+                      />
+                      {isPhotoUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                          <svg
+                            className="animate-spin h-8 w-8 text-blue-600"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
                 {isOwnProfile && (
-                  <button className="absolute bottom-2 right-2 p-1.5 bg-white rounded-full shadow-sm ring-1 ring-black/[0.08] hover:bg-gray-50 transition-colors">
-                    <svg
-                      className="w-4 h-4 text-[#1D1D1F]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  <>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                    />
+                    <button
+                      onClick={() =>
+                        !isPhotoUploading && fileInputRef.current?.click()
+                      }
+                      className={`absolute bottom-2 right-2 p-1.5 bg-white rounded-full shadow-sm ring-1 ring-black/[0.08] hover:bg-gray-50 transition-colors ${isPhotoUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+                      aria-label="Upload profile photo"
+                      disabled={isPhotoUploading}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-4 h-4 text-[#1D1D1F]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                    </button>
+                  </>
                 )}
               </div>
               <div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Text } from "@tremor/react";
 import { useRouter } from "next/navigation";
+import { getProfilePhoto } from "@/services/fileUploadService";
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
@@ -14,32 +15,89 @@ export default function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [lastPhotoFetch, setLastPhotoFetch] = useState<number>(0);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     setIsAuthenticated(!!storedUsername);
     setUsername(storedUsername || "");
-    // Use RAF to ensure smooth transition
-    requestAnimationFrame(() => {
-      setIsLoading(false);
-    });
+    setIsLoading(false);
 
-    const handleStorageChange = () => {
-      const currentUsername = localStorage.getItem("username");
-      setIsAuthenticated(!!currentUsername);
-      setUsername(currentUsername || "");
-    };
+    // Fetch profile photo if authenticated
+    if (storedUsername) {
+      fetchProfilePhoto();
+    }
 
+    // Setup event listener for storage changes
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    // Set up a custom event listener for profile photo updates
+    window.addEventListener("profilePhotoUpdated", fetchProfilePhoto);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("profilePhotoUpdated", fetchProfilePhoto);
+    };
   }, []);
+
+  // Refetch the profile photo every 5 minutes if the user stays on the page
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const interval = setInterval(
+      () => {
+        fetchProfilePhoto();
+      },
+      5 * 60 * 1000
+    ); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  const fetchProfilePhoto = () => {
+    // For now, we'll use a hardcoded user ID of 1 as per requirements
+    // Adding cache-busting timestamp to avoid browser caching
+    const timestamp = new Date().getTime();
+    if (timestamp - lastPhotoFetch < 2000) return; // Prevent multiple fetches within 2 seconds
+
+    setLastPhotoFetch(timestamp);
+    getProfilePhoto(1)
+      .then((photoUrl) => {
+        if (!photoUrl) {
+          // If no photo URL is returned, use the default avatar
+          setProfilePhoto(null);
+          return;
+        }
+
+        // Add timestamp query parameter to force refresh
+        const urlWithTimestamp = photoUrl.includes("?")
+          ? `${photoUrl}&t=${timestamp}`
+          : `${photoUrl}?t=${timestamp}`;
+        setProfilePhoto(urlWithTimestamp);
+      })
+      .catch((error) => {
+        // On error, use the default avatar and log the error
+        console.error("Error fetching profile photo:", error);
+        setProfilePhoto(null);
+      });
+  };
+
+  const handleStorageChange = () => {
+    const storedUsername = localStorage.getItem("username");
+    setIsAuthenticated(!!storedUsername);
+    setUsername(storedUsername || "");
+
+    if (storedUsername) {
+      fetchProfilePhoto();
+    } else {
+      setProfilePhoto(null);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
-    setIsAuthenticated(false);
-    setUsername("");
-    window.location.href = "/";
+    router.push("/login");
   };
 
   return (
@@ -83,7 +141,7 @@ export default function Header() {
                     </Text>
                     <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08] bg-[#F5F5F7]">
                       <Image
-                        src={DEFAULT_AVATAR}
+                        src={profilePhoto || DEFAULT_AVATAR}
                         alt="Profile"
                         fill
                         className="object-cover p-1"
