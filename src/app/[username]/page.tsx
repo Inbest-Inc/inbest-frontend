@@ -20,6 +20,8 @@ import {
   uploadProfilePhoto,
   getProfilePhoto,
 } from "@/services/fileUploadService";
+import { updateUserProfile, changePassword } from "@/services/userService";
+import { toast, Toaster } from "react-hot-toast";
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
@@ -69,9 +71,11 @@ export default function UserProfilePage() {
   const [isUserInfoLoading, setIsUserInfoLoading] = useState(true);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isPhotoUploading, setIsPhotoUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: DEFAULT_NAME,
+    name: "",
+    surname: "",
     username: params.username as string,
     email: "",
     currentPassword: "",
@@ -91,8 +95,17 @@ export default function UserProfilePage() {
       try {
         const response = await getUserInfo(params.username as string);
         if (response.name) {
+          // Split the name into name and surname if possible
+          const nameParts = response.name.split(" ");
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.slice(1).join(" ") || "";
+
           setUserInfo({ name: response.name });
-          setFormData((prev) => ({ ...prev, name: response.name }));
+          setFormData((prev) => ({
+            ...prev,
+            name: firstName,
+            surname: lastName,
+          }));
         }
       } catch (error) {
         console.error("Error fetching user info:", error);
@@ -136,11 +149,87 @@ export default function UserProfilePage() {
   // Check if the profile being viewed belongs to the logged-in user
   const isOwnProfile = isAuthenticated && params.username === loggedInUsername;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement save logic when API is ready
-    setIsEditing(false);
-    setEditMode("profile");
+
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
+    if (editMode === "profile") {
+      // Client-side validation for profile update
+      if (!formData.name.trim()) {
+        toast.error("First name is required");
+        return;
+      }
+
+      if (!formData.surname.trim()) {
+        toast.error("Last name is required");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const result = await updateUserProfile({
+          name: formData.name.trim(),
+          surname: formData.surname.trim(),
+        });
+
+        // Update the displayed name after successful update
+        setUserInfo({ name: `${formData.name} ${formData.surname}` });
+        setIsEditing(false);
+      } catch (error) {
+        console.error("Error updating profile:", error);
+        // Error toast is already handled in the service
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else if (editMode === "password") {
+      // Client-side validation for password change
+      if (!formData.currentPassword) {
+        toast.error("Current password is required");
+        return;
+      }
+
+      if (!formData.newPassword) {
+        toast.error("New password is required");
+        return;
+      }
+
+      if (formData.newPassword.length < 6) {
+        toast.error("New password must be at least 6 characters long");
+        return;
+      }
+
+      if (formData.newPassword !== formData.confirmPassword) {
+        toast.error("New passwords do not match");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const result = await changePassword({
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword,
+          confirmPassword: formData.confirmPassword,
+        });
+
+        // Clear password fields after successful change
+        setFormData((prev) => ({
+          ...prev,
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        }));
+
+        setIsEditing(false);
+        setEditMode("profile");
+      } catch (error) {
+        console.error("Error changing password:", error);
+        // Error handling is done in the service
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
   };
 
   // Filter portfolios based on ownership and privacy
@@ -203,6 +292,7 @@ export default function UserProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
+      <Toaster position="top-center" />
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Profile Header */}
         <motion.div
@@ -580,7 +670,7 @@ export default function UserProfilePage() {
                     <>
                       <div className="space-y-2">
                         <label className="block text-[15px] leading-[20px] font-semibold text-[#1D1D1F]">
-                          Full Name
+                          First Name
                         </label>
                         <input
                           type="text"
@@ -589,10 +679,32 @@ export default function UserProfilePage() {
                             setFormData({ ...formData, name: e.target.value })
                           }
                           className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+                          placeholder="First Name"
+                          required
                         />
                       </div>
 
                       <div className="space-y-2">
+                        <label className="block text-[15px] leading-[20px] font-semibold text-[#1D1D1F]">
+                          Last Name
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.surname}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              surname: e.target.value,
+                            })
+                          }
+                          className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+                          placeholder="Last Name"
+                          required
+                        />
+                      </div>
+
+                      {/* Commented out username and email inputs */}
+                      {/* <div className="space-y-2">
                         <label className="block text-[15px] leading-[20px] font-semibold text-[#1D1D1F]">
                           Username
                         </label>
@@ -621,7 +733,7 @@ export default function UserProfilePage() {
                           }
                           className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
                         />
-                      </div>
+                      </div> */}
                     </>
                   ) : (
                     <>
@@ -639,6 +751,7 @@ export default function UserProfilePage() {
                             })
                           }
                           className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+                          required
                         />
                       </div>
 
@@ -656,6 +769,8 @@ export default function UserProfilePage() {
                             })
                           }
                           className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+                          minLength={6}
+                          required
                         />
                       </div>
 
@@ -673,6 +788,8 @@ export default function UserProfilePage() {
                             })
                           }
                           className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+                          minLength={6}
+                          required
                         />
                       </div>
                     </>
@@ -686,14 +803,18 @@ export default function UserProfilePage() {
                         setEditMode("profile");
                       }}
                       className="px-4 py-2 text-[15px] leading-[20px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-xl ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
+                      disabled={isSubmitting}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all duration-200"
+                      className={`px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all duration-200 ${
+                        isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+                      }`}
+                      disabled={isSubmitting}
                     >
-                      Save Changes
+                      {isSubmitting ? "Saving..." : "Save Changes"}
                     </button>
                   </div>
                 </form>
