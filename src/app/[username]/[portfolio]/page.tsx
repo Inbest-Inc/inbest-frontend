@@ -10,8 +10,10 @@ import { useParams } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
 import ActivityTable from "@/components/ActivityTable";
 import OpinionsFeed from "@/components/OpinionsFeed";
-import { getPortfolioHoldings, getUserInfo } from "@/services/portfolioService";
+import { getPortfolioHoldings } from "@/services/portfolioService";
+import { getUserInfo } from "@/services/userService";
 import Link from "next/link";
+import NotFoundPage from "@/components/NotFoundPage";
 
 const portfolioReturns = {
   "1M": -2.3,
@@ -96,6 +98,10 @@ export default function PortfolioPage() {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [userInfo, setUserInfo] = useState({ name: "John Doe" });
   const [isUserInfoLoading, setIsUserInfoLoading] = useState(true);
+  const [userNotFound, setUserNotFound] = useState(false);
+  const [notFoundMessage, setNotFoundMessage] = useState("User not found");
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [followerCount, setFollowerCount] = useState(0);
 
   // Default user data
   const userData = {
@@ -128,11 +134,32 @@ export default function PortfolioPage() {
       setIsUserInfoLoading(true);
       try {
         const response = await getUserInfo(params.username as string);
-        if (response.name) {
-          setUserInfo({ name: response.name });
+
+        if (response.status === "error") {
+          console.error("Error fetching user info:", response.message);
+          setUserNotFound(true);
+          setNotFoundMessage(response.message || "User not found");
+          setIsUserInfoLoading(false);
+          return;
+        }
+
+        if (response.fullName) {
+          setUserInfo({ name: response.fullName });
+        }
+
+        // Check if profile photo URL is provided
+        if (response.imageUrl) {
+          setProfilePhoto(response.imageUrl);
+        }
+
+        // Update follower count if provided
+        if (response.followerCount !== undefined) {
+          setFollowerCount(response.followerCount);
         }
       } catch (error) {
         console.error("Error fetching user info:", error);
+        setUserNotFound(true);
+        setNotFoundMessage("Failed to fetch user information");
       } finally {
         setIsUserInfoLoading(false);
       }
@@ -160,6 +187,11 @@ export default function PortfolioPage() {
     fetchHoldings();
   }, [params.portfolio]);
 
+  // If user not found, show 404 page
+  if (userNotFound && !isUserInfoLoading) {
+    return <NotFoundPage message={notFoundMessage} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -175,7 +207,7 @@ export default function PortfolioPage() {
               <div className="relative w-24 h-24">
                 {!isUserInfoLoading && (
                   <Image
-                    src={userData.avatar}
+                    src={profilePhoto || userData.avatar}
                     alt={userInfo.name}
                     fill
                     className="object-cover rounded-2xl ring-1 ring-black/[0.04]"
@@ -206,7 +238,7 @@ export default function PortfolioPage() {
                             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                           />
                         </svg>
-                        {userData.followers} followers
+                        {followerCount.toLocaleString()} followers
                       </div>
                     </div>
                   </>

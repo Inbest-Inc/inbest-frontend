@@ -157,19 +157,19 @@ export async function uploadProfilePhoto(
 
 /**
  * Gets a profile photo URL
- * @param userId - The user ID
+ * @param username - The username
  * @param useCache - Whether to use cached results (default: false)
  * @returns Promise resolving to the photo URL
  */
 export async function getProfilePhoto(
-  userId: number,
+  username: string,
   useCache: boolean = false
 ): Promise<string> {
   try {
     // Add cache-busting if needed
     const url = useCache
-      ? `${API_URL}/api/s3/get-image/${userId}`
-      : `${API_URL}/api/s3/get-image/${userId}?t=${new Date().getTime()}`;
+      ? `${API_URL}/api/s3/get-image/${username}`
+      : `${API_URL}/api/s3/get-image/${username}?t=${new Date().getTime()}`;
 
     const response = await fetch(url);
     const data = await response.json();

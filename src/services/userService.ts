@@ -69,17 +69,13 @@ export async function updateUserProfile(
       body: JSON.stringify(userData),
     });
 
-    const result = await response.json();
-
-    if (!response.ok || result.error) {
-      throw new Error(
-        result.error || result.message || "Failed to update profile"
-      );
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to update profile");
     }
 
-    toast.success(result.message || "Profile updated successfully", {
-      id: loadingToast,
-    });
+    const result = await response.json();
+    toast.success("Profile updated successfully", { id: loadingToast });
     return result;
   } catch (error) {
     toast.error(
@@ -132,15 +128,13 @@ export async function changePassword(
       body: JSON.stringify(passwordData),
     });
 
-    const result = await response.json();
-
-    if (!response.ok || result.error) {
-      throw new Error(result.error || "Failed to change password");
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to change password");
     }
 
-    toast.success(result.message || "Password changed successfully", {
-      id: loadingToast,
-    });
+    const result = await response.json();
+    toast.success("Password changed successfully", { id: loadingToast });
     return result;
   } catch (error) {
     toast.error(
@@ -148,5 +142,43 @@ export async function changePassword(
       { id: loadingToast }
     );
     throw error;
+  }
+}
+
+/**
+ * User information response interface
+ */
+export interface UserInfoResponse {
+  status: string;
+  message?: string;
+  imageUrl?: string;
+  fullName?: string;
+  followerCount?: number;
+  error?: string;
+}
+
+/**
+ * Get user public information
+ * @param username Username to fetch information for
+ * @returns User information response
+ */
+export async function getUserInfo(username: string): Promise<UserInfoResponse> {
+  try {
+    const response = await fetch(`${API_URL}/api/user/${username}`);
+    const data = await response.json();
+
+    // For error responses, return the data without throwing
+    // This allows the caller to handle 404 cases properly
+    return data;
+  } catch (error) {
+    console.error("Error fetching user info:", error);
+    // Return a standardized error format
+    return {
+      status: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch user information",
+    };
   }
 }

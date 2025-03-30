@@ -14,14 +14,19 @@ import CreatePortfolioModal from "@/components/CreatePortfolioModal";
 import {
   createPortfolio,
   getPortfoliosByUsername,
-  getUserInfo,
+  getUserInfo as getPortfolioUserInfo,
 } from "@/services/portfolioService";
 import {
   uploadProfilePhoto,
   getProfilePhoto,
 } from "@/services/fileUploadService";
-import { updateUserProfile, changePassword } from "@/services/userService";
+import {
+  updateUserProfile,
+  changePassword,
+  getUserInfo,
+} from "@/services/userService";
 import { toast, Toaster } from "react-hot-toast";
+import NotFoundPage from "@/components/NotFoundPage";
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
@@ -68,10 +73,13 @@ export default function UserProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState({ name: DEFAULT_NAME });
+  const [followerCount, setFollowerCount] = useState(DEFAULT_FOLLOWERS);
   const [isUserInfoLoading, setIsUserInfoLoading] = useState(true);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isPhotoUploading, setIsPhotoUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userNotFound, setUserNotFound] = useState(false);
+  const [notFoundMessage, setNotFoundMessage] = useState("User not found");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -94,21 +102,42 @@ export default function UserProfilePage() {
       setIsUserInfoLoading(true);
       try {
         const response = await getUserInfo(params.username as string);
-        if (response.name) {
+
+        if (response.status === "error") {
+          console.error("Error fetching user info:", response.message);
+          setUserNotFound(true);
+          setNotFoundMessage(response.message || "User not found");
+          setIsUserInfoLoading(false);
+          return;
+        }
+
+        if (response.fullName) {
           // Split the name into name and surname if possible
-          const nameParts = response.name.split(" ");
+          const nameParts = response.fullName.split(" ");
           const firstName = nameParts[0] || "";
           const lastName = nameParts.slice(1).join(" ") || "";
 
-          setUserInfo({ name: response.name });
+          setUserInfo({ name: response.fullName });
           setFormData((prev) => ({
             ...prev,
             name: firstName,
             surname: lastName,
           }));
         }
+
+        // Check if profile photo URL is provided
+        if (response.imageUrl) {
+          setProfilePhoto(response.imageUrl);
+        }
+
+        // Update follower count if provided
+        if (response.followerCount !== undefined) {
+          setFollowerCount(response.followerCount);
+        }
       } catch (error) {
         console.error("Error fetching user info:", error);
+        setUserNotFound(true);
+        setNotFoundMessage("Failed to fetch user information");
       } finally {
         setIsUserInfoLoading(false);
       }
@@ -276,8 +305,8 @@ export default function UserProfilePage() {
         throw new Error(response.message || "Failed to upload profile photo");
       }
 
-      // For now, we'll use a hardcoded user ID of 1 as per requirements
-      const photoUrl = await getProfilePhoto(1);
+      // Get the profile photo URL using the current username
+      const photoUrl = await getProfilePhoto(params.username as string);
       setProfilePhoto(photoUrl);
 
       // Dispatch a custom event to notify other components that the profile photo has been updated
@@ -289,6 +318,11 @@ export default function UserProfilePage() {
       setIsPhotoUploading(false);
     }
   };
+
+  // If user not found, show 404 page
+  if (userNotFound && !isUserInfoLoading) {
+    return <NotFoundPage message={notFoundMessage} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
@@ -405,7 +439,7 @@ export default function UserProfilePage() {
                             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                           />
                         </svg>
-                        {DEFAULT_FOLLOWERS.toLocaleString()} followers
+                        {followerCount.toLocaleString()} followers
                       </div>
                     </div>
                   </>
