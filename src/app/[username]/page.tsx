@@ -15,10 +15,7 @@ import {
   createPortfolio,
   getPortfoliosByUsername,
 } from "@/services/portfolioService";
-import {
-  uploadProfilePhoto,
-  getProfilePhoto,
-} from "@/services/fileUploadService";
+import { uploadProfilePhoto } from "@/services/fileUploadService";
 import {
   updateUserProfile,
   changePassword,
@@ -99,6 +96,55 @@ export default function UserProfilePage() {
   useEffect(() => {
     const fetchUserInfo = async () => {
       setIsUserInfoLoading(true);
+
+      // Check for cached data first for a faster initial render
+      try {
+        const cacheKey = `user_info_${params.username}`;
+        const cachedData = localStorage.getItem(cacheKey);
+
+        if (cachedData) {
+          const userData = JSON.parse(cachedData);
+          if (userData.status === "success") {
+            if (userData.fullName) {
+              // Split the name into name and surname if possible
+              const nameParts = userData.fullName.split(" ");
+              const firstName = nameParts[0] || "";
+              const lastName = nameParts.slice(1).join(" ") || "";
+
+              setUserInfo({ name: userData.fullName });
+              setFormData((prev) => ({
+                ...prev,
+                name: firstName,
+                surname: lastName,
+              }));
+            }
+
+            // Check if profile photo URL is provided
+            if (userData.imageUrl) {
+              // Add timestamp to force cache refresh
+              const timestamp = new Date().getTime();
+              const imageUrl = userData.imageUrl;
+              const cachedPhotoUrl = imageUrl.includes("?")
+                ? `${imageUrl}&_t=${timestamp}`
+                : `${imageUrl}?_t=${timestamp}`;
+
+              setProfilePhoto(cachedPhotoUrl);
+            }
+
+            // Update follower count if provided
+            if (userData.followerCount !== undefined) {
+              setFollowerCount(userData.followerCount);
+            }
+
+            // Short-circuit the loading state if we have cached data
+            // but still continue to fetch fresh data
+            setIsUserInfoLoading(false);
+          }
+        }
+      } catch (e) {
+        console.error("Error getting cached data:", e);
+      }
+
       try {
         const response = await getUserInfo(params.username as string);
 
@@ -126,7 +172,14 @@ export default function UserProfilePage() {
 
         // Check if profile photo URL is provided
         if (response.imageUrl) {
-          setProfilePhoto(response.imageUrl);
+          // Add timestamp to force cache refresh
+          const timestamp = new Date().getTime();
+          const imageUrl = response.imageUrl;
+          const cachedPhotoUrl = imageUrl.includes("?")
+            ? `${imageUrl}&_t=${timestamp}`
+            : `${imageUrl}?_t=${timestamp}`;
+
+          setProfilePhoto(cachedPhotoUrl);
         }
 
         // Update follower count if provided
@@ -298,18 +351,67 @@ export default function UserProfilePage() {
         throw new Error("File is empty");
       }
 
+      // Upload the photo
       const response = await uploadProfilePhoto(file);
 
       if (response.status === "error") {
         throw new Error(response.message || "Failed to upload profile photo");
       }
 
-      // Get the profile photo URL using the current username
-      const photoUrl = await getProfilePhoto(params.username as string);
-      setProfilePhoto(photoUrl);
+      // Generate a cache-busting timestamp
+      const timestamp = new Date().getTime();
+
+      // Update the photo version in localStorage to force refresh
+      const currentUsername = params.username as string;
+      const photoVersionKey = `user_photo_version_${currentUsername}`;
+      localStorage.setItem(photoVersionKey, timestamp.toString());
+
+      // Temporarily clear the photo to force a refresh
+      setProfilePhoto(null);
+
+      // Short delay to ensure we're getting the latest image
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Get the user info with forced fresh data to get the new photo URL
+      const userInfo = await getUserInfo(currentUsername, true);
+
+      let newPhotoUrl = null;
+
+      if (userInfo.status === "success" && userInfo.imageUrl) {
+        // Add the photo version for cache busting
+        const imageUrl = userInfo.imageUrl;
+        const photoVersion = userInfo.photoVersion || timestamp;
+        const cachedPhotoUrl = imageUrl.includes("?")
+          ? `${imageUrl}&_t=${photoVersion}`
+          : `${imageUrl}?_t=${photoVersion}`;
+
+        // Set the photo with the cache-busting URL
+        setProfilePhoto(cachedPhotoUrl);
+        newPhotoUrl = cachedPhotoUrl;
+      }
 
       // Dispatch a custom event to notify other components that the profile photo has been updated
-      window.dispatchEvent(new Event("profilePhotoUpdated"));
+      window.dispatchEvent(
+        new CustomEvent("profilePhotoUpdated", {
+          detail: {
+            username: currentUsername,
+            timestamp,
+            photoUrl: newPhotoUrl,
+            photoVersion: timestamp.toString(),
+          },
+        })
+      );
+
+      // For debugging
+      console.log("Photo updated event dispatched:", {
+        username: currentUsername,
+        timestamp,
+        photoUrl: newPhotoUrl,
+        photoVersion: timestamp.toString(),
+      });
+
+      // Show success message
+      toast.success("Profile photo updated successfully");
     } catch (error) {
       console.error("Error uploading photo:", error);
       // Error is already shown via toast in the service
@@ -351,7 +453,8 @@ export default function UserProfilePage() {
                         src={profilePhoto || DEFAULT_AVATAR}
                         alt={userInfo.name}
                         fill
-                        className={`object-cover p-2 ${isPhotoUploading ? "opacity-30" : "opacity-100"} transition-opacity`}
+                        className={`object-cover ${isPhotoUploading ? "opacity-30" : "opacity-100"} transition-opacity`}
+                        style={{ objectFit: "cover" }}
                       />
                       {isPhotoUploading && (
                         <div className="absolute inset-0 flex items-center justify-center z-10">

@@ -149,7 +149,14 @@ export default function PortfolioPage() {
 
         // Check if profile photo URL is provided
         if (response.imageUrl) {
-          setProfilePhoto(response.imageUrl);
+          // Add timestamp to force cache refresh
+          const timestamp = new Date().getTime();
+          const imageUrl = response.imageUrl;
+          const cachedPhotoUrl = imageUrl.includes("?")
+            ? `${imageUrl}&t=${timestamp}`
+            : `${imageUrl}?t=${timestamp}`;
+
+          setProfilePhoto(cachedPhotoUrl);
         }
 
         // Update follower count if provided
@@ -211,6 +218,7 @@ export default function PortfolioPage() {
                     alt={userInfo.name}
                     fill
                     className="object-cover rounded-2xl ring-1 ring-black/[0.04]"
+                    style={{ objectFit: "cover" }}
                   />
                 )}
               </div>

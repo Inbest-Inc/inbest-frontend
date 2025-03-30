@@ -166,12 +166,23 @@ export async function getProfilePhoto(
   useCache: boolean = false
 ): Promise<string> {
   try {
-    // Add cache-busting if needed
+    // Always add cache-busting timestamp unless specifically requested to use cache
+    const timestamp = new Date().getTime();
+
+    // We use a unique parameter name 'nocache' to ensure browsers don't mistake it for a standard cache param
     const url = useCache
       ? `${API_URL}/api/s3/get-image/${username}`
-      : `${API_URL}/api/s3/get-image/${username}?t=${new Date().getTime()}`;
+      : `${API_URL}/api/s3/get-image/${username}?nocache=${timestamp}`;
 
-    const response = await fetch(url);
+    // Add Cache-Control headers to prevent browser caching
+    const response = await fetch(url, {
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+
     const data = await response.json();
 
     if (!response.ok || data.status === "error") {
@@ -184,7 +195,13 @@ export async function getProfilePhoto(
       throw new Error("No profile photo available");
     }
 
-    return data.filePath;
+    // Add cache busting to the image URL as well
+    const imageUrl = data.filePath;
+    const imageUrlWithCacheBusting = imageUrl.includes("?")
+      ? `${imageUrl}&_t=${timestamp}`
+      : `${imageUrl}?_t=${timestamp}`;
+
+    return imageUrlWithCacheBusting;
   } catch (error) {
     console.error("Error fetching profile photo:", error);
     throw error;

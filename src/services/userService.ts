@@ -145,40 +145,108 @@ export async function changePassword(
   }
 }
 
-/**
- * User information response interface
- */
-export interface UserInfoResponse {
-  status: string;
-  message?: string;
+export type UserInfoResponse = {
+  status: "success" | "error";
+  name?: string;
+  followers?: number;
   imageUrl?: string;
+  photoVersion?: string;
+  message?: string;
+  socials?: Array<{ type: string; url: string }>;
+  // Aliases for backward compatibility
   fullName?: string;
   followerCount?: number;
-  error?: string;
+};
+
+export interface Notification {
+  id: string;
+  type: string;
+  createdAt: string;
+  read: boolean;
+  data: {
+    username?: string;
+    action?: string;
+    portfolioId?: string;
+    portfolioName?: string;
+  };
 }
 
-/**
- * Get user public information
- * @param username Username to fetch information for
- * @returns User information response
- */
-export async function getUserInfo(username: string): Promise<UserInfoResponse> {
-  try {
-    const response = await fetch(`${API_URL}/api/user/${username}`);
-    const data = await response.json();
+// User cache keys
+const USER_CACHE_PREFIX = "user_info_";
+const USER_PHOTO_VERSION_PREFIX = "user_photo_version_";
 
-    // For error responses, return the data without throwing
-    // This allows the caller to handle 404 cases properly
-    return data;
+export async function getUserInfo(
+  username: string,
+  forceFresh: boolean = false
+): Promise<UserInfoResponse> {
+  // Check if we have cached data first
+  const cacheKey = `${USER_CACHE_PREFIX}${username}`;
+  const photoVersionKey = `${USER_PHOTO_VERSION_PREFIX}${username}`;
+
+  // Get the current photo version from localStorage (if exists)
+  const currentPhotoVersion = localStorage.getItem(photoVersionKey);
+
+  // Check if we should use cached data
+  if (!forceFresh) {
+    try {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        const parsedData = JSON.parse(cachedData) as UserInfoResponse;
+
+        // Add photo version to the response
+        if (currentPhotoVersion) {
+          parsedData.photoVersion = currentPhotoVersion;
+        }
+
+        return parsedData;
+      }
+    } catch (error) {
+      console.error("Error retrieving cached user data:", error);
+      // Continue with fresh fetch if cache retrieval fails
+    }
+  }
+
+  // If we reach here, we need to fetch fresh data
+  try {
+    // Add cache-busting timestamp if forcing fresh data
+    const timestamp = forceFresh ? `?_t=${Date.now()}` : "";
+    const response = await fetch(
+      `${API_URL}/api/user/${username}${timestamp}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch user info");
+    }
+
+    const userInfo = await response.json();
+
+    // Add the photo version to the response
+    if (currentPhotoVersion) {
+      userInfo.photoVersion = currentPhotoVersion;
+    } else if (userInfo.status === "success" && userInfo.imageUrl) {
+      // If no version exists yet, create one
+      const newVersion = new Date().getTime().toString();
+      localStorage.setItem(photoVersionKey, newVersion);
+      userInfo.photoVersion = newVersion;
+    }
+
+    // Cache the response
+    if (userInfo.status === "success") {
+      localStorage.setItem(cacheKey, JSON.stringify(userInfo));
+    }
+
+    return userInfo;
   } catch (error) {
     console.error("Error fetching user info:", error);
-    // Return a standardized error format
     return {
       status: "error",
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch user information",
+      message: "Failed to fetch user info",
     };
   }
 }
