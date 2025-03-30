@@ -14,7 +14,6 @@ import CreatePortfolioModal from "@/components/CreatePortfolioModal";
 import {
   createPortfolio,
   getPortfoliosByUsername,
-  getUserInfo as getPortfolioUserInfo,
 } from "@/services/portfolioService";
 import {
   uploadProfilePhoto,

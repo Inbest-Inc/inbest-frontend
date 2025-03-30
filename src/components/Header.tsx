@@ -55,13 +55,14 @@ export default function Header() {
   }, [isAuthenticated]);
 
   const fetchProfilePhoto = () => {
-    // For now, we'll use a hardcoded user ID of 1 as per requirements
+    if (!username) return; // Don't fetch if no username is available
+
     // Adding cache-busting timestamp to avoid browser caching
     const timestamp = new Date().getTime();
     if (timestamp - lastPhotoFetch < 2000) return; // Prevent multiple fetches within 2 seconds
 
     setLastPhotoFetch(timestamp);
-    getProfilePhoto(1)
+    getProfilePhoto(username)
       .then((photoUrl) => {
         if (!photoUrl) {
           // If no photo URL is returned, use the default avatar
