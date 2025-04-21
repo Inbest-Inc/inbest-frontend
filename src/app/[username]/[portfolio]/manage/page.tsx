@@ -19,6 +19,7 @@ import {
   addStockToPortfolio,
   updateStockQuantity,
   deleteStockFromPortfolio,
+  getPortfolioMetrics,
 } from "@/services/portfolioService";
 import { useParams, useRouter } from "next/navigation";
 import { Toaster, toast } from "react-hot-toast";
@@ -175,6 +176,8 @@ export default function ManagePortfolioPage() {
   const [isLoadingHoldings, setIsLoadingHoldings] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isOperationInProgress, setIsOperationInProgress] = useState(false);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [isMetricsLoading, setIsMetricsLoading] = useState(true);
 
   // Keep track of the fetch function reference
   const fetchDataRef = useRef<(() => Promise<void>) | null>(null);
@@ -239,6 +242,7 @@ export default function ManagePortfolioPage() {
 
     const fetchData = async () => {
       setIsLoadingHoldings(true);
+      setIsMetricsLoading(true);
       try {
         // Check access first
         const token = localStorage.getItem("token");
@@ -279,6 +283,23 @@ export default function ManagePortfolioPage() {
             !error.message?.includes("404")
           ) {
             console.error("Error fetching holdings:", error);
+          }
+        }
+
+        // Fetch metrics data
+        try {
+          const metricsResponse = await getPortfolioMetrics(portfolioId);
+          if (!isSubscribed) return;
+
+          if (metricsResponse.status === "success") {
+            setMetrics(metricsResponse.data);
+          }
+        } catch (error) {
+          if (!isSubscribed) return;
+          console.error("Error fetching metrics:", error);
+        } finally {
+          if (isSubscribed) {
+            setIsMetricsLoading(false);
           }
         }
       } catch (error) {
@@ -357,6 +378,25 @@ export default function ManagePortfolioPage() {
 
   const handlePortfolioNameChange = (name: string) => {
     setPortfolioName(name);
+  };
+
+  // Format metrics values properly
+  const formatMetricValue = (
+    value: number | undefined,
+    isPercentage = true,
+    decimalPlaces = 2
+  ) => {
+    if (value === undefined || value === null) return "-";
+    const formattedValue = value.toFixed(decimalPlaces);
+    return isPercentage
+      ? `${value >= 0 ? "+" : ""}${formattedValue}%`
+      : formattedValue;
+  };
+
+  // Determine trend (positive/negative) based on value
+  const getTrend = (value: number | undefined) => {
+    if (value === undefined || value === null) return "neutral";
+    return value >= 0 ? "positive" : "negative";
   };
 
   // Only show error if it's a critical error that prevents the page from functioning
@@ -467,8 +507,8 @@ export default function ManagePortfolioPage() {
         >
           <StatCard
             label="Ranking"
-            value={`#${portfolioData.overview.rank.toLocaleString()}`}
-            subtext={`of ${portfolioData.overview.totalUsers.toLocaleString()} investors`}
+            value="-"
+            subtext="of investors"
             icon={
               <svg
                 className="w-5 h-5 text-[#1D1D1F]"
@@ -487,17 +527,21 @@ export default function ManagePortfolioPage() {
           />
           <StatCard
             label="Daily Return"
-            value={`${portfolioData.overview.dailyReturn}%`}
+            value={
+              isMetricsLoading
+                ? "-"
+                : `${metrics?.dailyReturn >= 0 ? "+" : ""}${metrics?.dailyReturn.toFixed(2)}%`
+            }
             trend={
-              portfolioData.overview.dailyReturn >= 0 ? "positive" : "negative"
+              isMetricsLoading
+                ? "neutral"
+                : metrics?.dailyReturn >= 0
+                  ? "positive"
+                  : "negative"
             }
             icon={
               <svg
-                className={`w-5 h-5 ${
-                  portfolioData.overview.dailyReturn >= 0
-                    ? "text-[#00A852]"
-                    : "text-[#FF3B30]"
-                }`}
+                className={`w-5 h-5 ${isMetricsLoading ? "text-[#1D1D1F]" : metrics?.dailyReturn >= 0 ? "text-[#00A852]" : "text-[#FF3B30]"}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -507,7 +551,7 @@ export default function ManagePortfolioPage() {
                   strokeLinejoin="round"
                   strokeWidth={1.5}
                   d={
-                    portfolioData.overview.dailyReturn >= 0
+                    isMetricsLoading || metrics?.dailyReturn >= 0
                       ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
                       : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
                   }
@@ -517,19 +561,21 @@ export default function ManagePortfolioPage() {
           />
           <StatCard
             label="Monthly Return"
-            value={`${portfolioData.overview.monthlyReturn}%`}
+            value={
+              isMetricsLoading
+                ? "-"
+                : `${metrics?.monthlyReturn >= 0 ? "+" : ""}${metrics?.monthlyReturn.toFixed(2)}%`
+            }
             trend={
-              portfolioData.overview.monthlyReturn >= 0
-                ? "positive"
-                : "negative"
+              isMetricsLoading
+                ? "neutral"
+                : metrics?.monthlyReturn >= 0
+                  ? "positive"
+                  : "negative"
             }
             icon={
               <svg
-                className={`w-5 h-5 ${
-                  portfolioData.overview.monthlyReturn >= 0
-                    ? "text-[#00A852]"
-                    : "text-[#FF3B30]"
-                }`}
+                className={`w-5 h-5 ${isMetricsLoading ? "text-[#1D1D1F]" : metrics?.monthlyReturn >= 0 ? "text-[#00A852]" : "text-[#FF3B30]"}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -539,7 +585,7 @@ export default function ManagePortfolioPage() {
                   strokeLinejoin="round"
                   strokeWidth={1.5}
                   d={
-                    portfolioData.overview.monthlyReturn >= 0
+                    isMetricsLoading || metrics?.monthlyReturn >= 0
                       ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
                       : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
                   }
@@ -549,17 +595,21 @@ export default function ManagePortfolioPage() {
           />
           <StatCard
             label="Total Return"
-            value={`${portfolioData.overview.totalReturn}%`}
+            value={
+              isMetricsLoading
+                ? "-"
+                : `${metrics?.totalReturn >= 0 ? "+" : ""}${metrics?.totalReturn.toFixed(2)}%`
+            }
             trend={
-              portfolioData.overview.totalReturn >= 0 ? "positive" : "negative"
+              isMetricsLoading
+                ? "neutral"
+                : metrics?.totalReturn >= 0
+                  ? "positive"
+                  : "negative"
             }
             icon={
               <svg
-                className={`w-5 h-5 ${
-                  portfolioData.overview.totalReturn >= 0
-                    ? "text-[#00A852]"
-                    : "text-[#FF3B30]"
-                }`}
+                className={`w-5 h-5 ${isMetricsLoading ? "text-[#1D1D1F]" : metrics?.totalReturn >= 0 ? "text-[#00A852]" : "text-[#FF3B30]"}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -569,7 +619,7 @@ export default function ManagePortfolioPage() {
                   strokeLinejoin="round"
                   strokeWidth={1.5}
                   d={
-                    portfolioData.overview.totalReturn >= 0
+                    isMetricsLoading || metrics?.totalReturn >= 0
                       ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
                       : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
                   }
@@ -611,7 +661,7 @@ export default function ManagePortfolioPage() {
                     Beta (vs S&P 500)
                   </Text>
                   <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                    {portfolioData.riskMetrics.beta.toFixed(2)}
+                    {isMetricsLoading ? "-" : metrics?.beta.toFixed(2)}
                   </Text>
                 </div>
                 <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
@@ -619,7 +669,7 @@ export default function ManagePortfolioPage() {
                     Sharpe Ratio
                   </Text>
                   <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                    {portfolioData.riskMetrics.sharpeRatio.toFixed(2)}
+                    {isMetricsLoading ? "-" : metrics?.sharpeRatio.toFixed(2)}
                   </Text>
                 </div>
                 <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
@@ -627,7 +677,9 @@ export default function ManagePortfolioPage() {
                     Volatility
                   </Text>
                   <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                    {portfolioData.riskMetrics.volatility.toFixed(1)}%
+                    {isMetricsLoading
+                      ? "-"
+                      : `${metrics?.volatility.toFixed(1)}%`}
                   </Text>
                 </div>
               </div>

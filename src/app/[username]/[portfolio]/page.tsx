@@ -10,7 +10,10 @@ import { useParams } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
 import ActivityTable from "@/components/ActivityTable";
 import OpinionsFeed from "@/components/OpinionsFeed";
-import { getPortfolioHoldings } from "@/services/portfolioService";
+import {
+  getPortfolioHoldings,
+  getPortfolioMetrics,
+} from "@/services/portfolioService";
 import { getUserInfo } from "@/services/userService";
 import Link from "next/link";
 import NotFoundPage from "@/components/NotFoundPage";
@@ -102,6 +105,8 @@ export default function PortfolioPage() {
   const [notFoundMessage, setNotFoundMessage] = useState("User not found");
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [followerCount, setFollowerCount] = useState(0);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [isMetricsLoading, setIsMetricsLoading] = useState(true);
 
   // Default user data
   const userData = {
@@ -194,10 +199,51 @@ export default function PortfolioPage() {
     fetchHoldings();
   }, [params.portfolio]);
 
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      setIsMetricsLoading(true);
+      try {
+        const response = await getPortfolioMetrics(Number(params.portfolio));
+        if (response.status === "success") {
+          setMetrics(response.data);
+        } else {
+          console.error("Error fetching metrics:", response.message);
+        }
+      } catch (error) {
+        console.error("Error fetching metrics:", error);
+      } finally {
+        setIsMetricsLoading(false);
+      }
+    };
+
+    if (params.portfolio) {
+      fetchMetrics();
+    }
+  }, [params.portfolio]);
+
   // If user not found, show 404 page
   if (userNotFound && !isUserInfoLoading) {
     return <NotFoundPage message={notFoundMessage} />;
   }
+
+  // Format metrics values properly
+  const formatMetricValue = (
+    value: number | undefined,
+    isPercentage = true,
+    decimalPlaces = 2
+  ) => {
+    if (value === undefined || value === null) return "-";
+    const formattedValue = value.toFixed(decimalPlaces);
+    return isPercentage
+      ? `${value >= 0 ? "+" : ""}${formattedValue}%`
+      : formattedValue;
+  };
+
+  // Determine trend (positive/negative) based on value
+  const getTrend = (value: number | undefined) => {
+    if (value === undefined || value === null) return "neutral";
+    return value >= 0 ? "positive" : "negative";
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">
@@ -325,8 +371,8 @@ export default function PortfolioPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <StatCard
             label="Ranking"
-            value={`#${userData.ranking.position.toLocaleString()}`}
-            subtext={`of ${userData.ranking.totalUsers.toLocaleString()} investors`}
+            value="-"
+            subtext="of investors"
             icon={
               <svg
                 className="w-5 h-5 text-[#1D1D1F]"
@@ -344,12 +390,22 @@ export default function PortfolioPage() {
             }
           />
           <StatCard
-            label="Last Trade"
-            value={`+${userData.returns.lastTrade}%`}
-            trend="positive"
+            label="Daily Return"
+            value={
+              isMetricsLoading
+                ? "-"
+                : `${metrics?.dailyReturn >= 0 ? "+" : ""}${metrics?.dailyReturn.toFixed(2)}%`
+            }
+            trend={
+              isMetricsLoading
+                ? "neutral"
+                : metrics?.dailyReturn >= 0
+                  ? "positive"
+                  : "negative"
+            }
             icon={
               <svg
-                className="w-5 h-5 text-[#00A852]"
+                className={`w-5 h-5 ${isMetricsLoading ? "text-[#1D1D1F]" : metrics?.dailyReturn >= 0 ? "text-[#00A852]" : "text-[#FF3B30]"}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -358,18 +414,32 @@ export default function PortfolioPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={1.5}
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  d={
+                    isMetricsLoading || metrics?.dailyReturn >= 0
+                      ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                  }
                 />
               </svg>
             }
           />
           <StatCard
             label="Monthly Return"
-            value={`${userData.returns.monthly}%`}
-            trend="negative"
+            value={
+              isMetricsLoading
+                ? "-"
+                : `${metrics?.monthlyReturn >= 0 ? "+" : ""}${metrics?.monthlyReturn.toFixed(2)}%`
+            }
+            trend={
+              isMetricsLoading
+                ? "neutral"
+                : metrics?.monthlyReturn >= 0
+                  ? "positive"
+                  : "negative"
+            }
             icon={
               <svg
-                className="w-5 h-5 text-[#FF3B30]"
+                className={`w-5 h-5 ${isMetricsLoading ? "text-[#1D1D1F]" : metrics?.monthlyReturn >= 0 ? "text-[#00A852]" : "text-[#FF3B30]"}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -378,18 +448,32 @@ export default function PortfolioPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={1.5}
-                  d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                  d={
+                    isMetricsLoading || metrics?.monthlyReturn >= 0
+                      ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                  }
                 />
               </svg>
             }
           />
           <StatCard
             label="Total Return"
-            value={`+${portfolioReturns.Total}%`}
-            trend="positive"
+            value={
+              isMetricsLoading
+                ? "-"
+                : `${metrics?.totalReturn >= 0 ? "+" : ""}${metrics?.totalReturn.toFixed(2)}%`
+            }
+            trend={
+              isMetricsLoading
+                ? "neutral"
+                : metrics?.totalReturn >= 0
+                  ? "positive"
+                  : "negative"
+            }
             icon={
               <svg
-                className="w-5 h-5 text-[#00A852]"
+                className={`w-5 h-5 ${isMetricsLoading ? "text-[#1D1D1F]" : metrics?.totalReturn >= 0 ? "text-[#00A852]" : "text-[#FF3B30]"}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -398,7 +482,11 @@ export default function PortfolioPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={1.5}
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  d={
+                    isMetricsLoading || metrics?.totalReturn >= 0
+                      ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                  }
                 />
               </svg>
             }
@@ -414,6 +502,52 @@ export default function PortfolioPage() {
         >
           <Card className="p-6 bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
             <PortfolioChart showCompare={true} showSocials={false} />
+          </Card>
+        </motion.div>
+
+        {/* Risk Metrics */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.15 }}
+          className="mb-12"
+        >
+          <Card className="overflow-hidden bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
+            <div className="p-6 border-b border-black/[0.04]">
+              <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                Risk Metrics
+              </Text>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
+                    Beta (vs S&P 500)
+                  </Text>
+                  <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                    {isMetricsLoading ? "-" : metrics?.beta.toFixed(2)}
+                  </Text>
+                </div>
+                <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
+                    Sharpe Ratio
+                  </Text>
+                  <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                    {isMetricsLoading ? "-" : metrics?.sharpeRatio.toFixed(2)}
+                  </Text>
+                </div>
+                <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
+                    Volatility
+                  </Text>
+                  <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                    {isMetricsLoading
+                      ? "-"
+                      : `${metrics?.volatility.toFixed(1)}%`}
+                  </Text>
+                </div>
+              </div>
+            </div>
           </Card>
         </motion.div>
 

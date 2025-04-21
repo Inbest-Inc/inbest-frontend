@@ -531,3 +531,49 @@ export async function getUserInfo(username: string): Promise<UserInfoResponse> {
     throw error;
   }
 }
+
+export interface PortfolioMetricsResponse {
+  status: string;
+  message: string;
+  data: {
+    portfolioId: number;
+    hourlyReturn: number;
+    dailyReturn: number;
+    monthlyReturn: number;
+    totalReturn: number;
+    beta: number;
+    sharpeRatio: number;
+    volatility: number;
+    riskScore: number;
+    riskCategory: string;
+  };
+}
+
+export async function getPortfolioMetrics(
+  portfolioId: number
+): Promise<PortfolioMetricsResponse> {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/portfolio-metrics/get?portfolioId=${portfolioId}`,
+      {
+        headers: {
+          // Only add Authorization header if token exists
+          ...(localStorage.getItem("token") && {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          }),
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch portfolio metrics");
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching portfolio metrics:", error);
+    throw error;
+  }
+}

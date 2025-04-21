@@ -172,41 +172,19 @@ export interface Notification {
 }
 
 // User cache keys
-const USER_CACHE_PREFIX = "user_info_";
 const USER_PHOTO_VERSION_PREFIX = "user_photo_version_";
 
 export async function getUserInfo(
   username: string,
   forceFresh: boolean = false
 ): Promise<UserInfoResponse> {
-  // Check if we have cached data first
-  const cacheKey = `${USER_CACHE_PREFIX}${username}`;
+  // Only keep track of photo version for cache busting
   const photoVersionKey = `${USER_PHOTO_VERSION_PREFIX}${username}`;
 
   // Get the current photo version from localStorage (if exists)
   const currentPhotoVersion = localStorage.getItem(photoVersionKey);
 
-  // Check if we should use cached data
-  if (!forceFresh) {
-    try {
-      const cachedData = localStorage.getItem(cacheKey);
-      if (cachedData) {
-        const parsedData = JSON.parse(cachedData) as UserInfoResponse;
-
-        // Add photo version to the response
-        if (currentPhotoVersion) {
-          parsedData.photoVersion = currentPhotoVersion;
-        }
-
-        return parsedData;
-      }
-    } catch (error) {
-      console.error("Error retrieving cached user data:", error);
-      // Continue with fresh fetch if cache retrieval fails
-    }
-  }
-
-  // If we reach here, we need to fetch fresh data
+  // Always fetch fresh data
   try {
     // Add cache-busting timestamp if forcing fresh data
     const timestamp = forceFresh ? `?_t=${Date.now()}` : "";
@@ -234,11 +212,6 @@ export async function getUserInfo(
       const newVersion = new Date().getTime().toString();
       localStorage.setItem(photoVersionKey, newVersion);
       userInfo.photoVersion = newVersion;
-    }
-
-    // Cache the response
-    if (userInfo.status === "success") {
-      localStorage.setItem(cacheKey, JSON.stringify(userInfo));
     }
 
     return userInfo;

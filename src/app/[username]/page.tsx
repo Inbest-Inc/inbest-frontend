@@ -21,6 +21,11 @@ import {
   changePassword,
   getUserInfo,
 } from "@/services/userService";
+import {
+  followUser,
+  unfollowUser,
+  isFollowingUser,
+} from "@/services/followService";
 import { toast, Toaster } from "react-hot-toast";
 import NotFoundPage from "@/components/NotFoundPage";
 
@@ -35,19 +40,31 @@ const SocialButton = ({
   icon,
   label,
   onClick,
+  variant = "default",
 }: {
   icon: React.ReactNode;
   label: string;
   onClick?: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
-  >
-    {icon}
-    {label}
-  </button>
-);
+  variant?: "default" | "primary" | "danger";
+}) => {
+  // Determine the button style based on the variant
+  const buttonStyle =
+    variant === "primary"
+      ? "text-white bg-blue-600 hover:bg-blue-700"
+      : variant === "danger"
+        ? "text-white bg-red-600 hover:bg-red-700"
+        : "text-[#1D1D1F] bg-gray-50/80 hover:bg-gray-100/80";
+
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium ${buttonStyle} backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] transition-all duration-200`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+};
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -76,6 +93,8 @@ export default function UserProfilePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userNotFound, setUserNotFound] = useState(false);
   const [notFoundMessage, setNotFoundMessage] = useState("User not found");
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowActionLoading, setIsFollowActionLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -96,54 +115,6 @@ export default function UserProfilePage() {
   useEffect(() => {
     const fetchUserInfo = async () => {
       setIsUserInfoLoading(true);
-
-      // Check for cached data first for a faster initial render
-      try {
-        const cacheKey = `user_info_${params.username}`;
-        const cachedData = localStorage.getItem(cacheKey);
-
-        if (cachedData) {
-          const userData = JSON.parse(cachedData);
-          if (userData.status === "success") {
-            if (userData.fullName) {
-              // Split the name into name and surname if possible
-              const nameParts = userData.fullName.split(" ");
-              const firstName = nameParts[0] || "";
-              const lastName = nameParts.slice(1).join(" ") || "";
-
-              setUserInfo({ name: userData.fullName });
-              setFormData((prev) => ({
-                ...prev,
-                name: firstName,
-                surname: lastName,
-              }));
-            }
-
-            // Check if profile photo URL is provided
-            if (userData.imageUrl) {
-              // Add timestamp to force cache refresh
-              const timestamp = new Date().getTime();
-              const imageUrl = userData.imageUrl;
-              const cachedPhotoUrl = imageUrl.includes("?")
-                ? `${imageUrl}&_t=${timestamp}`
-                : `${imageUrl}?_t=${timestamp}`;
-
-              setProfilePhoto(cachedPhotoUrl);
-            }
-
-            // Update follower count if provided
-            if (userData.followerCount !== undefined) {
-              setFollowerCount(userData.followerCount);
-            }
-
-            // Short-circuit the loading state if we have cached data
-            // but still continue to fetch fresh data
-            setIsUserInfoLoading(false);
-          }
-        }
-      } catch (e) {
-        console.error("Error getting cached data:", e);
-      }
 
       try {
         const response = await getUserInfo(params.username as string);
@@ -229,6 +200,13 @@ export default function UserProfilePage() {
 
   // Check if the profile being viewed belongs to the logged-in user
   const isOwnProfile = isAuthenticated && params.username === loggedInUsername;
+
+  // Check if current user is following the profile user
+  useEffect(() => {
+    // If the page is reloaded, the following state will be reset to false
+    // The user will have to click follow again if they were following before
+    setIsFollowing(false);
+  }, [params.username]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,6 +295,58 @@ export default function UserProfilePage() {
   const visiblePortfolios = portfolios.filter(
     (p) => p.visibility === "public" || isOwnProfile
   );
+
+  // Handle follow user action
+  const handleFollowUser = async () => {
+    if (!isAuthenticated) {
+      toast.error("You must be logged in to follow users");
+      router.push("/login");
+      return;
+    }
+
+    // Don't allow following yourself
+    if (params.username === loggedInUsername) {
+      toast.error("You cannot follow yourself");
+      return;
+    }
+
+    if (isFollowActionLoading) return;
+
+    try {
+      setIsFollowActionLoading(true);
+
+      if (isFollowing) {
+        // Unfollow user
+        const response = await unfollowUser(params.username as string);
+        if (response.status === "success") {
+          setIsFollowing(false);
+          // Update follower count
+          setFollowerCount((prev) => Math.max(0, prev - 1));
+          toast.success(`Unfollowed @${params.username}`);
+        } else {
+          // If there's an error, don't change the UI state
+          console.error("Error unfollowing user:", response.message);
+        }
+      } else {
+        // Follow user
+        const response = await followUser(params.username as string);
+        if (response.status === "success") {
+          setIsFollowing(true);
+          // Update follower count
+          setFollowerCount((prev) => prev + 1);
+          toast.success(`Following @${params.username}`);
+        } else {
+          // If there's an error, don't change the UI state
+          console.error("Error following user:", response.message);
+        }
+      }
+    } catch (error) {
+      console.error("Error with follow action:", error);
+      toast.error("An unexpected error occurred. Please try again later.");
+    } finally {
+      setIsFollowActionLoading(false);
+    }
+  };
 
   const handleCreatePortfolio = async (data: {
     portfolioName: string;
@@ -578,21 +608,45 @@ export default function UserProfilePage() {
                 <>
                   <SocialButton
                     icon={
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M12 4.5v15m7.5-7.5h-15"
-                        />
-                      </svg>
+                      isFollowing ? (
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M12 4.5v15m7.5-7.5h-15"
+                          />
+                        </svg>
+                      )
                     }
-                    label="Follow"
+                    variant={isFollowing ? "danger" : "primary"}
+                    label={
+                      isFollowActionLoading
+                        ? "Loading..."
+                        : isFollowing
+                          ? "Following"
+                          : "Follow"
+                    }
+                    onClick={handleFollowUser}
                   />
                   <SocialButton
                     icon={
