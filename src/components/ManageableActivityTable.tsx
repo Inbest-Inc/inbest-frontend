@@ -152,6 +152,19 @@ const DeleteConfirmModal = ({
 
 const DEMO_USERNAME = "warrenbuffett";
 
+// Add a debug utility to log the structure of an action object
+const debugActionObject = (prefix: string, actionObj: any) => {
+  console.log(`${prefix} action object:`, JSON.stringify(actionObj, null, 2));
+
+  // Check for essential fields
+  console.log(`${prefix} essential fields:`, {
+    symbol: actionObj.stockSymbol || actionObj.symbol,
+    name: actionObj.stockName || actionObj.name,
+    type: actionObj.actionType || actionObj.type,
+    activityId: actionObj.activityId || actionObj.investmentActivityId,
+  });
+};
+
 export default function ManageableActivityTable({
   data,
   onChange,
@@ -294,12 +307,39 @@ export default function ManageableActivityTable({
     oldAllocation: number,
     newAllocation: number,
     username: string,
-    type: "start" | "increase" | "decrease"
+    type: "start" | "increase" | "decrease",
+    apiActivityId?: number
   ) => {
     const holding = holdings.find((h) => h.symbol === symbol);
-    if (!holding) return;
+    if (!holding) {
+      console.error("Cannot find holding for symbol:", symbol);
+      return;
+    }
 
+    // Determine the proper action type based on the backend's static types
+    let actionType = "BUY";
+    if (oldShares === 0) {
+      actionType = "ADD"; // First time buying this stock
+    } else if (newShares > oldShares) {
+      actionType = "BUY"; // Adding more shares to existing position
+    } else if (newShares === 0) {
+      actionType = "SELL"; // Sold entire position
+    } else {
+      actionType = "SELL"; // Reduced position
+    }
+
+    // New structure based on the API response
     const action = {
+      activityId: apiActivityId || 123456, // Use fixed ID instead of Date.now()
+      portfolioId: portfolioId,
+      stockId: holding.stock_id,
+      stockSymbol: symbol,
+      stockName: holding.name,
+      actionType: actionType,
+      stockQuantity: newShares,
+      old_position_weight: oldAllocation / 100, // Convert from percentage to decimal
+      new_position_weight: newAllocation / 100, // Convert from percentage to decimal
+      // Add legacy fields for backward compatibility
       type,
       symbol,
       name: holding.name,
@@ -311,6 +351,10 @@ export default function ManageableActivityTable({
       username,
     };
 
+    console.log("Action constructed in handleSharesChange:");
+    debugActionObject("Generated", action);
+
+    console.log("Sharing action with activityId:", action.activityId);
     onShare(action);
   };
 
@@ -389,15 +433,97 @@ export default function ManageableActivityTable({
     if (!selectedStock) return;
 
     try {
-      await updateStockQuantity(portfolioId, selectedStock.symbol, quantity);
+      // Get original shares for comparison
+      const oldShares = selectedStock.shares;
+      const oldAllocation = selectedStock.allocation;
 
-      const updatedHoldings = updateHoldings(
+      // Call API to update quantity
+      const response = await updateStockQuantity(
+        portfolioId,
         selectedStock.symbol,
-        quantity,
-        selectedStock.shares
+        quantity
       );
-      setHoldings(updatedHoldings);
-      onChange(updatedHoldings);
+
+      if (response.status === "success") {
+        // Update local state
+        const updatedHoldings = updateHoldings(
+          selectedStock.symbol,
+          quantity,
+          oldShares
+        );
+        setHoldings(updatedHoldings);
+        onChange(updatedHoldings);
+
+        // If we have activity data in the response, use it for sharing
+        if (response.data) {
+          console.log(
+            "Stock quantity update response data:",
+            JSON.stringify(response.data, null, 2)
+          );
+
+          // Try to extract activityId from various possible locations
+          const activityId =
+            response.data?.activityId ||
+            (response as any).activityId ||
+            (response.data?.data && response.data.data.activityId);
+
+          if (activityId) {
+            console.log("Found activityId in response:", activityId);
+
+            // Create a share action with the activityId
+            const shareAction = {
+              ...response.data,
+              activityId: activityId, // Ensure activityId is at the top level
+            };
+
+            console.log("About to trigger onShare with API response data:");
+            debugActionObject("API response-based", shareAction);
+            onShare(shareAction);
+          } else {
+            // Fallback to the old method
+            console.log(
+              "No activityId found in response, using generic method"
+            );
+            const updatedHolding = updatedHoldings.find(
+              (h) => h.symbol === selectedStock.symbol
+            );
+            if (updatedHolding) {
+              const type = determineActionType(
+                selectedStock.symbol,
+                oldShares,
+                quantity,
+                oldAllocation,
+                updatedHolding.allocation
+              );
+
+              // Create action with fixed ID instead of timestamp
+              const tempActivityId = 123456;
+              console.log("Using fixed activityId:", tempActivityId);
+
+              // Log the action before sending it
+              console.log(
+                "About to call handleSharesChange with fallback data"
+              );
+
+              handleSharesChange(
+                selectedStock.symbol,
+                quantity,
+                oldShares,
+                oldAllocation,
+                updatedHolding.allocation,
+                DEMO_USERNAME,
+                type,
+                tempActivityId // Use temporary ID
+              );
+            }
+          }
+        } else {
+          console.log("No response data available for sharing");
+        }
+      } else {
+        setUpdateError(response.message || "Failed to update quantity");
+      }
+
       setSelectedStock(null);
       setUpdateError(null);
     } catch (error) {

@@ -232,7 +232,11 @@ export async function getPortfoliosByUsername(
 interface AddStockResponse {
   status: string;
   message: string;
-  data?: any;
+  data?: {
+    activityId?: number;
+    holdings?: any[];
+    [key: string]: any;
+  };
 }
 
 // Add a new type for the refresh callback
@@ -256,6 +260,10 @@ export async function addStockToPortfolio(
 
     // Ensure quantity is properly formatted with up to 2 decimal places for API
     const formattedQuantity = Math.round(quantity * 100) / 100;
+
+    console.log(
+      `Adding stock ${tickerName} with quantity ${formattedQuantity} to portfolio ${portfolioId}`
+    );
 
     const response = await fetch(
       `${API_URL}/api/portfolio-stock/add?portfolioId=${portfolioId}&tickerName=${tickerName}&quantity=${formattedQuantity}`,
@@ -301,6 +309,21 @@ export async function addStockToPortfolio(
       };
     }
 
+    // Parse the response to get all data including activityId
+    const data = await response.json();
+    console.log("Add stock complete response:", JSON.stringify(data));
+
+    // Directly log the important fields to look for activityId
+    console.log("Response data fields:", Object.keys(data));
+    if (data.data) {
+      console.log("Response data.data fields:", Object.keys(data.data));
+    }
+    console.log(
+      "Looking for activityId:",
+      data.activityId,
+      data.data?.activityId
+    );
+
     // Call the refresh callback before showing success message
     if (onSuccess) {
       await onSuccess();
@@ -312,9 +335,11 @@ export async function addStockToPortfolio(
         id: loadingToast,
       }
     );
+
     return {
       status: "success",
       message: "Stock added successfully",
+      data: data, // Return the full response data, not just data.data
     };
   } catch (error) {
     // Only display error toast if it hasn't been displayed yet
@@ -436,6 +461,19 @@ export async function getPortfolioHoldings(
 export interface UpdateStockQuantityResponse {
   status: string;
   message: string;
+  data?: {
+    activityId?: number;
+    portfolioId?: number;
+    stockId?: number;
+    stockSymbol?: string;
+    stockName?: string;
+    actionType?: string;
+    stockQuantity?: number;
+    date?: string;
+    old_position_weight?: number;
+    new_position_weight?: number;
+    [key: string]: any;
+  };
 }
 
 export async function updateStockQuantity(
@@ -454,6 +492,10 @@ export async function updateStockQuantity(
 
     // Ensure quantity is properly formatted with up to 2 decimal places for API
     const formattedQuantity = Math.round(quantity * 100) / 100;
+
+    console.log(
+      `Updating stock ${tickerName} with quantity ${formattedQuantity} in portfolio ${portfolioId}`
+    );
 
     const response = await fetch(
       `${API_URL}/api/portfolio-stock/update/quantity?portfolioId=${portfolioId}&tickerName=${tickerName}&quantity=${formattedQuantity}`,
@@ -493,7 +535,20 @@ export async function updateStockQuantity(
       };
     }
 
+    // Parse the complete response
     const data = await response.json();
+    console.log("Update stock complete response:", JSON.stringify(data));
+
+    // Directly log the important fields to look for activityId
+    console.log("Response data fields:", Object.keys(data));
+    if (data.data) {
+      console.log("Response data.data fields:", Object.keys(data.data));
+    }
+    console.log(
+      "Looking for activityId:",
+      data.activityId,
+      data.data?.activityId
+    );
 
     if (onSuccess) {
       await onSuccess();
@@ -502,7 +557,12 @@ export async function updateStockQuantity(
     toast.success(`Updated ${tickerName} to ${formattedQuantity} shares`, {
       id: loadingToast,
     });
-    return data;
+
+    return {
+      status: "success",
+      message: "Stock quantity updated successfully",
+      data: data, // Return the full response data, not just data.data
+    };
   } catch (error) {
     // Only display error toast if it hasn't been displayed yet by the code above
     toast.error(

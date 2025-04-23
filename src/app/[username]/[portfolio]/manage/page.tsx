@@ -204,8 +204,53 @@ export default function ManagePortfolioPage() {
             operation.shares,
             refreshCallback
           );
+          console.log("Add stock operation complete response:", response);
+
           if (response?.status === "success") {
             setIsAddStockModalOpen(false);
+
+            // CRITICAL - Inspect the full response structure
+            console.log(
+              "Add stock response structure:",
+              JSON.stringify(response, null, 2)
+            );
+
+            // Try to find activityId at different levels of the response
+            const activityId =
+              response.data?.activityId ||
+              (response as any).activityId ||
+              (response.data?.data && response.data.data.activityId);
+
+            if (activityId) {
+              console.log("Found activityId:", activityId);
+              const shareData = {
+                activityId: activityId,
+                portfolioId: portfolioId,
+                stockSymbol: operation.symbol,
+                actionType: "ADD",
+                stockQuantity: operation.shares,
+              };
+
+              console.log("Setting share action with:", shareData);
+              setSelectedAction(shareData);
+              setIsShareActionModalOpen(true);
+              return;
+            } else {
+              console.log("No activityId found in response, creating one");
+              // Force the share dialog with a temporary ID if needed
+              const tempAction = {
+                activityId: 123456, // Fixed ID instead of Date.now()
+                portfolioId: portfolioId,
+                stockSymbol: operation.symbol,
+                actionType: "ADD",
+                stockQuantity: operation.shares,
+                stockName: operation.symbol, // Use symbol as name if not available
+              };
+
+              console.log("Using temp action:", tempAction);
+              setSelectedAction(tempAction);
+              setIsShareActionModalOpen(true);
+            }
           }
           break;
         case "update":
@@ -215,6 +260,21 @@ export default function ManagePortfolioPage() {
             operation.shares,
             refreshCallback
           );
+
+          console.log("Update stock response for sharing:", response);
+
+          // If it's an update with activity data, show share modal
+          if (response?.status === "success" && response.data) {
+            // Direct access to activityId from the response
+            if (response.data.activityId) {
+              console.log(
+                "Found activityId in update response:",
+                response.data.activityId
+              );
+              setSelectedAction(response.data);
+              setIsShareActionModalOpen(true);
+            }
+          }
           break;
         case "delete":
           response = await deleteStockFromPortfolio(
@@ -757,7 +817,10 @@ export default function ManagePortfolioPage() {
                       });
                     }
                   }}
-                  onShare={() => {}} // Empty handler to satisfy the interface
+                  onShare={(action) => {
+                    setSelectedAction(action);
+                    setIsShareActionModalOpen(true);
+                  }}
                   portfolioName={portfolioName}
                   onPortfolioNameChange={handlePortfolioNameChange}
                   portfolioId={portfolioId}
