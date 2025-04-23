@@ -28,6 +28,8 @@ import {
 } from "@/services/followService";
 import { toast, Toaster } from "react-hot-toast";
 import NotFoundPage from "@/components/NotFoundPage";
+import FollowersModal from "@/components/FollowersModal";
+import FollowingModal from "@/components/FollowingModal";
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
@@ -35,6 +37,7 @@ const DEFAULT_AVATAR =
 // Update mock data
 const DEFAULT_NAME = "John Doe";
 const DEFAULT_FOLLOWERS = 0;
+const DEFAULT_FOLLOWING = 0;
 
 const SocialButton = ({
   icon,
@@ -87,6 +90,7 @@ export default function UserProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState({ name: DEFAULT_NAME });
   const [followerCount, setFollowerCount] = useState(DEFAULT_FOLLOWERS);
+  const [followingCount, setFollowingCount] = useState(DEFAULT_FOLLOWING);
   const [isUserInfoLoading, setIsUserInfoLoading] = useState(true);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isPhotoUploading, setIsPhotoUploading] = useState(false);
@@ -95,6 +99,8 @@ export default function UserProfilePage() {
   const [notFoundMessage, setNotFoundMessage] = useState("User not found");
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowActionLoading, setIsFollowActionLoading] = useState(false);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -156,6 +162,11 @@ export default function UserProfilePage() {
         // Update follower count if provided
         if (response.followerCount !== undefined) {
           setFollowerCount(response.followerCount);
+        }
+
+        // Update following count if provided
+        if (response.followingCount !== undefined) {
+          setFollowingCount(response.followingCount);
         }
       } catch (error) {
         console.error("Error fetching user info:", error);
@@ -567,7 +578,10 @@ export default function UserProfilePage() {
                       <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
                         @{params.username}
                       </Text>
-                      <div className="flex items-center text-[17px] leading-[22px] text-[#6E6E73]">
+                      <button
+                        onClick={() => setShowFollowersModal(true)}
+                        className="flex items-center text-[17px] leading-[22px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
+                      >
                         <svg
                           className="w-4 h-4 mr-1"
                           fill="none"
@@ -582,7 +596,26 @@ export default function UserProfilePage() {
                           />
                         </svg>
                         {followerCount.toLocaleString()} followers
-                      </div>
+                      </button>
+                      <button
+                        onClick={() => setShowFollowingModal(true)}
+                        className="flex items-center text-[17px] leading-[22px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                          />
+                        </svg>
+                        {followingCount.toLocaleString()} following
+                      </button>
                     </div>
                   </>
                 ) : (
@@ -1052,6 +1085,20 @@ export default function UserProfilePage() {
           isOpen={showCreatePortfolioModal}
           onClose={() => setShowCreatePortfolioModal(false)}
           onSubmit={handleCreatePortfolio}
+        />
+
+        {/* Followers Modal */}
+        <FollowersModal
+          isOpen={showFollowersModal}
+          onClose={() => setShowFollowersModal(false)}
+          username={params.username as string}
+        />
+
+        {/* Following Modal */}
+        <FollowingModal
+          isOpen={showFollowingModal}
+          onClose={() => setShowFollowingModal(false)}
+          username={params.username as string}
         />
       </div>
     </div>

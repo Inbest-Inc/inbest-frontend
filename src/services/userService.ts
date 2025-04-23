@@ -149,6 +149,7 @@ export type UserInfoResponse = {
   status: "success" | "error";
   name?: string;
   followers?: number;
+  following?: number;
   imageUrl?: string;
   photoVersion?: string;
   message?: string;
@@ -156,6 +157,7 @@ export type UserInfoResponse = {
   // Aliases for backward compatibility
   fullName?: string;
   followerCount?: number;
+  followingCount?: number;
 };
 
 export interface Notification {

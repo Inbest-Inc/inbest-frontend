@@ -122,3 +122,91 @@ export async function isFollowingUser(username: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Get the list of followers for a user
+ * @param username - The username to get followers for
+ * @returns A promise that resolves to the response from the server
+ */
+export async function getFollowers(username: string) {
+  try {
+    // Get auth token from local storage
+    const token = localStorage.getItem("token");
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Add auth token if available
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(
+      `${getApiUrl()}/api/follow/${username}/followers`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error fetching followers:", errorData);
+      return {
+        status: "error",
+        message: errorData.message || "Failed to fetch followers",
+      };
+    }
+
+    const data = await response.json();
+    return { status: "success", data: data.data, message: data.message };
+  } catch (error) {
+    console.error("Error fetching followers:", error);
+    return { status: "error", message: "Failed to fetch followers" };
+  }
+}
+
+/**
+ * Get the list of users a user is following
+ * @param username - The username to get following list for
+ * @returns A promise that resolves to the response from the server
+ */
+export async function getFollowing(username: string) {
+  try {
+    // Get auth token from local storage
+    const token = localStorage.getItem("token");
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Add auth token if available
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(
+      `${getApiUrl()}/api/follow/${username}/following`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error fetching following list:", errorData);
+      return {
+        status: "error",
+        message: errorData.message || "Failed to fetch following list",
+      };
+    }
+
+    const data = await response.json();
+    return { status: "success", data: data.data, message: data.message };
+  } catch (error) {
+    console.error("Error fetching following list:", error);
+    return { status: "error", message: "Failed to fetch following list" };
+  }
+}
