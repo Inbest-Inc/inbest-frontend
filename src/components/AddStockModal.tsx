@@ -8,6 +8,7 @@ import {
   addStockToPortfolio,
   getStockTickers,
 } from "@/services/portfolioService";
+import QuantityInput from "./QuantityInput";
 
 interface Stock {
   symbol: string;
@@ -65,6 +66,7 @@ const StockQuantityScreen = ({
   error,
 }: StockQuantityScreenProps) => {
   const [quantity, setQuantity] = useState<number>(1);
+  const [isValidInput, setIsValidInput] = useState<boolean>(true);
 
   return (
     <div className="space-y-6">
@@ -116,52 +118,15 @@ const StockQuantityScreen = ({
         <label className="block text-[15px] leading-[20px] font-semibold text-[#1D1D1F]">
           Quantity
         </label>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            className="p-3 text-[#6E6E73] hover:text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-xl ring-1 ring-black/[0.04] transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M20 12H4"
-              />
-            </svg>
-          </button>
-          <input
-            type="number"
-            value={quantity}
-            onChange={(e) =>
-              setQuantity(Math.max(1, parseInt(e.target.value) || 1))
-            }
-            className="flex-1 h-[44px] px-4 text-center rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
-          />
-          <button
-            onClick={() => setQuantity(quantity + 1)}
-            className="p-3 text-[#6E6E73] hover:text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-xl ring-1 ring-black/[0.04] transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
-        </div>
+        <QuantityInput
+          value={quantity}
+          onChange={setQuantity}
+          onValidChange={setIsValidInput}
+          minValue={0.01}
+        />
+        <p className="text-[13px] text-[#6E6E73] mt-1">
+          Enter quantity with up to 2 decimal places (e.g., 10.12)
+        </p>
       </div>
 
       {error && (
@@ -174,7 +139,12 @@ const StockQuantityScreen = ({
 
       <button
         onClick={() => onConfirm(quantity)}
-        className="w-full h-[44px] flex items-center justify-center gap-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all duration-200"
+        disabled={!isValidInput}
+        className={`w-full h-[44px] flex items-center justify-center gap-2 text-[15px] leading-[20px] font-medium text-white ${
+          isValidInput
+            ? "bg-blue-600 hover:bg-blue-700"
+            : "bg-blue-300 cursor-not-allowed"
+        } rounded-xl transition-all duration-200`}
       >
         Continue
       </button>

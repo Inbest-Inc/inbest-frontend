@@ -191,6 +191,9 @@ export default function ManagePortfolioPage() {
       return;
     }
 
+    // Get the callback function if available
+    const refreshCallback = fetchDataRef.current || undefined;
+
     try {
       let response;
       switch (operation.type) {
@@ -198,10 +201,10 @@ export default function ManagePortfolioPage() {
           response = await addStockToPortfolio(
             portfolioId,
             operation.symbol,
-            operation.shares
+            operation.shares,
+            refreshCallback
           );
           if (response?.status === "success") {
-            toast.success(`Added ${operation.symbol} to your portfolio`);
             setIsAddStockModalOpen(false);
           }
           break;
@@ -209,26 +212,20 @@ export default function ManagePortfolioPage() {
           response = await updateStockQuantity(
             portfolioId,
             operation.symbol,
-            operation.shares
+            operation.shares,
+            refreshCallback
           );
-          if (response?.status === "success") {
-            toast.success(`Updated ${operation.symbol} shares`);
-          }
           break;
         case "delete":
           response = await deleteStockFromPortfolio(
             portfolioId,
-            operation.symbol
+            operation.symbol,
+            refreshCallback
           );
-          if (response?.status === "success") {
-            toast.success(`Removed ${operation.symbol} from your portfolio`);
-          }
           break;
       }
 
-      if (response?.status === "success") {
-        await fetchDataRef.current?.();
-      }
+      // We don't need to fetch data again since we passed the callback to the service
     } catch (error) {
       console.error("Error during stock operation:", error);
       toast.error(

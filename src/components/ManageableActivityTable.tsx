@@ -17,6 +17,7 @@ import {
   updateStockQuantity,
   deleteStockFromPortfolio,
 } from "@/services/portfolioService";
+import { formatQuantity } from "@/utils/quantityUtils";
 
 interface Holding {
   symbol: string;
@@ -333,7 +334,12 @@ export default function ManageableActivityTable({
     if (!holding) return;
 
     if (field === "shares") {
-      const updatedHoldings = updateHoldings(symbol, newValue, holding.shares);
+      const roundedValue = Math.round(newValue * 1000) / 1000;
+      const updatedHoldings = updateHoldings(
+        symbol,
+        roundedValue,
+        holding.shares
+      );
       setHoldings(updatedHoldings);
       onChange(updatedHoldings);
     }
@@ -445,7 +451,7 @@ export default function ManageableActivityTable({
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <span>{holding.shares}</span>
+                    <span>{formatQuantity(holding.shares)}</span>
                     <button
                       onClick={() => setSelectedStock(holding)}
                       className="p-1 text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"

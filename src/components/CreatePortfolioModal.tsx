@@ -50,11 +50,14 @@ export default function CreatePortfolioModal({
 
     setIsLoading(true);
     try {
+      console.log("Submitting portfolio data...");
       await onSubmit({ portfolioName: portfolioName.trim(), visibility });
+      console.log("Portfolio creation successful, closing modal");
       setPortfolioName("");
       setVisibility("public");
       onClose();
     } catch (err) {
+      console.error("Error in CreatePortfolioModal:", err);
       setError(
         err instanceof Error ? err.message : "Failed to create portfolio"
       );

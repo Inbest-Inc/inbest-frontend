@@ -353,14 +353,24 @@ export default function UserProfilePage() {
     visibility: "public" | "private";
   }) => {
     try {
+      console.log("Creating portfolio with data:", data);
       const response = await createPortfolio(data);
-      // After successful creation, redirect to manage portfolio page
-      if (response.portfolioId) {
-        router.push(`/${loggedInUsername}/${response.portfolioId}/manage`);
+      console.log("Portfolio creation response:", response);
+
+      // The API returns the portfolio ID directly in the data property as a number
+      if (response && response.status === "success" && response.data) {
+        const portfolioId = response.data; // The data property IS the portfolio ID
+        const redirectUrl = `/${loggedInUsername}/${portfolioId}/manage`;
+        console.log("Redirecting to:", redirectUrl);
+
+        // Force a hard navigation
+        window.location.href = redirectUrl;
+      } else {
+        console.error("Invalid response structure:", response);
       }
     } catch (error) {
+      // Error toast is already handled in the service
       console.error("Failed to create portfolio:", error);
-      throw error;
     }
   };
 
@@ -585,25 +595,49 @@ export default function UserProfilePage() {
             </div>
             <div className="flex items-center gap-3">
               {isOwnProfile ? (
-                <SocialButton
-                  icon={
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                  }
-                  label="Edit Profile"
-                  onClick={() => setIsEditing(true)}
-                />
+                <>
+                  <SocialButton
+                    icon={
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                    }
+                    label="Edit Profile"
+                    onClick={() => setIsEditing(true)}
+                  />
+                  {portfolios.length > 0 && (
+                    <SocialButton
+                      icon={
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M12 4.5v15m7.5-7.5h-15"
+                          />
+                        </svg>
+                      }
+                      label="Create Portfolio"
+                      variant="primary"
+                      onClick={() => setShowCreatePortfolioModal(true)}
+                    />
+                  )}
+                </>
               ) : (
                 <>
                   <SocialButton
@@ -748,7 +782,7 @@ export default function UserProfilePage() {
         {/* Recent Activity */}
 
         {/* Portfolio Performance */}
-        {isOwnProfile && (
+        {isOwnProfile && portfolios.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

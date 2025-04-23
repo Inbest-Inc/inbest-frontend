@@ -51,9 +51,11 @@ export async function createPortfolio(portfolio: PortfolioDTO): Promise<any> {
     }
 
     const result = await response.json();
+    console.log("API response for portfolio creation:", result);
     toast.success("Portfolio created successfully", { id: loadingToast });
     return result;
   } catch (error) {
+    console.error("Error in createPortfolio service:", error);
     toast.error(
       error instanceof Error ? error.message : "Failed to create portfolio",
       { id: loadingToast }
@@ -252,8 +254,11 @@ export async function addStockToPortfolio(
       throw new Error("No authentication token found");
     }
 
+    // Ensure quantity is properly formatted with up to 2 decimal places for API
+    const formattedQuantity = Math.round(quantity * 100) / 100;
+
     const response = await fetch(
-      `${API_URL}/api/portfolio-stock/add?portfolioId=${portfolioId}&tickerName=${tickerName}&quantity=${quantity}`,
+      `${API_URL}/api/portfolio-stock/add?portfolioId=${portfolioId}&tickerName=${tickerName}&quantity=${formattedQuantity}`,
       {
         method: "POST",
         headers: {
@@ -263,8 +268,37 @@ export async function addStockToPortfolio(
     );
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || "Couldn't add stock to portfolio");
+      // Read response as text first
+      const textResponse = await response.text();
+
+      // Try to parse it as JSON, but handle the case where it's not valid JSON
+      let errorMessage = "Couldn't add stock to portfolio";
+
+      try {
+        // Attempt to parse as JSON
+        const jsonResponse = JSON.parse(textResponse);
+        if (jsonResponse.message) {
+          // For already added stocks, use our custom friendly message
+          if (jsonResponse.message.includes("already added")) {
+            errorMessage = `${tickerName} is already in your portfolio`;
+          } else {
+            // For other errors, use the API's message
+            errorMessage = jsonResponse.message;
+          }
+        }
+      } catch (parseError) {
+        // If not JSON, use the text response if it's not empty
+        if (textResponse && textResponse.trim()) {
+          errorMessage = textResponse;
+        }
+      }
+
+      // Display the error toast and then throw to exit the function
+      toast.error(errorMessage, { id: loadingToast });
+      return {
+        status: "error",
+        message: errorMessage,
+      };
     }
 
     // Call the refresh callback before showing success message
@@ -272,20 +306,30 @@ export async function addStockToPortfolio(
       await onSuccess();
     }
 
-    toast.success(`Added ${quantity} shares of ${tickerName} to portfolio`, {
-      id: loadingToast,
-    });
+    toast.success(
+      `Added ${formattedQuantity} shares of ${tickerName} to portfolio`,
+      {
+        id: loadingToast,
+      }
+    );
     return {
       status: "success",
       message: "Stock added successfully",
     };
   } catch (error) {
-    toast.error(
-      error instanceof Error
-        ? error.message
-        : "Couldn't add stock to portfolio",
-      { id: loadingToast }
-    );
+    // Only display error toast if it hasn't been displayed yet
+    // This is to avoid duplicate toasts for the same error
+    if (
+      error instanceof Error &&
+      !error.message.includes("already in your portfolio")
+    ) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Couldn't add stock to portfolio",
+        { id: loadingToast }
+      );
+    }
     throw error;
   }
 }
@@ -408,8 +452,11 @@ export async function updateStockQuantity(
       throw new Error("No authentication token found");
     }
 
+    // Ensure quantity is properly formatted with up to 2 decimal places for API
+    const formattedQuantity = Math.round(quantity * 100) / 100;
+
     const response = await fetch(
-      `${API_URL}/api/portfolio-stock/update/quantity?portfolioId=${portfolioId}&tickerName=${tickerName}&quantity=${quantity}`,
+      `${API_URL}/api/portfolio-stock/update/quantity?portfolioId=${portfolioId}&tickerName=${tickerName}&quantity=${formattedQuantity}`,
       {
         method: "PUT",
         headers: {
@@ -419,7 +466,31 @@ export async function updateStockQuantity(
     );
 
     if (!response.ok) {
-      throw new Error("Couldn't update shares quantity");
+      // Read response as text first
+      const textResponse = await response.text();
+
+      // Try to parse it as JSON, but handle the case where it's not valid JSON
+      let errorMessage = "Couldn't update shares quantity";
+
+      try {
+        // Attempt to parse as JSON
+        const jsonResponse = JSON.parse(textResponse);
+        if (jsonResponse.message) {
+          errorMessage = jsonResponse.message;
+        }
+      } catch (parseError) {
+        // If not JSON, use the text response if it's not empty
+        if (textResponse && textResponse.trim()) {
+          errorMessage = textResponse;
+        }
+      }
+
+      // Display the error toast and return an error response
+      toast.error(errorMessage, { id: loadingToast });
+      return {
+        status: "error",
+        message: errorMessage,
+      };
     }
 
     const data = await response.json();
@@ -428,11 +499,12 @@ export async function updateStockQuantity(
       await onSuccess();
     }
 
-    toast.success(`Updated ${tickerName} to ${quantity} shares`, {
+    toast.success(`Updated ${tickerName} to ${formattedQuantity} shares`, {
       id: loadingToast,
     });
     return data;
   } catch (error) {
+    // Only display error toast if it hasn't been displayed yet by the code above
     toast.error(
       error instanceof Error
         ? error.message
@@ -474,7 +546,37 @@ export async function deleteStockFromPortfolio(
     );
 
     if (!response.ok) {
-      throw new Error("Couldn't delete stock from portfolio");
+      // Read response as text first
+      const textResponse = await response.text();
+
+      // Try to parse it as JSON, but handle the case where it's not valid JSON
+      let errorMessage = "Couldn't delete stock from portfolio";
+
+      try {
+        // Attempt to parse as JSON
+        const jsonResponse = JSON.parse(textResponse);
+        if (jsonResponse.message) {
+          // For "not found" errors, use custom friendly message
+          if (jsonResponse.message.includes("not found")) {
+            errorMessage = `${tickerName} is not in your portfolio`;
+          } else {
+            // For other errors, use the API's message
+            errorMessage = jsonResponse.message;
+          }
+        }
+      } catch (parseError) {
+        // If not JSON, use the text response if it's not empty
+        if (textResponse && textResponse.trim()) {
+          errorMessage = textResponse;
+        }
+      }
+
+      // Display the error toast and return an error response
+      toast.error(errorMessage, { id: loadingToast });
+      return {
+        status: "error",
+        message: errorMessage,
+      };
     }
 
     const data = await response.json();
@@ -487,12 +589,18 @@ export async function deleteStockFromPortfolio(
     toast.success(`Deleted ${tickerName} from portfolio`, { id: loadingToast });
     return data;
   } catch (error) {
-    toast.error(
-      error instanceof Error
-        ? error.message
-        : "Couldn't delete stock from portfolio",
-      { id: loadingToast }
-    );
+    // Only display error toast if it hasn't been displayed yet by the code above
+    if (
+      error instanceof Error &&
+      !error.message.includes("not in your portfolio")
+    ) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Couldn't delete stock from portfolio",
+        { id: loadingToast }
+      );
+    }
     throw error;
   }
 }
