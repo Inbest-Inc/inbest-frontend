@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Text } from "@tremor/react";
 import { useRouter } from "next/navigation";
-import { getUserInfo } from "@/services/userService";
+import { getUserInfo, checkAuthStatus } from "@/services/userService";
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
@@ -28,8 +28,41 @@ export default function Header() {
     setUsername(storedUsername || "");
     setIsLoading(false);
 
-    // Immediately try to get cached user info for a faster initial render
+    // Verify authentication status with the server
+    const verifyAuth = async () => {
+      const authStatus = await checkAuthStatus();
+
+      if (authStatus.status === "error") {
+        // If server says user is not authenticated, clear localStorage and update state
+        if (!!storedUsername) {
+          console.log("Auth verification failed, logging out");
+          localStorage.removeItem("token");
+          localStorage.removeItem("username");
+          setIsAuthenticated(false);
+          setUsername("");
+          setProfilePhoto(null);
+        }
+      } else if (authStatus.status === "success") {
+        // If authentication is valid, update user information
+        setIsAuthenticated(true);
+        setUsername(authStatus.username || storedUsername || "");
+
+        if (authStatus.imageUrl) {
+          const timestamp = Date.now();
+          const imageUrlWithTimestamp = authStatus.imageUrl.includes("?")
+            ? `${authStatus.imageUrl}&_t=${timestamp}`
+            : `${authStatus.imageUrl}?_t=${timestamp}`;
+
+          // Set photo directly without clearing first to avoid flickering
+          setProfilePhoto(imageUrlWithTimestamp);
+        }
+      }
+    };
+
     if (storedUsername) {
+      verifyAuth();
+
+      // Immediately try to get cached user info for a faster initial render
       try {
         const cacheKey = `user_info_${storedUsername}`;
         const cachedData = localStorage.getItem(cacheKey);
@@ -93,13 +126,8 @@ export default function Header() {
 
       // If we have a direct URL in the event, use it immediately
       if (customEvent.detail.photoUrl) {
-        // Clear existing photo first to force a refresh
-        setProfilePhoto(null);
-
-        // Small delay to ensure DOM is updated
-        setTimeout(() => {
-          setProfilePhoto(customEvent.detail.photoUrl);
-        }, 50);
+        // Set the photo directly to avoid flickering
+        setProfilePhoto(customEvent.detail.photoUrl);
 
         // Update last fetch time to prevent immediate re-fetching
         setLastPhotoFetch(Date.now());
@@ -112,7 +140,7 @@ export default function Header() {
       }
 
       // If no direct URL, fetch the user info
-      setTimeout(() => fetchUserInfo(true), 100);
+      fetchUserInfo(true);
     }
   };
 
@@ -129,6 +157,28 @@ export default function Header() {
 
     return () => clearInterval(interval);
   }, [isAuthenticated]);
+
+  // Verify authentication status periodically
+  useEffect(() => {
+    // Skip if no username in localStorage
+    if (!localStorage.getItem("username")) return;
+
+    // Check auth status every minute
+    const authCheckInterval = setInterval(async () => {
+      const authStatus = await checkAuthStatus();
+
+      if (authStatus.status === "error") {
+        // If server says user is not authenticated, clear localStorage and update state
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        setIsAuthenticated(false);
+        setUsername("");
+        setProfilePhoto(null);
+      }
+    }, 60 * 1000); // 1 minute
+
+    return () => clearInterval(authCheckInterval);
+  }, []);
 
   const fetchUserInfo = async (forceRefresh = false) => {
     if (!username) return; // Don't fetch if no username is available
@@ -154,13 +204,8 @@ export default function Header() {
         // Log the updated photo URL for debugging
         console.log("Updated profile photo URL:", urlWithTimestamp);
 
-        // Clear any existing profile photo first to force a full reload
-        setProfilePhoto(null);
-
-        // Use setTimeout to ensure the DOM has time to clear the old image
-        setTimeout(() => {
-          setProfilePhoto(urlWithTimestamp);
-        }, 50);
+        // Set the photo directly without clearing first to avoid flickering
+        setProfilePhoto(urlWithTimestamp);
 
         setUserInfo((prev) => ({
           ...prev,
@@ -184,15 +229,34 @@ export default function Header() {
     setUsername(storedUsername || "");
 
     if (storedUsername) {
-      fetchUserInfo();
+      // Also check auth status with the server when localStorage changes
+      checkAuthStatus().then((authStatus) => {
+        if (authStatus.status === "error") {
+          localStorage.removeItem("token");
+          localStorage.removeItem("username");
+          setIsAuthenticated(false);
+          setUsername("");
+          setProfilePhoto(null);
+        } else {
+          fetchUserInfo();
+        }
+      });
     } else {
       setProfilePhoto(null);
     }
   };
 
   const handleLogout = () => {
+    // First clear the localStorage
     localStorage.removeItem("token");
     localStorage.removeItem("username");
+
+    // Then update the UI immediately
+    setIsAuthenticated(false);
+    setUsername("");
+    setProfilePhoto(null);
+
+    // Navigate to login page
     router.push("/login");
   };
 
@@ -209,13 +273,18 @@ export default function Header() {
 
     return (
       <div className="relative h-8 w-8 rounded-xl overflow-hidden ring-1 ring-black/[0.08] bg-[#F5F5F7]">
-        <Image
-          src={imageUrl}
-          alt="Profile"
-          fill
-          className="object-cover"
-          style={{ objectFit: "cover" }}
-        />
+        {!profilePhoto && !userInfo?.photoUrl ? (
+          // Skeleton loader when no image is available yet
+          <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-xl" />
+        ) : (
+          <Image
+            src={imageUrl}
+            alt="Profile"
+            fill
+            className="object-cover"
+            style={{ objectFit: "cover" }}
+          />
+        )}
       </div>
     );
   };

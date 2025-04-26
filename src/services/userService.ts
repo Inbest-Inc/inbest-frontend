@@ -149,7 +149,7 @@ export type UserInfoResponse = {
   status: "success" | "error";
   name?: string;
   followers?: number;
-  following?: number;
+  following?: number | boolean; // Can be count of users followed or boolean indicator if authenticated user follows this profile
   imageUrl?: string;
   photoVersion?: string;
   message?: string;
@@ -190,13 +190,25 @@ export async function getUserInfo(
   try {
     // Add cache-busting timestamp if forcing fresh data
     const timestamp = forceFresh ? `?_t=${Date.now()}` : "";
+
+    // Get auth token if available
+    const token = localStorage.getItem("token");
+
+    // Prepare headers - always include Content-Type
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Add auth token if available for following status
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch(
       `${API_URL}/api/user/${username}${timestamp}`,
       {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
       }
     );
 
@@ -222,6 +234,45 @@ export async function getUserInfo(
     return {
       status: "error",
       message: "Failed to fetch user info",
+    };
+  }
+}
+
+/**
+ * Checks if the user's authentication is still valid using the server endpoint
+ * @returns Promise with authentication status and user info
+ */
+export async function checkAuthStatus(): Promise<{
+  status: "success" | "error";
+  username?: string;
+  imageUrl?: string;
+  message?: string;
+}> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return { status: "error", message: "No authentication token found" };
+    }
+
+    const response = await fetch(`${API_URL}/api/user/check`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Authentication check failed");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Auth check error:", error);
+    return {
+      status: "error",
+      message: "Failed to fetch user information.",
     };
   }
 }

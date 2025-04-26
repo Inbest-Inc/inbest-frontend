@@ -1,5 +1,6 @@
 import { toast } from "react-hot-toast";
 import { getApiUrl } from "@/config/env";
+import { getUserInfo } from "@/services/userService";
 
 const API_URL = getApiUrl();
 
@@ -680,24 +681,6 @@ export interface RegisterRequest {
 export interface AuthenticationRequest {
   username: string;
   password: string;
-}
-
-export interface UserInfoResponse {
-  name: string;
-}
-
-export async function getUserInfo(username: string): Promise<UserInfoResponse> {
-  try {
-    const response = await fetch(`${API_URL}/api/user/${username}`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch user info");
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching user info:", error);
-    throw error;
-  }
 }
 
 export interface PortfolioMetricsResponse {

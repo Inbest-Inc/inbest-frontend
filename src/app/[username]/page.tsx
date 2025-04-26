@@ -125,6 +125,9 @@ export default function UserProfilePage() {
       try {
         const response = await getUserInfo(params.username as string);
 
+        // Debug: log the user info response to inspect fields
+        console.log("User info response:", response);
+
         if (response.status === "error") {
           console.error("Error fetching user info:", response.message);
           setUserNotFound(true);
@@ -167,6 +170,15 @@ export default function UserProfilePage() {
         // Update following count if provided
         if (response.followingCount !== undefined) {
           setFollowingCount(response.followingCount);
+        }
+
+        // Set isFollowing status based on the API response
+        // The backend sends "following" field as boolean
+        if (
+          response.following !== undefined &&
+          typeof response.following === "boolean"
+        ) {
+          setIsFollowing(response.following);
         }
       } catch (error) {
         console.error("Error fetching user info:", error);
@@ -212,12 +224,13 @@ export default function UserProfilePage() {
   // Check if the profile being viewed belongs to the logged-in user
   const isOwnProfile = isAuthenticated && params.username === loggedInUsername;
 
-  // Check if current user is following the profile user
-  useEffect(() => {
+  // We no longer need to reset isFollowing state on profile change
+  // as it is now set from the API response
+  /* useEffect(() => {
     // If the page is reloaded, the following state will be reset to false
     // The user will have to click follow again if they were following before
     setIsFollowing(false);
-  }, [params.username]);
+  }, [params.username]); */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -333,7 +346,7 @@ export default function UserProfilePage() {
           setIsFollowing(false);
           // Update follower count
           setFollowerCount((prev) => Math.max(0, prev - 1));
-          toast.success(`Unfollowed @${params.username}`);
+          // Toast is handled in the service
         } else {
           // If there's an error, don't change the UI state
           console.error("Error unfollowing user:", response.message);
@@ -345,7 +358,7 @@ export default function UserProfilePage() {
           setIsFollowing(true);
           // Update follower count
           setFollowerCount((prev) => prev + 1);
-          toast.success(`Following @${params.username}`);
+          // Toast is handled in the service
         } else {
           // If there's an error, don't change the UI state
           console.error("Error following user:", response.message);
@@ -705,7 +718,7 @@ export default function UserProfilePage() {
                         </svg>
                       )
                     }
-                    variant={isFollowing ? "danger" : "primary"}
+                    variant={isFollowing ? "default" : "primary"}
                     label={
                       isFollowActionLoading
                         ? "Loading..."
@@ -714,24 +727,6 @@ export default function UserProfilePage() {
                           : "Follow"
                     }
                     onClick={handleFollowUser}
-                  />
-                  <SocialButton
-                    icon={
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"
-                        />
-                      </svg>
-                    }
-                    label="Share"
                   />
                 </>
               )}

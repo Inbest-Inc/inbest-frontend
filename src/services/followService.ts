@@ -40,6 +40,12 @@ export async function followUser(followingName: string) {
 
     const data = await response.json();
     console.log("Follow success:", data);
+
+    // Only show success toast if status code is 200
+    if (response.status === 200) {
+      toast.success(`Following @${followingName}`);
+    }
+
     return { status: "success", data };
   } catch (error) {
     console.error("Error following user:", error);
@@ -90,6 +96,12 @@ export async function unfollowUser(followingName: string) {
 
     const data = await response.json();
     console.log("Unfollow success:", data);
+
+    // Only show success toast if status code is 200
+    if (response.status === 200) {
+      toast.success(`Unfollowed @${followingName}`);
+    }
+
     return { status: "success", data };
   } catch (error) {
     console.error("Error unfollowing user:", error);
