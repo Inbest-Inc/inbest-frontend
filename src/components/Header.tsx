@@ -1,11 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { Text } from "@tremor/react";
 import { useRouter } from "next/navigation";
-import { getUserInfo, checkAuthStatus } from "@/services/userService";
+import {
+  getUserInfo,
+  checkAuthStatus,
+  searchUsers,
+} from "@/services/userService";
 import Avatar from "./Avatar";
+
+// User search result type
+type UserSearchResult = {
+  imageUrl: string;
+  fullName: string;
+  username: string;
+};
 
 export default function Header() {
   const router = useRouter();
@@ -19,6 +30,18 @@ export default function Header() {
     photoVersion?: string;
     name?: string;
   }>({});
+
+  // Search related states
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Mobile menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -99,6 +122,69 @@ export default function Header() {
       );
     };
   }, []);
+
+  // Handle click outside search component
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setIsSearchOpen(false);
+        setSearchTerm("");
+        setSearchResults([]);
+      }
+
+      // Handle click outside mobile menu
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Focus input when search is opened
+  useEffect(() => {
+    if (isSearchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearchOpen]);
+
+  // Search for users when search term changes
+  useEffect(() => {
+    const searchTimeout = setTimeout(async () => {
+      if (searchTerm.length >= 3) {
+        setIsSearching(true);
+        setSearchResults([]);
+
+        try {
+          const response = await searchUsers(searchTerm);
+          if (response.status === "success" && response.data) {
+            setSearchResults(response.data);
+          } else {
+            setSearchResults([]);
+            console.log("Search response:", response);
+          }
+        } catch (error) {
+          console.error("Error searching users:", error);
+          setSearchResults([]);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(searchTimeout);
+  }, [searchTerm]);
 
   // Improved event handler for profile photo update with type safety
   const handleProfilePhotoUpdated = (event: Event) => {
@@ -275,6 +361,137 @@ export default function Header() {
     return <Avatar src={imageUrl} name={displayName} size="sm" />;
   };
 
+  const handleSearchClick = () => {
+    setIsSearchOpen(!isSearchOpen);
+    if (!isSearchOpen && searchInputRef.current) {
+      // Focus the input after opening
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  // Render navigation links for both desktop and mobile
+  const renderNavLinks = () => (
+    <>
+      <Link
+        href="/best-portfolios"
+        className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
+        onClick={() => setIsMobileMenuOpen(false)}
+      >
+        Best Portfolios
+      </Link>
+      <Link
+        href="/opinions"
+        className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
+        onClick={() => setIsMobileMenuOpen(false)}
+      >
+        Opinions
+      </Link>
+
+      {/* Search Component */}
+      <div className="relative" ref={searchRef}>
+        <button
+          onClick={handleSearchClick}
+          className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-50/80 hover:bg-gray-100/80 text-[#1D1D1F] transition-all duration-200"
+          aria-label="Search users"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </button>
+
+        {isSearchOpen && (
+          <div className="absolute left-0 mt-2 w-72 bg-white rounded-xl shadow-lg ring-1 ring-black/[0.08] overflow-hidden z-10">
+            <div className="p-2">
+              <div className="relative">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search users (min 3 chars)"
+                  className="w-full px-3 py-2 pl-9 text-[15px] leading-[20px] bg-gray-50/80 rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <svg
+                  className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6E6E73]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+
+              {/* Search Results */}
+              <div className="mt-2 max-h-64 overflow-y-auto">
+                {isSearching ? (
+                  <div className="py-4 text-center">
+                    <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : searchTerm.length >= 3 && searchResults.length === 0 ? (
+                  <div className="py-4 text-center text-[13px] leading-[18px] text-[#6E6E73]">
+                    No users found
+                  </div>
+                ) : searchTerm.length < 3 ? (
+                  <div className="py-4 text-center text-[13px] leading-[18px] text-[#6E6E73]">
+                    Enter at least 3 characters to search
+                  </div>
+                ) : (
+                  searchResults.map((user) => (
+                    <Link
+                      key={user.username}
+                      href={`/${user.username}`}
+                      className="flex items-center gap-3 p-3 hover:bg-gray-50/80 rounded-lg transition-colors"
+                      onClick={() => {
+                        setIsSearchOpen(false);
+                        setSearchTerm("");
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <Avatar
+                        src={user.imageUrl}
+                        name={user.fullName}
+                        size="sm"
+                      />
+                      <div>
+                        <div className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                          {user.fullName}
+                        </div>
+                        <div className="text-[13px] leading-[18px] text-[#6E6E73]">
+                          @{user.username}
+                        </div>
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -287,20 +504,40 @@ export default function Header() {
             Inbest
           </Link>
 
-          {/* Navigation */}
-          <nav className="flex items-center gap-8 mx-auto">
-            <Link
-              href="/best-portfolios"
-              className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
+          {/* Mobile menu button */}
+          <button
+            className="md:hidden flex items-center justify-center h-9 w-9 rounded-full bg-gray-50/80 hover:bg-gray-100/80 text-[#1D1D1F] transition-all duration-200"
+            onClick={toggleMobileMenu}
+            aria-label="Toggle mobile menu"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              Best Portfolios
-            </Link>
-            <Link
-              href="/opinions"
-              className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
-            >
-              Opinions
-            </Link>
+              {isMobileMenuOpen ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              )}
+            </svg>
+          </button>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-8 mx-auto justify-center flex-1">
+            {renderNavLinks()}
           </nav>
 
           {/* Auth Buttons */}
@@ -311,7 +548,7 @@ export default function Header() {
               {isAuthenticated ? (
                 <div className="relative group">
                   <div className="flex items-center gap-3">
-                    <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                    <Text className="hidden sm:block text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
                       {username}
                     </Text>
                     {renderUserAvatar()}
@@ -350,6 +587,38 @@ export default function Header() {
             </div>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div
+            ref={mobileMenuRef}
+            className="md:hidden py-4 bg-white border-t border-black/[0.04] space-y-4 flex flex-col items-center"
+          >
+            {renderNavLinks()}
+
+            {/* Mobile-only auth links if needed */}
+            {isAuthenticated && (
+              <div className="pt-2 border-t border-gray-100 w-full flex flex-col items-center">
+                <Link
+                  href={`/${username}`}
+                  className="py-2 text-[15px] leading-[20px] text-[#1D1D1F]"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="py-2 text-[15px] leading-[20px] text-[#FF3B30]"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

@@ -13,6 +13,7 @@ import OpinionsFeed from "@/components/OpinionsFeed";
 import {
   getPortfolioHoldings,
   getPortfolioMetrics,
+  getPortfolio,
 } from "@/services/portfolioService";
 import { getUserInfo } from "@/services/userService";
 import Link from "next/link";
@@ -272,6 +273,8 @@ export default function PortfolioPage() {
   const [isMetricsLoading, setIsMetricsLoading] = useState(true);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [portfolioName, setPortfolioName] = useState<string>("Portfolio");
+  const [isPortfolioLoading, setIsPortfolioLoading] = useState(true);
 
   // Default user data
   const userData = {
@@ -296,6 +299,35 @@ export default function PortfolioPage() {
 
     checkOwnership();
   }, [params.username]);
+
+  useEffect(() => {
+    const fetchPortfolio = async () => {
+      setIsPortfolioLoading(true);
+      try {
+        // We will try to get the portfolio data even if not authenticated
+        // This is safe because public portfolios can be viewed without auth
+        const token = localStorage.getItem("token");
+        if (token) {
+          try {
+            const response = await getPortfolio(Number(params.portfolio));
+            if (response.status === "success") {
+              setPortfolioName(response.data.portfolioName);
+            }
+          } catch (error) {
+            console.log("Not authorized or not found, using default name");
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching portfolio:", error);
+      } finally {
+        setIsPortfolioLoading(false);
+      }
+    };
+
+    if (params.portfolio) {
+      fetchPortfolio();
+    }
+  }, [params.portfolio]);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -418,7 +450,7 @@ export default function PortfolioPage() {
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Profile Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
           className="mb-12"
@@ -433,60 +465,69 @@ export default function PortfolioPage() {
               <div>
                 {!isUserInfoLoading ? (
                   <>
-                    <Text className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
-                      {userInfo.name}
-                    </Text>
-                    <div className="flex items-center gap-4">
-                      <Link
-                        href={`/${params.username}`}
-                        className="text-[17px] leading-[22px] text-[#6E6E73] hover:text-blue-600 transition-colors"
-                      >
-                        @{params.username}
-                      </Link>
-                      <button
-                        onClick={() => setShowFollowersModal(true)}
-                        className="flex items-center text-[17px] leading-[22px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
-                      >
-                        <svg
-                          className="w-4 h-4 mr-1"
-                          fill="none"
-                          strokeWidth="1.5"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                    <div>
+                      <Text className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
+                        {!isPortfolioLoading ? portfolioName : "Portfolio"}
+                      </Text>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F]">
+                          {userInfo.name}
+                        </Text>
+                        <span className="text-[#6E6E73]">•</span>
+                        <Link
+                          href={`/${params.username}`}
+                          className="text-[17px] leading-[22px] text-[#6E6E73] hover:text-blue-600 transition-colors"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                          />
-                        </svg>
-                        {followerCount.toLocaleString()} followers
-                      </button>
-                      <button
-                        onClick={() => setShowFollowingModal(true)}
-                        className="flex items-center text-[17px] leading-[22px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
-                      >
-                        <svg
-                          className="w-4 h-4 mr-1"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                          @{params.username}
+                        </Link>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => setShowFollowersModal(true)}
+                          className="flex items-center text-[15px] leading-[20px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                          />
-                        </svg>
-                        {followingCount.toLocaleString()} following
-                      </button>
+                          <svg
+                            className="w-4 h-4 mr-1"
+                            fill="none"
+                            strokeWidth="1.5"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                          </svg>
+                          {followerCount.toLocaleString()} followers
+                        </button>
+                        <button
+                          onClick={() => setShowFollowingModal(true)}
+                          className="flex items-center text-[15px] leading-[20px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
+                        >
+                          <svg
+                            className="w-4 h-4 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                            />
+                          </svg>
+                          {followingCount.toLocaleString()} following
+                        </button>
+                      </div>
                     </div>
                   </>
                 ) : (
                   <div className="animate-pulse">
                     <div className="h-10 w-48 bg-gray-200 rounded-lg mb-2"></div>
-                    <div className="h-6 w-32 bg-gray-200 rounded-lg"></div>
+                    <div className="h-6 w-32 bg-gray-200 rounded-lg mb-2"></div>
+                    <div className="h-5 w-40 bg-gray-200 rounded-lg"></div>
                   </div>
                 )}
               </div>
@@ -665,7 +706,7 @@ export default function PortfolioPage() {
 
         {/* Portfolio Chart */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
           className="mb-12"
@@ -677,7 +718,7 @@ export default function PortfolioPage() {
 
         {/* Risk Metrics */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.15 }}
           className="mb-12"
@@ -723,7 +764,7 @@ export default function PortfolioPage() {
 
         {/* Best & Worst Trades */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.15 }}
           className="mb-12"
@@ -881,7 +922,7 @@ export default function PortfolioPage() {
 
         {/* Holdings */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
           className="mb-12"
@@ -964,7 +1005,7 @@ export default function PortfolioPage() {
 
         {/* Recent Activity */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.3 }}
         >

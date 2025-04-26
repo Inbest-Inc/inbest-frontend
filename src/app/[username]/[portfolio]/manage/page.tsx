@@ -22,8 +22,10 @@ import {
   getPortfolioMetrics,
 } from "@/services/portfolioService";
 import { useParams, useRouter } from "next/navigation";
-import { Toaster, toast } from "react-hot-toast";
+import { toast, Toaster } from "react-hot-toast";
 import Link from "next/link";
+import { getUserInfo } from "@/services/userService";
+import Avatar from "@/components/Avatar";
 
 // Keep existing mock data
 const portfolioData = {
@@ -179,6 +181,9 @@ export default function ManagePortfolioPage() {
   const [isOperationInProgress, setIsOperationInProgress] = useState(false);
   const [metrics, setMetrics] = useState<any>(null);
   const [isMetricsLoading, setIsMetricsLoading] = useState(true);
+  const [userInfo, setUserInfo] = useState({ name: "User" });
+  const [isUserInfoLoading, setIsUserInfoLoading] = useState(true);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
   // Keep track of the fetch function reference
   const fetchDataRef = useRef<(() => Promise<void>) | null>(null);
@@ -322,6 +327,35 @@ export default function ManagePortfolioPage() {
         // Update portfolio data
         setPortfolioName(portfolioResponse.data.portfolioName);
         setIsPublic(portfolioResponse.data.visibility === "public");
+
+        // Fetch user info
+        try {
+          setIsUserInfoLoading(true);
+          const userResponse = await getUserInfo(params.username as string);
+          if (!isSubscribed) return;
+
+          if (userResponse.fullName) {
+            setUserInfo({ name: userResponse.fullName });
+          }
+
+          // Check if profile photo URL is provided
+          if (userResponse.imageUrl) {
+            // Add timestamp to force cache refresh
+            const timestamp = new Date().getTime();
+            const imageUrl = userResponse.imageUrl;
+            const cachedPhotoUrl = imageUrl.includes("?")
+              ? `${imageUrl}&t=${timestamp}`
+              : `${imageUrl}?t=${timestamp}`;
+
+            setProfilePhoto(cachedPhotoUrl);
+          }
+        } catch (error) {
+          console.error("Error fetching user info:", error);
+        } finally {
+          if (isSubscribed) {
+            setIsUserInfoLoading(false);
+          }
+        }
 
         // Fetch holdings data
         try {
@@ -497,20 +531,74 @@ export default function ManagePortfolioPage() {
           className="mb-12"
         >
           <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
-                {portfolioName || (
-                  <div className="h-[40px] w-[180px] bg-gray-100 rounded-lg animate-pulse" />
+            <div className="flex items-center gap-6">
+              <div className="relative w-24 h-24">
+                {!isUserInfoLoading && (
+                  <Avatar src={profilePhoto} name={userInfo.name} size="lg" />
                 )}
               </div>
-              <Link
-                href={`/${params.username}`}
-                className="hover:text-blue-600 transition-colors"
-              >
-                <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
-                  @{params.username}
-                </Text>
-              </Link>
+              <div>
+                {!isUserInfoLoading ? (
+                  <>
+                    <div>
+                      <Text className="text-[34px] leading-[40px] font-semibold text-[#1D1D1F] mb-2">
+                        {portfolioName || (
+                          <div className="h-[40px] w-[180px] bg-gray-100 rounded-lg animate-pulse" />
+                        )}
+                      </Text>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F]">
+                          {userInfo.name}
+                        </Text>
+                        <span className="text-[#6E6E73]">•</span>
+                        <Link
+                          href={`/${params.username}`}
+                          className="text-[17px] leading-[22px] text-[#6E6E73] hover:text-blue-600 transition-colors"
+                        >
+                          @{params.username}
+                        </Link>
+                      </div>
+                      <div className="text-[15px] leading-[20px] text-[#6E6E73]">
+                        {isPublic !== undefined && (
+                          <span className="flex items-center">
+                            <svg
+                              className="w-4 h-4 mr-1"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              {isPublic ? (
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1.5}
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                              ) : (
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1.5}
+                                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                                />
+                              )}
+                            </svg>
+                            {isPublic
+                              ? "Public portfolio"
+                              : "Private portfolio"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="animate-pulse">
+                    <div className="h-10 w-48 bg-gray-200 rounded-lg mb-2"></div>
+                    <div className="h-6 w-32 bg-gray-200 rounded-lg mb-2"></div>
+                    <div className="h-5 w-40 bg-gray-200 rounded-lg"></div>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <button

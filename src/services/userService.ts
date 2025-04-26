@@ -276,3 +276,48 @@ export async function checkAuthStatus(): Promise<{
     };
   }
 }
+
+export const searchUsers = async (searchTerm: string) => {
+  try {
+    // Get auth token if available
+    const token = localStorage.getItem("token");
+
+    // Prepare headers - always include Content-Type
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Add auth token if available
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/user/search?searchTerm=${encodeURIComponent(searchTerm)}`,
+      {
+        method: "GET",
+        headers,
+        credentials: "include", // Include credentials like cookies with the request
+      }
+    );
+
+    // Check if the response is OK before trying to parse JSON
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error searching users: ${response.status} - ${errorText}`);
+      return {
+        status: "error",
+        message: "Failed to search users",
+      };
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error searching users:", error);
+    return {
+      status: "error",
+      message: "Failed to search users",
+    };
+  }
+};
