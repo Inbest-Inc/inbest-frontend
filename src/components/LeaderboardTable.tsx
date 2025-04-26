@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -12,6 +13,12 @@ import {
   TableRoot,
   TableRow,
 } from "./Table";
+import {
+  getBestPortfoliosByTotalReturn,
+  getBestPortfoliosByMonthlyReturn,
+  getBestPortfoliosByDailyReturn,
+  type BestPortfolioResponse,
+} from "@/services/portfolioService";
 
 // Trophy icons for top 3
 const TrophyGold = () => (
@@ -80,183 +87,112 @@ const TrophyBronze = () => (
   </div>
 );
 
-const UserPlusIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="mr-1"
-  >
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <line x1="19" x2="19" y1="8" y2="14" />
-    <line x1="22" x2="16" y1="11" y2="11" />
-  </svg>
-);
-
-const leaderboardData = [
-  {
-    rank: 1,
-    name: "You Know Who",
-    username: "warrenbuffett",
-    portfolioName: "Secret Portfolio",
-    avatar:
-      "https://img.freepik.com/premium-vector/yellow-light-bulb-with-smile-it_410516-80048.jpg",
-    averageReturn: 52.4,
-    ytdReturn: 18.7,
-    holdings: 12,
-    followers: 85000000,
-  },
-  {
-    rank: 2,
-    name: "Samet Sahin",
-    username: "samet",
-    portfolioName: "Tech Growth",
-    avatar: "https://sametsahin.com/images/new-pp.jpeg",
-    averageReturn: 48.2,
-    ytdReturn: 22.3,
-    holdings: 35,
-    followers: 98234,
-  },
-  {
-    rank: 3,
-    name: "Enes Cakmak",
-    username: "enes_cakmak_2003",
-    portfolioName: "Gold and Silver",
-    avatar:
-      "https://media.licdn.com/dms/image/D4D03AQE3zS1U-n_r9A/profile-displayphoto-shrink_200_200/0/1716110426777?e=2147483647&v=beta&t=tU0lNTciq1IDw6eS_vgCzYoQu_ZLbAXsuhVf8zDjfOs",
-    averageReturn: 45.7,
-    ytdReturn: 15.8,
-    holdings: 8,
-    followers: 76543,
-  },
-  {
-    rank: 4,
-    name: "Sude Akarcay",
-    username: "pm",
-    portfolioName: "My Portfolio",
-    avatar: "https://i.ytimg.com/vi/m0XpDRhnTN8/maxresdefault.jpg",
-    averageReturn: 42.1,
-    ytdReturn: -12.4,
-    holdings: 28,
-    followers: 65432,
-  },
-  {
-    rank: 5,
-    name: "Mert Gunes",
-    username: "skraatz416",
-    portfolioName: "Betting on my ÖÇP earnings",
-    avatar:
-      "https://pbs.twimg.com/profile_images/965317696639459328/pRPM9a9H_400x400.jpg",
-    averageReturn: 40.1,
-    ytdReturn: 13.4,
-    holdings: 2,
-    followers: 3,
-  },
-  {
-    rank: 6,
-    name: "Mehmet Yıldırım",
-    username: "faizsebep",
-    portfolioName: "Enflasyon't Touch This Portfolio",
-    avatar:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBgTAXz-EbpmyMVUcrO6ra6DolsQxJaF11uA&s",
-    averageReturn: 38.0,
-    ytdReturn: 13.4,
-    holdings: 13,
-    followers: 4893,
-  },
-  {
-    rank: 7,
-    name: "Mehmet Kocyigit",
-    username: "kocyigit",
-    portfolioName: "Fethiye Portfolio Management",
-    avatar:
-      "https://media.licdn.com/dms/image/v2/D4D03AQHeqaS39F_X9Q/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1731703909704?e=2147483647&v=beta&t=FfYf_MXcsLFkWRKQqrJSGEQ6uqRSCw_BpnXuADqrEJY",
-    averageReturn: 37.8,
-    ytdReturn: 8.9,
-    holdings: 15,
-    followers: 34521,
-  },
-
-  {
-    rank: 8,
-    name: "Cuneyt Sevgi",
-    portfolioName: "Nitelikli Yatirimcilar Portfoyu",
-    username: "stockpro1",
-    avatar: "https://i.ytimg.com/vi/YEbCfWsTZpo/hqdefault.jpg",
-    averageReturn: 35.0,
-    ytdReturn: 25.4,
-    holdings: 4,
-    followers: 1,
-  },
-  {
-    rank: 9,
-    name: "Ercan Uchar",
-    username: "ctisadmin",
-    portfolioName: "Later Than Ever, Richer Than Most",
-    avatar:
-      "https://pbs.twimg.com/profile_images/1316982158578298880/BRoYwo1W_400x400.jpg",
-    averageReturn: 32.0,
-    ytdReturn: -1.4,
-    holdings: 8,
-    followers: 4008,
-  },
-  {
-    rank: 10,
-    name: "Serdar Genc",
-    portfolioName: "The One Who Stocks",
-    username: "phpsgenc",
-    avatar:
-      "https://i1.rgstatic.net/ii/profile.image/11431281283013872-1728568858685_Q512/Serkan-Genc.jpg",
-    averageReturn: 23.0,
-    ytdReturn: 8.2,
-    holdings: 25,
-    followers: 13008,
-  },
-];
+interface Portfolio {
+  portfolioMetric: {
+    portfolioId: number;
+    dailyReturn: number;
+    monthlyReturn: number;
+    totalReturn: number;
+    beta: number;
+    sharpeRatio: number;
+    volatility: number;
+    riskScore: number;
+    riskCategory: string;
+    holdings?: number;
+  };
+  user: {
+    username: string;
+    email: string;
+    name: string;
+    surname: string;
+    image_url: string | null;
+    followers?: number;
+  };
+  portfolioDTO: {
+    portfolioName: string;
+    visibility: string;
+  };
+  rank?: number;
+}
 
 interface LeaderboardTableProps {
-  timeFilter: "all" | "year";
-  sortBy: "return" | "followers";
+  returnFilter: "total" | "monthly" | "daily";
+  onError?: (error: Error) => void;
 }
 
 export default function LeaderboardTable({
-  timeFilter,
-  sortBy,
+  returnFilter,
+  onError,
 }: LeaderboardTableProps) {
-  const getReturnValue = (portfolio: (typeof leaderboardData)[0]) => {
-    switch (timeFilter) {
-      case "all":
-        return portfolio.averageReturn;
-      case "year":
-        return portfolio.ytdReturn;
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        let response: BestPortfolioResponse;
+
+        switch (returnFilter) {
+          case "total":
+            response = await getBestPortfoliosByTotalReturn();
+            break;
+          case "monthly":
+            response = await getBestPortfoliosByMonthlyReturn();
+            break;
+          case "daily":
+            response = await getBestPortfoliosByDailyReturn();
+            break;
+          default:
+            response = await getBestPortfoliosByTotalReturn();
+        }
+
+        if (response.status !== "success") {
+          throw new Error(response.message || "Failed to fetch portfolios");
+        }
+
+        // Add rank property to each portfolio
+        const rankedPortfolios = response.data.map((portfolio, index) => ({
+          ...portfolio,
+          rank: index + 1,
+        }));
+
+        setPortfolios(rankedPortfolios);
+      } catch (err) {
+        console.error("Error fetching portfolios:", err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "An error occurred while fetching portfolios";
+        setError(errorMessage);
+
+        // Call the onError callback if provided
+        if (onError && err instanceof Error) {
+          onError(err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [returnFilter, onError]);
+
+  const getReturnValue = (portfolio: Portfolio) => {
+    switch (returnFilter) {
+      case "total":
+        return portfolio.portfolioMetric.totalReturn;
+      case "monthly":
+        return portfolio.portfolioMetric.monthlyReturn;
+      case "daily":
+        return portfolio.portfolioMetric.dailyReturn;
       default:
-        return portfolio.averageReturn;
+        return portfolio.portfolioMetric.totalReturn;
     }
   };
-
-  const filteredAndSortedData = [...leaderboardData]
-    .map((portfolio) => ({
-      ...portfolio,
-      currentReturn: getReturnValue(portfolio),
-    }))
-    .sort((a, b) => {
-      if (sortBy === "return") {
-        return b.currentReturn - a.currentReturn;
-      } else {
-        return b.followers - a.followers;
-      }
-    })
-    .map((item, index) => ({
-      ...item,
-      rank: index + 1,
-    }));
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -276,7 +212,9 @@ export default function LeaderboardTable({
   };
 
   const formatReturn = (value: number) => {
-    const formattedValue = value >= 0 ? `+${value}` : value;
+    // Ensure we always have 2 decimal places
+    const formattedValue =
+      value >= 0 ? `+${value.toFixed(2)}` : value.toFixed(2);
     return `${formattedValue}%`;
   };
 
@@ -284,114 +222,201 @@ export default function LeaderboardTable({
     return value >= 0 ? "text-[#00A852]" : "text-[#FF3B30]";
   };
 
-  const formatFollowers = (value: number) => {
+  // Add this function to format followers count
+  const formatCount = (value: number | undefined) => {
+    if (value === undefined) return "0";
     if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
     if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
     return value.toString();
   };
 
+  // Error state
+  if (error) {
+    return (
+      <div className="py-10 text-center overflow-hidden min-h-[500px] flex flex-col items-center justify-center w-full">
+        <div className="text-red-500 mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-16 w-16 mx-auto"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <h3 className="text-xl font-medium text-gray-900 mb-2">
+          Unable to load portfolios
+        </h3>
+        <p className="text-gray-600">{error}</p>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="py-10 text-center overflow-hidden min-h-[500px] flex flex-col items-center justify-center w-full">
+        <div className="text-blue-500 animate-spin mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-16 w-16 mx-auto"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="12" y1="2" x2="12" y2="6" />
+            <line x1="12" y1="18" x2="12" y2="22" />
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+            <line x1="2" y1="12" x2="6" y2="12" />
+            <line x1="18" y1="12" x2="22" y2="12" />
+            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
+          </svg>
+        </div>
+        <p className="text-gray-600">Loading portfolios...</p>
+      </div>
+    );
+  }
+
   return (
-    <TableRoot>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px] text-sm font-medium text-[#6E6E73]">
-              Rank
-            </TableHead>
-            <TableHead className="text-sm font-medium text-[#6E6E73]">
-              Investor / Portfolio
-            </TableHead>
-            <TableHead className="text-right text-sm font-medium text-[#6E6E73]">
-              {timeFilter === "all" ? "Average Return" : "YTD Return"}
-            </TableHead>
-            {timeFilter === "all" && (
-              <TableHead className="text-right text-sm font-medium text-[#6E6E73]">
-                YTD Return
+    <div className="overflow-hidden w-full max-w-full">
+      <TableRoot className="min-h-[500px] w-full table-fixed overflow-hidden">
+        <Table className="w-full max-w-full">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[100px] text-sm font-medium text-[#6E6E73]">
+                Rank
               </TableHead>
-            )}
-            <TableHead className="text-center text-sm font-medium text-[#6E6E73]">
-              Holdings
-            </TableHead>
-            <TableHead className="text-right text-sm font-medium text-[#6E6E73]">
-              Followers
-            </TableHead>
-            <TableHead className="w-[100px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredAndSortedData.map((portfolio, index) => (
-            <motion.tr
-              key={portfolio.username}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              className="group"
-            >
-              <TableCell className="py-4">
-                <div className="flex items-center gap-2">
-                  {getRankIcon(portfolio.rank)}
-                </div>
-              </TableCell>
-              <TableCell>
-                <Link
-                  href={`/${portfolio.username}`}
-                  className="flex items-center gap-4 group/link"
-                >
-                  <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.08]">
-                    <Image
-                      src={portfolio.avatar}
-                      alt={portfolio.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div>
-                    <div className="font-medium text-[#1D1D1F] group-hover/link:text-blue-600 transition-colors duration-200">
-                      {portfolio.name}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-[#6E6E73]">
-                        @{portfolio.username}
-                      </span>
-                      <span className="text-[#6E6E73]">•</span>
-                      <span className="text-sm text-[#6E6E73]">
-                        {portfolio.portfolioName}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              </TableCell>
-              <TableCell
-                className={`text-right font-medium ${getReturnColorClass(portfolio.currentReturn)}`}
-              >
-                {formatReturn(portfolio.currentReturn)}
-              </TableCell>
-              {timeFilter === "all" && (
+              <TableHead className="text-sm font-medium text-[#6E6E73] w-[350px]">
+                Investor / Portfolio
+              </TableHead>
+              <TableHead className="text-right text-sm font-medium text-[#6E6E73] min-w-[120px] whitespace-nowrap w-[120px]">
+                {returnFilter === "total"
+                  ? "Total Return"
+                  : returnFilter === "monthly"
+                    ? "Monthly Return"
+                    : "Daily Return"}
+              </TableHead>
+              <TableHead className="text-center text-sm font-medium text-[#6E6E73] whitespace-nowrap w-[120px]">
+                Risk Category
+              </TableHead>
+              <TableHead className="text-center text-sm font-medium text-[#6E6E73] whitespace-nowrap w-[100px]">
+                Holdings
+              </TableHead>
+              <TableHead className="text-right text-sm font-medium text-[#6E6E73] whitespace-nowrap w-[100px]">
+                Followers
+              </TableHead>
+              <TableHead className="w-[100px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {portfolios.length === 0 ? (
+              <TableRow>
                 <TableCell
-                  className={`text-right font-medium ${getReturnColorClass(portfolio.ytdReturn)}`}
+                  colSpan={7}
+                  className="text-center py-12 text-gray-500"
                 >
-                  {formatReturn(portfolio.ytdReturn)}
+                  No portfolios found
                 </TableCell>
-              )}
-              <TableCell className="text-center">
-                <span className="inline-flex items-center justify-center h-6 min-w-[48px] rounded-full bg-gray-50/80 backdrop-blur-sm text-sm font-medium text-[#1D1D1F] ring-1 ring-black/[0.04]">
-                  {portfolio.holdings}
-                </span>
-              </TableCell>
-              <TableCell className="text-right">
-                <span className="font-medium text-[#1D1D1F]">
-                  {formatFollowers(portfolio.followers)}
-                </span>
-              </TableCell>
-              <TableCell>
-                <button className="px-4 py-1.5 rounded-full bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
-                  Follow
-                </button>
-              </TableCell>
-            </motion.tr>
-          ))}
-        </TableBody>
-      </Table>
-    </TableRoot>
+              </TableRow>
+            ) : (
+              portfolios.map((portfolio, index) => (
+                <motion.tr
+                  key={`${portfolio.user.username}-${portfolio.portfolioMetric.portfolioId}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className="group"
+                >
+                  <TableCell className="py-4 w-[100px]">
+                    <div className="flex items-center gap-2">
+                      {getRankIcon(portfolio.rank || index + 1)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="w-[350px]">
+                    <Link
+                      href={`/${portfolio.user.username}/${portfolio.portfolioMetric.portfolioId}`}
+                      className="flex items-center gap-4 group/link"
+                    >
+                      <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.08] flex-shrink-0">
+                        {portfolio.user.image_url ? (
+                          <Image
+                            src={portfolio.user.image_url}
+                            alt={portfolio.user.name}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-lg font-medium text-gray-500">
+                              {portfolio.user.name.charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 overflow-hidden">
+                        <div className="font-medium text-[#1D1D1F] group-hover/link:text-blue-600 transition-colors duration-200 truncate">
+                          {portfolio.user.name} {portfolio.user.surname}
+                        </div>
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-sm text-[#6E6E73] truncate">
+                            @{portfolio.user.username}
+                          </span>
+                          <span className="text-[#6E6E73] flex-shrink-0">
+                            •
+                          </span>
+                          <span className="text-sm text-[#6E6E73] truncate">
+                            {portfolio.portfolioDTO.portfolioName}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  </TableCell>
+                  <TableCell
+                    className={`text-right font-medium ${getReturnColorClass(getReturnValue(portfolio))} min-w-[120px] whitespace-nowrap w-[120px]`}
+                  >
+                    {formatReturn(getReturnValue(portfolio))}
+                  </TableCell>
+                  <TableCell className="text-center w-[120px]">
+                    <span className="inline-flex items-center justify-center min-w-[100px] px-3 py-1 rounded-full bg-gray-50/80 backdrop-blur-sm text-sm font-medium text-[#1D1D1F] ring-1 ring-black/[0.04] whitespace-nowrap">
+                      {portfolio.portfolioMetric.riskCategory}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center w-[100px]">
+                    <span className="inline-flex items-center justify-center h-6 min-w-[48px] rounded-full bg-gray-50/80 backdrop-blur-sm text-sm font-medium text-[#1D1D1F] ring-1 ring-black/[0.04] whitespace-nowrap">
+                      {portfolio.portfolioMetric.holdings ?? 0}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap w-[100px]">
+                    <span className="font-medium text-[#1D1D1F]">
+                      {formatCount(portfolio.user.followers)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="w-[100px]">
+                    <Link
+                      href={`/${portfolio.user.username}/${portfolio.portfolioMetric.portfolioId}`}
+                    >
+                      <button className="px-4 py-1.5 rounded-full bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+                        View
+                      </button>
+                    </Link>
+                  </TableCell>
+                </motion.tr>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableRoot>
+    </div>
   );
 }

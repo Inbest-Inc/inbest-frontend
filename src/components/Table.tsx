@@ -9,7 +9,7 @@ const TableRoot = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cx("relative w-full overflow-auto", className)}
+    className={cx("relative w-full overflow-hidden", className)}
     {...props}
   />
 ));

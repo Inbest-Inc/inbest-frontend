@@ -728,3 +728,92 @@ export async function getPortfolioMetrics(
     throw error;
   }
 }
+
+export interface BestPortfolioResponse {
+  status: string;
+  message: string;
+  data: Array<{
+    portfolioMetric: {
+      portfolioId: number;
+      hourlyReturn: number;
+      dailyReturn: number;
+      monthlyReturn: number;
+      totalReturn: number;
+      beta: number;
+      sharpeRatio: number;
+      volatility: number;
+      riskScore: number;
+      riskCategory: string;
+    };
+    user: {
+      username: string;
+      email: string;
+      name: string;
+      surname: string;
+      image_url: string | null;
+    };
+    portfolioDTO: {
+      portfolioName: string;
+      visibility: string;
+    };
+  }>;
+}
+
+export async function getBestPortfoliosByTotalReturn(): Promise<BestPortfolioResponse> {
+  try {
+    const response = await fetch(`${API_URL}/api/portfolios/best/total-return`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to fetch best portfolios by total return"
+      );
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching best portfolios by total return:", error);
+    throw error;
+  }
+}
+
+export async function getBestPortfoliosByMonthlyReturn(): Promise<BestPortfolioResponse> {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/portfolios/best/monthly-return`
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to fetch best portfolios by monthly return"
+      );
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching best portfolios by monthly return:", error);
+    throw error;
+  }
+}
+
+export async function getBestPortfoliosByDailyReturn(): Promise<BestPortfolioResponse> {
+  try {
+    const response = await fetch(`${API_URL}/api/portfolios/best/daily-return`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to fetch best portfolios by daily return"
+      );
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching best portfolios by daily return:", error);
+    throw error;
+  }
+}

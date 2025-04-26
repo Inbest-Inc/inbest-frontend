@@ -4,13 +4,21 @@ import { Card, Title, Text } from "@tremor/react";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function BestPortfoliosPage() {
-  const [timeFilter, setTimeFilter] = useState<"all" | "year">("all");
-  const [sortBy, setSortBy] = useState<"return" | "followers">("return");
+  const [returnFilter, setReturnFilter] = useState<
+    "total" | "monthly" | "daily"
+  >("total");
+
+  // Function to handle API errors and show toast
+  const handleApiError = (error: Error) => {
+    console.error("API Error:", error);
+    toast.error(error.message || "Failed to load portfolio data");
+  };
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white overflow-x-hidden">
       {/* Hero Section */}
       <div className="bg-gradient-to-b from-gray-50/50 to-white">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -32,64 +40,58 @@ export default function BestPortfoliosPage() {
       </div>
 
       {/* Content Section */}
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
+          className="w-full"
         >
-          <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl">
-            <div className="space-y-8">
+          <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl overflow-hidden max-w-full">
+            <div className="space-y-8 overflow-hidden">
               {/* Filters Row */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between overflow-hidden">
+                <div className="flex items-center gap-4 overflow-hidden">
                   <button
-                    onClick={() => setTimeFilter("all")}
-                    className={`px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${
-                      timeFilter === "all"
+                    onClick={() => setReturnFilter("total")}
+                    className={`px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full min-w-[120px] text-center whitespace-nowrap ${
+                      returnFilter === "total"
                         ? "text-[#1D1D1F] bg-gray-50/80 ring-1 ring-black/[0.04]"
                         : "text-[#6E6E73] hover:text-[#1D1D1F]"
                     }`}
                   >
-                    All Time
+                    Total Return
                   </button>
                   <button
-                    onClick={() => setTimeFilter("year")}
-                    className={`px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${
-                      timeFilter === "year"
+                    onClick={() => setReturnFilter("monthly")}
+                    className={`px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full min-w-[120px] text-center whitespace-nowrap ${
+                      returnFilter === "monthly"
                         ? "text-[#1D1D1F] bg-gray-50/80 ring-1 ring-black/[0.04]"
                         : "text-[#6E6E73] hover:text-[#1D1D1F]"
                     }`}
                   >
-                    This Year
-                  </button>
-                </div>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setSortBy("return")}
-                    className={`px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${
-                      sortBy === "return"
-                        ? "text-[#1D1D1F] bg-gray-50/80 ring-1 ring-black/[0.04]"
-                        : "text-[#6E6E73] hover:text-[#1D1D1F]"
-                    }`}
-                  >
-                    Sort by Return
+                    Monthly Return
                   </button>
                   <button
-                    onClick={() => setSortBy("followers")}
-                    className={`px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${
-                      sortBy === "followers"
+                    onClick={() => setReturnFilter("daily")}
+                    className={`px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full min-w-[120px] text-center whitespace-nowrap ${
+                      returnFilter === "daily"
                         ? "text-[#1D1D1F] bg-gray-50/80 ring-1 ring-black/[0.04]"
                         : "text-[#6E6E73] hover:text-[#1D1D1F]"
                     }`}
                   >
-                    Sort by Followers
+                    Daily Return
                   </button>
                 </div>
               </div>
 
               {/* Table */}
-              <LeaderboardTable timeFilter={timeFilter} sortBy={sortBy} />
+              <div className="min-h-[550px] w-full overflow-hidden">
+                <LeaderboardTable
+                  returnFilter={returnFilter}
+                  onError={handleApiError}
+                />
+              </div>
             </div>
           </Card>
         </motion.div>
