@@ -5,7 +5,7 @@ export const runtime = "edge";
 import { Card, Text } from "@tremor/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
 import ActivityTable from "@/components/ActivityTable";
@@ -17,6 +17,19 @@ import {
 import { getUserInfo } from "@/services/userService";
 import Link from "next/link";
 import NotFoundPage from "@/components/NotFoundPage";
+import Avatar from "@/components/Avatar";
+import FollowersModal from "@/components/FollowersModal";
+import FollowingModal from "@/components/FollowingModal";
+import {
+  LinkedinShareButton,
+  TwitterShareButton as XShareButton,
+  WhatsappShareButton,
+  TelegramShareButton,
+  XIcon,
+  LinkedinIcon,
+  WhatsappIcon,
+  TelegramIcon,
+} from "react-share";
 
 const portfolioReturns = {
   "1M": -2.3,
@@ -94,6 +107,155 @@ const SocialButton = ({
   </button>
 );
 
+const ShareButton = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const params = useParams();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Generate a shareable URL for the current portfolio
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/${params.username}/${params.portfolio}`
+      : "";
+
+  const shareTitle = `Check out @${params.username}'s investment portfolio on Inbest!`;
+  const shareDescription = `Follow along with ${params.username}'s investment strategy and track portfolio performance on Inbest - the social investing platform.`;
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+        setCopied(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleCopyLink = () => {
+    if (
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText === "function"
+    ) {
+      navigator.clipboard
+        .writeText(shareUrl)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => {
+            setIsOpen(false);
+            setCopied(false);
+          }, 1500);
+        })
+        .catch((err) => {
+          console.error("Could not copy text: ", err);
+        });
+    }
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"
+          />
+        </svg>
+        Share
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-auto bg-white rounded-xl shadow-lg ring-1 ring-black/[0.08] overflow-hidden z-10">
+          <div className="p-3">
+            <div className="text-[13px] leading-[18px] text-[#6E6E73] mb-3 px-2">
+              Share this portfolio
+            </div>
+            <div className="flex items-center justify-between gap-2 px-2">
+              <XShareButton
+                url={shareUrl}
+                title={shareTitle}
+                className="hover:opacity-80 transition-opacity"
+              >
+                <XIcon size={36} round />
+              </XShareButton>
+
+              <LinkedinShareButton
+                url={shareUrl}
+                title={shareTitle}
+                summary={shareDescription}
+                className="hover:opacity-80 transition-opacity"
+              >
+                <LinkedinIcon size={36} round />
+              </LinkedinShareButton>
+
+              <WhatsappShareButton
+                url={shareUrl}
+                title={shareTitle}
+                className="hover:opacity-80 transition-opacity"
+              >
+                <WhatsappIcon size={36} round />
+              </WhatsappShareButton>
+
+              <TelegramShareButton
+                url={shareUrl}
+                title={shareTitle}
+                className="hover:opacity-80 transition-opacity"
+              >
+                <TelegramIcon size={36} round />
+              </TelegramShareButton>
+            </div>
+            <div className="mt-3 pt-2 border-t border-gray-100">
+              <button
+                className={`w-full text-left px-3 py-2 text-[13px] leading-[18px] ${copied ? "text-green-600 flex items-center" : "text-blue-600"} hover:bg-blue-50/50 rounded-lg transition-colors`}
+                onClick={handleCopyLink}
+              >
+                {copied ? (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Link copied!
+                  </>
+                ) : (
+                  "Copy link to clipboard"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function PortfolioPage() {
   const params = useParams();
   const [holdings, setHoldings] = useState<any[]>([]);
@@ -105,16 +267,17 @@ export default function PortfolioPage() {
   const [notFoundMessage, setNotFoundMessage] = useState("User not found");
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [metrics, setMetrics] = useState<any>(null);
   const [isMetricsLoading, setIsMetricsLoading] = useState(true);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
 
   // Default user data
   const userData = {
     name: "John Doe",
     username: params.username as string,
     followers: "0",
-    avatar:
-      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236E6E73'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E",
     ranking: {
       position: 30,
       totalUsers: 763927,
@@ -167,6 +330,11 @@ export default function PortfolioPage() {
         // Update follower count if provided
         if (response.followerCount !== undefined) {
           setFollowerCount(response.followerCount);
+        }
+
+        // Update following count if provided
+        if (response.followingCount !== undefined) {
+          setFollowingCount(response.followingCount);
         }
       } catch (error) {
         console.error("Error fetching user info:", error);
@@ -259,13 +427,7 @@ export default function PortfolioPage() {
             <div className="flex items-center gap-6">
               <div className="relative w-24 h-24">
                 {!isUserInfoLoading && (
-                  <Image
-                    src={profilePhoto || userData.avatar}
-                    alt={userInfo.name}
-                    fill
-                    className="object-cover rounded-2xl ring-1 ring-black/[0.04]"
-                    style={{ objectFit: "cover" }}
-                  />
+                  <Avatar src={profilePhoto} name={userInfo.name} size="lg" />
                 )}
               </div>
               <div>
@@ -275,10 +437,16 @@ export default function PortfolioPage() {
                       {userInfo.name}
                     </Text>
                     <div className="flex items-center gap-4">
-                      <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                      <Link
+                        href={`/${params.username}`}
+                        className="text-[17px] leading-[22px] text-[#6E6E73] hover:text-blue-600 transition-colors"
+                      >
                         @{params.username}
-                      </Text>
-                      <div className="flex items-center text-[17px] leading-[22px] text-[#6E6E73]">
+                      </Link>
+                      <button
+                        onClick={() => setShowFollowersModal(true)}
+                        className="flex items-center text-[17px] leading-[22px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
+                      >
                         <svg
                           className="w-4 h-4 mr-1"
                           fill="none"
@@ -293,7 +461,26 @@ export default function PortfolioPage() {
                           />
                         </svg>
                         {followerCount.toLocaleString()} followers
-                      </div>
+                      </button>
+                      <button
+                        onClick={() => setShowFollowingModal(true)}
+                        className="flex items-center text-[17px] leading-[22px] text-[#6E6E73] hover:text-[#1D1D1F] transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                          />
+                        </svg>
+                        {followingCount.toLocaleString()} following
+                      </button>
                     </div>
                   </>
                 ) : (
@@ -345,24 +532,7 @@ export default function PortfolioPage() {
                   label="Follow"
                 />
               )}
-              <SocialButton
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"
-                    />
-                  </svg>
-                }
-                label="Share"
-              />
+              <ShareButton />
             </div>
           </div>
         </motion.div>
@@ -810,6 +980,18 @@ export default function PortfolioPage() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Modals */}
+      <FollowersModal
+        isOpen={showFollowersModal}
+        onClose={() => setShowFollowersModal(false)}
+        username={params.username as string}
+      />
+      <FollowingModal
+        isOpen={showFollowingModal}
+        onClose={() => setShowFollowingModal(false)}
+        username={params.username as string}
+      />
     </div>
   );
 }

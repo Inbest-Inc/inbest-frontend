@@ -23,6 +23,7 @@ import {
 } from "@/services/portfolioService";
 import { useParams, useRouter } from "next/navigation";
 import { Toaster, toast } from "react-hot-toast";
+import Link from "next/link";
 
 // Keep existing mock data
 const portfolioData = {
@@ -502,9 +503,14 @@ export default function ManagePortfolioPage() {
                   <div className="h-[40px] w-[180px] bg-gray-100 rounded-lg animate-pulse" />
                 )}
               </div>
-              <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
-                {portfolioData.description}
-              </Text>
+              <Link
+                href={`/${params.username}`}
+                className="hover:text-blue-600 transition-colors"
+              >
+                <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                  @{params.username}
+                </Text>
+              </Link>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -526,6 +532,31 @@ export default function ManagePortfolioPage() {
                 </svg>
                 Add Stock
               </button>
+              <Link
+                href={`/${params.username}/${params.portfolio}`}
+                className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                View Portfolio
+              </Link>
               <button
                 onClick={() => setIsSettingsModalOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
@@ -553,6 +584,92 @@ export default function ManagePortfolioPage() {
               </button>
             </div>
           </div>
+        </motion.div>
+
+        {/* Holdings Table - Moved to top */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="mb-12"
+        >
+          <Card className="overflow-hidden bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
+            <div className="p-6 border-b border-black/[0.04]">
+              <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                Holdings
+              </Text>
+            </div>
+            <div className="p-6">
+              {isLoadingHoldings ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : holdings.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 mb-4 rounded-full bg-gray-50 flex items-center justify-center">
+                    <svg
+                      className="w-8 h-8 text-[#6E6E73]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                  </div>
+                  <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F] mb-2">
+                    No Stocks Yet
+                  </Text>
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-6">
+                    Start building your portfolio by adding some stocks
+                  </Text>
+                  <button
+                    onClick={() => setIsAddStockModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                    Add Your First Stock
+                  </button>
+                </div>
+              ) : (
+                <ManageableActivityTable
+                  data={holdings}
+                  onChange={(changes) => {
+                    if ("quantity" in changes) {
+                      handleStockOperation({
+                        type: changes.quantity === 0 ? "delete" : "update",
+                        symbol: changes.symbol,
+                        shares: changes.quantity,
+                      });
+                    }
+                  }}
+                  onShare={(action) => {
+                    setSelectedAction(action);
+                    setIsShareActionModalOpen(true);
+                  }}
+                  portfolioName={portfolioName}
+                  onPortfolioNameChange={handlePortfolioNameChange}
+                  portfolioId={portfolioId}
+                />
+              )}
+            </div>
+          </Card>
         </motion.div>
 
         {/* Stats Grid */}
@@ -740,92 +857,6 @@ export default function ManagePortfolioPage() {
                   </Text>
                 </div>
               </div>
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* Holdings Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="mb-12"
-        >
-          <Card className="overflow-hidden bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
-            <div className="p-6 border-b border-black/[0.04]">
-              <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                Holdings
-              </Text>
-            </div>
-            <div className="p-6">
-              {isLoadingHoldings ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : holdings.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 mb-4 rounded-full bg-gray-50 flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-[#6E6E73]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
-                  </div>
-                  <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F] mb-2">
-                    No Stocks Yet
-                  </Text>
-                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-6">
-                    Start building your portfolio by adding some stocks
-                  </Text>
-                  <button
-                    onClick={() => setIsAddStockModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    Add Your First Stock
-                  </button>
-                </div>
-              ) : (
-                <ManageableActivityTable
-                  data={holdings}
-                  onChange={(changes) => {
-                    if ("quantity" in changes) {
-                      handleStockOperation({
-                        type: changes.quantity === 0 ? "delete" : "update",
-                        symbol: changes.symbol,
-                        shares: changes.quantity,
-                      });
-                    }
-                  }}
-                  onShare={(action) => {
-                    setSelectedAction(action);
-                    setIsShareActionModalOpen(true);
-                  }}
-                  portfolioName={portfolioName}
-                  onPortfolioNameChange={handlePortfolioNameChange}
-                  portfolioId={portfolioId}
-                />
-              )}
             </div>
           </Card>
         </motion.div>
