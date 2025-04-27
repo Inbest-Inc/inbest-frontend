@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
-import OpinionsFeed from "@/components/OpinionsFeed";
+import UserPosts from "@/components/UserPosts";
 import CreatePortfolioModal from "@/components/CreatePortfolioModal";
 import {
   createPortfolio,
@@ -100,6 +100,11 @@ export default function UserProfilePage() {
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
 
+  // Add state for active tab with a default of "portfolios"
+  const [activeTab, setActiveTab] = useState<"portfolios" | "posts">(
+    "portfolios"
+  );
+
   const [formData, setFormData] = useState({
     name: "",
     surname: "",
@@ -109,6 +114,40 @@ export default function UserProfilePage() {
     newPassword: "",
     confirmPassword: "",
   });
+
+  // Add effect to sync URL hash with active tab
+  useEffect(() => {
+    // Check for existing hash on initial load
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash === "#posts") {
+        setActiveTab("posts");
+      } else if (hash === "#portfolios") {
+        setActiveTab("portfolios");
+      }
+
+      // Listen for hash changes
+      const handleHashChange = () => {
+        const newHash = window.location.hash;
+        if (newHash === "#posts") {
+          setActiveTab("posts");
+        } else if (newHash === "#portfolios") {
+          setActiveTab("portfolios");
+        }
+      };
+
+      window.addEventListener("hashchange", handleHashChange);
+      return () => window.removeEventListener("hashchange", handleHashChange);
+    }
+  }, []);
+
+  // Function to change tab and update URL hash
+  const changeTab = (tab: "portfolios" | "posts") => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      window.location.hash = tab;
+    }
+  };
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -496,7 +535,7 @@ export default function UserProfilePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="mb-12"
+          className="mb-8"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
@@ -738,163 +777,197 @@ export default function UserProfilePage() {
           </div>
         </motion.div>
 
-        {visiblePortfolios.length > 0 ? (
-          visiblePortfolios.map((portfolio, index) => (
+        {/* Tab Navigation */}
+        <div className="mb-8 border-b border-gray-200">
+          <nav className="flex gap-1">
+            <button
+              onClick={() => changeTab("portfolios")}
+              className={`px-6 py-3 text-[15px] leading-[20px] font-medium border-b-2 transition-all ${
+                activeTab === "portfolios"
+                  ? "text-blue-600 border-blue-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              Portfolios
+            </button>
+            <button
+              onClick={() => changeTab("posts")}
+              className={`px-6 py-3 text-[15px] leading-[20px] font-medium border-b-2 transition-all ${
+                activeTab === "posts"
+                  ? "text-blue-600 border-blue-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              Posts
+            </button>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div>
+          {/* Portfolios Tab */}
+          {activeTab === "portfolios" && (
+            <>
+              {visiblePortfolios.length > 0 ? (
+                visiblePortfolios.map((portfolio, index) => (
+                  <motion.div
+                    key={portfolio.portfolioId}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.1 * (index + 1) }}
+                    className="mb-8"
+                  >
+                    <div className="relative">
+                      <Link
+                        href={`/${params.username}/${portfolio.portfolioId}`}
+                        className="block group"
+                      >
+                        <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl">
+                          <PortfolioChart
+                            title={portfolio.portfolioName}
+                            subtitle={
+                              portfolio.visibility === "public" ? "" : ""
+                            }
+                            showSocials={false}
+                            privacy={portfolio.visibility}
+                            showCompare={false}
+                          />
+                        </Card>
+                      </Link>
+                      {isOwnProfile && (
+                        <Link
+                          href={`/${params.username}/${portfolio.portfolioId}/manage`}
+                          className="absolute top-4 right-4 p-2 bg-gray-50/80 backdrop-blur-sm rounded-full hover:bg-gray-100/80 transition-all duration-200 shadow-sm z-10"
+                          title="Manage Portfolio"
+                        >
+                          <svg
+                            className="w-5 h-5 text-[#1D1D1F]"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                            />
+                          </svg>
+                        </Link>
+                      )}
+                    </div>
+                  </motion.div>
+                ))
+              ) : !isOwnProfile && !isLoading ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="mb-8"
+                >
+                  <Card className="bg-white/60 backdrop-blur-md p-12 ring-1 ring-black/[0.04] shadow-sm rounded-2xl">
+                    <div className="flex flex-col items-center justify-center text-center space-y-4">
+                      <div className="h-16 w-16 rounded-2xl bg-gray-50/80 backdrop-blur-sm flex items-center justify-center ring-1 ring-black/[0.04] shadow-sm">
+                        <svg
+                          className="w-8 h-8 text-[#6E6E73]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                          />
+                        </svg>
+                      </div>
+                      <div className="space-y-2">
+                        <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                          No public portfolios
+                        </Text>
+                        <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                          {params.username} hasn't shared any portfolios yet
+                        </Text>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              ) : isLoading ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-center py-12"
+                >
+                  <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                    Loading portfolios...
+                  </Text>
+                </motion.div>
+              ) : null}
+
+              {/* Create Portfolio Button for users with no portfolios */}
+              {isOwnProfile && portfolios.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="mb-8"
+                >
+                  <button
+                    onClick={() => setShowCreatePortfolioModal(true)}
+                    className="w-full"
+                  >
+                    <Card className="bg-white/60 backdrop-blur-md p-12 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl group">
+                      <div className="flex flex-col items-center justify-center text-center space-y-4">
+                        <div className="h-16 w-16 rounded-2xl bg-gray-50/80 backdrop-blur-sm flex items-center justify-center ring-1 ring-black/[0.04] shadow-sm group-hover:scale-110 transition-transform duration-300">
+                          <svg
+                            className="w-8 h-8 text-[#1D1D1F]"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M12 4.5v15m7.5-7.5h-15"
+                            />
+                          </svg>
+                        </div>
+                        <div className="space-y-2">
+                          <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
+                            Create new portfolio
+                          </Text>
+                          <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                            Start tracking your investments and share your
+                            success with others
+                          </Text>
+                        </div>
+                      </div>
+                    </Card>
+                  </button>
+                </motion.div>
+              )}
+            </>
+          )}
+
+          {/* Posts Tab */}
+          {activeTab === "posts" && (
             <motion.div
-              key={portfolio.portfolioId}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 * (index + 1) }}
-              className="mb-8"
+              transition={{ duration: 0.3 }}
             >
-              <div className="relative">
-                <Link
-                  href={`/${params.username}/${portfolio.portfolioId}`}
-                  className="block group"
-                >
-                  <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl">
-                    <PortfolioChart
-                      title={portfolio.portfolioName}
-                      subtitle={portfolio.visibility === "public" ? "" : ""}
-                      showSocials={false}
-                      privacy={portfolio.visibility}
-                      showCompare={false}
-                    />
-                  </Card>
-                </Link>
-                {isOwnProfile && (
-                  <Link
-                    href={`/${params.username}/${portfolio.portfolioId}/manage`}
-                    className="absolute top-4 right-4 p-2 bg-gray-50/80 backdrop-blur-sm rounded-full hover:bg-gray-100/80 transition-all duration-200 shadow-sm z-10"
-                    title="Manage Portfolio"
-                  >
-                    <svg
-                      className="w-5 h-5 text-[#1D1D1F]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                  </Link>
-                )}
-              </div>
+              <UserPosts
+                username={params.username as string}
+                isOwnProfile={isOwnProfile}
+              />
             </motion.div>
-          ))
-        ) : !isOwnProfile && !isLoading ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mb-8"
-          >
-            <Card className="bg-white/60 backdrop-blur-md p-12 ring-1 ring-black/[0.04] shadow-sm rounded-2xl">
-              <div className="flex flex-col items-center justify-center text-center space-y-4">
-                <div className="h-16 w-16 rounded-2xl bg-gray-50/80 backdrop-blur-sm flex items-center justify-center ring-1 ring-black/[0.04] shadow-sm">
-                  <svg
-                    className="w-8 h-8 text-[#6E6E73]"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
-                    />
-                  </svg>
-                </div>
-                <div className="space-y-2">
-                  <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                    No public portfolios
-                  </Text>
-                  <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
-                    {params.username} hasn't shared any portfolios yet
-                  </Text>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-        ) : isLoading ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="text-center py-12"
-          >
-            <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
-              Loading portfolios...
-            </Text>
-          </motion.div>
-        ) : null}
+          )}
+        </div>
 
-        {/* Recent Activity */}
-
-        {/* Portfolio Performance */}
-        {isOwnProfile && portfolios.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mb-8"
-          >
-            <button
-              onClick={() => setShowCreatePortfolioModal(true)}
-              className="w-full"
-            >
-              <Card className="bg-white/60 backdrop-blur-md p-12 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl group">
-                <div className="flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="h-16 w-16 rounded-2xl bg-gray-50/80 backdrop-blur-sm flex items-center justify-center ring-1 ring-black/[0.04] shadow-sm group-hover:scale-110 transition-transform duration-300">
-                    <svg
-                      className="w-8 h-8 text-[#1D1D1F]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M12 4.5v15m7.5-7.5h-15"
-                      />
-                    </svg>
-                  </div>
-                  <div className="space-y-2">
-                    <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                      Create new portfolio
-                    </Text>
-                    <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
-                      Start tracking your investments and share your success
-                      with others
-                    </Text>
-                  </div>
-                </div>
-              </Card>
-            </button>
-          </motion.div>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl">
-            <div className="mb-6">
-              <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                Recent Activity
-              </Text>
-            </div>
-            <OpinionsFeed activeTab="for-you" />
-          </Card>
-        </motion.div>
-
+        {/* Modals */}
         {/* Edit Modal */}
         {isOwnProfile && isEditing && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
