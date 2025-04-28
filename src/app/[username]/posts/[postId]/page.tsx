@@ -32,6 +32,7 @@ import {
   TelegramIcon,
 } from "react-share";
 import { toast } from "react-hot-toast";
+import { getApiUrl } from "@/config/env";
 
 export default function SinglePostPage() {
   const params = useParams();
@@ -81,8 +82,7 @@ export default function SinglePostPage() {
       try {
         // Fetch the specific post by its ID
         const token = localStorage.getItem("token");
-        const API_URL =
-          process.env.NEXT_PUBLIC_API_URL || "https://api.inbest.app";
+        const API_URL = getApiUrl();
         console.log(`Fetching post with ID: ${params.postId}`);
 
         // Create headers object conditionally to include token if available
@@ -167,37 +167,66 @@ export default function SinglePostPage() {
     setIsCommentsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "https://api.inbest.app";
+      const API_URL = getApiUrl();
 
-      console.log(`Fetching comments for post: ${postId}`);
+      console.log(`[DEBUG] Fetching comments for post ID: ${postId}`);
 
       // Create headers object conditionally to include token if available
-      const headers: HeadersInit = {};
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
       if (token) {
         headers.Authorization = `Bearer ${token}`;
+        console.log("[DEBUG] Using token for comment fetch");
+      } else {
+        console.log("[DEBUG] No token available for comment fetch");
       }
 
-      const response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
+      // Try the first endpoint
+      console.log(
+        `[DEBUG] Trying primary endpoint: ${API_URL}/api/posts/${postId}/comments`
+      );
+      let response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
         method: "GET",
         headers,
       });
 
+      // If that fails, try the fallback endpoint
       if (!response.ok) {
-        console.log(`Comments fetch failed with status: ${response.status}`);
+        console.log(
+          `[DEBUG] Primary endpoint failed with status: ${response.status}, trying fallback endpoint`
+        );
+
+        response = await fetch(
+          `${API_URL}/api/comments/get-all-comments/${postId}`,
+          {
+            method: "GET",
+            headers,
+          }
+        );
+      }
+
+      console.log(
+        `[DEBUG] Final comments fetch response status: ${response.status}`
+      );
+
+      if (!response.ok) {
+        console.log(
+          `[ERROR] Comments fetch failed with status: ${response.status}`
+        );
         return;
       }
 
       const data = await response.json();
-      console.log(
-        `Comments fetched successfully. Raw response:`,
-        JSON.stringify(data)
-      );
+      console.log(`[DEBUG] Comments fetched successfully. Response:`, data);
 
       if (data.status === "success" && data.data) {
+        console.log(
+          `[DEBUG] Comment data available, length: ${data.data.length}`
+        );
         // Check the format of the comments and normalize if needed
         const formattedComments = data.data.map((comment: any) => {
-          console.log("Processing single post comment:", comment);
+          console.log("[DEBUG] Processing comment:", comment);
 
           // Get content field, handling different API formats
           const commentContent = comment.content || comment.comment || "";
@@ -226,13 +255,16 @@ export default function SinglePostPage() {
           };
         });
 
-        console.log("Formatted comments:", formattedComments);
+        console.log("[DEBUG] Formatted comments complete, setting state");
         setComments(formattedComments);
       } else {
-        console.log("API returned error when fetching comments:", data.message);
+        console.log(
+          "[ERROR] API returned error or no data:",
+          data.message || "No comment data"
+        );
       }
     } catch (error) {
-      console.error("Error fetching comments:", error);
+      console.error("[ERROR] Exception while fetching comments:", error);
     } finally {
       setIsCommentsLoading(false);
     }
@@ -298,8 +330,7 @@ export default function SinglePostPage() {
         );
 
         // Fetch the latest count from the API
-        const API_URL =
-          process.env.NEXT_PUBLIC_API_URL || "https://api.inbest.app";
+        const API_URL = getApiUrl();
         const token = localStorage.getItem("token");
 
         try {
@@ -828,13 +859,6 @@ export default function SinglePostPage() {
               <span className="text-sm font-medium">{commentCount}</span>
             </div>
           </div>
-
-          <Link
-            href={`/${post.userDTO.username}/${post.investmentActivityResponseDTO.portfolioId}`}
-            className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
-          >
-            View Portfolio
-          </Link>
         </div>
       </Card>
 
@@ -844,132 +868,160 @@ export default function SinglePostPage() {
           <Text className="font-medium text-[#1D1D1F]">Comments</Text>
         </div>
 
-        {/* Add new comment form */}
-        <form onSubmit={handleSubmitComment} className="mb-6">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Write a comment..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
-              disabled={isSubmittingComment}
-            />
-            <button
-              type="submit"
-              className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 ${
-                isSubmittingComment
-                  ? "text-gray-400"
-                  : "text-blue-600 hover:text-blue-700"
-              } transition-colors`}
-              aria-label="Post comment"
-              disabled={isSubmittingComment}
-            >
-              {isSubmittingComment ? (
-                <svg
-                  className="w-5 h-5 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M13 5l7 7-7 7M5 12h15"
-                  />
-                </svg>
-              )}
-            </button>
-          </div>
-        </form>
+        {/* Get authentication state */}
+        {(() => {
+          const isAuthenticated = !!localStorage.getItem("token");
 
-        {/* Comments list */}
-        {isCommentsLoading ? (
-          <div className="flex justify-center py-4">
-            <div className="animate-pulse flex space-x-4 w-full max-w-md">
-              <div className="rounded-full bg-gray-200 h-10 w-10"></div>
-              <div className="flex-1 space-y-2 py-1">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
-          </div>
-        ) : comments.length > 0 ? (
-          <div className="space-y-4">
-            {comments.map((comment) => (
-              <div key={comment.id} className="bg-gray-50/60 p-3 rounded-xl">
-                <div className="flex items-start gap-3">
-                  <Avatar
-                    src={comment.imageUrl || comment.userDTO?.image_url || null}
-                    name={
-                      comment.fullName ||
-                      `${comment.userDTO?.name || ""} ${comment.userDTO?.surname || ""}`
-                    }
-                    size="sm"
-                  />
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="font-medium text-[#1D1D1F] text-sm">
-                          {comment.fullName ||
-                            `${comment.userDTO?.name || ""} ${comment.userDTO?.surname || ""}`}
-                        </span>
-                        <Link href={`/${comment.userDTO?.username || "#"}`}>
-                          <span className="ml-1 text-xs text-[#6E6E73] hover:text-blue-600 transition-colors">
-                            @{comment.userDTO?.username || "user"}
-                          </span>
-                        </Link>
-                      </div>
-                      <div
-                        className="text-xs text-[#6E6E73] cursor-help"
-                        title={formatExactDate(comment.createdAt)}
-                      >
-                        {formatRelativeTime(comment.createdAt)}
-                      </div>
+          return (
+            <>
+              {/* Add new comment form - only for authenticated users */}
+              {isAuthenticated ? (
+                <form onSubmit={handleSubmitComment} className="mb-6">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Write a comment..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+                      disabled={isSubmittingComment}
+                    />
+                    <button
+                      type="submit"
+                      className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 ${
+                        isSubmittingComment
+                          ? "text-gray-400"
+                          : "text-blue-600 hover:text-blue-700"
+                      } transition-colors`}
+                      aria-label="Post comment"
+                      disabled={isSubmittingComment}
+                    >
+                      {isSubmittingComment ? (
+                        <svg
+                          className="w-5 h-5 animate-spin"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M13 5l7 7-7 7M5 12h15"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="mb-6 p-3 bg-gray-50/80 rounded-xl text-center">
+                  <Text className="text-[#6E6E73] text-sm">
+                    Sign in to leave a comment
+                  </Text>
+                </div>
+              )}
+
+              {/* Comments list - different message for public vs authenticated */}
+              {isCommentsLoading ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-pulse flex space-x-4 w-full max-w-md">
+                    <div className="rounded-full bg-gray-200 h-10 w-10"></div>
+                    <div className="flex-1 space-y-2 py-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                     </div>
-                    <p className="text-sm text-[#1D1D1F] mt-1 whitespace-pre-line">
-                      {comment.content}
-                    </p>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <svg
-              className="w-10 h-10 text-gray-300 mb-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
-            <Text className="text-[#6E6E73]">
-              No comments yet. Be the first to comment!
-            </Text>
-          </div>
-        )}
+              ) : isAuthenticated && comments.length > 0 ? (
+                <div className="space-y-4">
+                  {comments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="bg-gray-50/60 p-3 rounded-xl"
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar
+                          src={
+                            comment.imageUrl ||
+                            comment.userDTO?.image_url ||
+                            null
+                          }
+                          name={
+                            comment.fullName ||
+                            `${comment.userDTO?.name || ""} ${comment.userDTO?.surname || ""}`
+                          }
+                          size="sm"
+                        />
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className="font-medium text-[#1D1D1F] text-sm">
+                                {comment.fullName ||
+                                  `${comment.userDTO?.name || ""} ${comment.userDTO?.surname || ""}`}
+                              </span>
+                              <Link
+                                href={`/${comment.userDTO?.username || "#"}`}
+                              >
+                                <span className="ml-1 text-xs text-[#6E6E73] hover:text-blue-600 transition-colors">
+                                  @{comment.userDTO?.username || "user"}
+                                </span>
+                              </Link>
+                            </div>
+                            <div
+                              className="text-xs text-[#6E6E73] cursor-help"
+                              title={formatExactDate(comment.createdAt)}
+                            >
+                              {formatRelativeTime(comment.createdAt)}
+                            </div>
+                          </div>
+                          <p className="text-sm text-[#1D1D1F] mt-1 whitespace-pre-line">
+                            {comment.content}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <svg
+                    className="w-10 h-10 text-gray-300 mb-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                  <Text className="text-[#6E6E73]">
+                    {isAuthenticated
+                      ? "No comments yet. Be the first to comment!"
+                      : "Sign in to view comments"}
+                  </Text>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </Card>
 
       {/* Share section */}
