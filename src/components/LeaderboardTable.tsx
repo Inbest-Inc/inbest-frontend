@@ -98,7 +98,6 @@ interface Portfolio {
     volatility: number;
     riskScore: number;
     riskCategory: string;
-    holdings?: number;
   };
   user: {
     username: string;
@@ -106,11 +105,12 @@ interface Portfolio {
     name: string;
     surname: string;
     image_url: string | null;
-    followers?: number;
+    followerCount: number;
   };
-  portfolioDTO: {
+  bestPortfolioResponseDTO: {
     portfolioName: string;
     visibility: string;
+    holdingCount: number;
   };
   rank?: number;
 }
@@ -129,7 +129,13 @@ export default function LeaderboardTable({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log(
+      "LeaderboardTable useEffect triggered with returnFilter:",
+      returnFilter
+    );
+
     const fetchData = async () => {
+      console.log("Fetching data for returnFilter:", returnFilter);
       setLoading(true);
       setError(null);
 
@@ -147,7 +153,7 @@ export default function LeaderboardTable({
             response = await getBestPortfoliosByDailyReturn();
             break;
           default:
-            response = await getBestPortfoliosByTotalReturn();
+            throw new Error("Invalid return filter");
         }
 
         if (response.status !== "success") {
@@ -376,7 +382,7 @@ export default function LeaderboardTable({
                             •
                           </span>
                           <span className="text-sm text-[#6E6E73] truncate">
-                            {portfolio.portfolioDTO.portfolioName}
+                            {portfolio.bestPortfolioResponseDTO.portfolioName}
                           </span>
                         </div>
                       </div>
@@ -394,12 +400,12 @@ export default function LeaderboardTable({
                   </TableCell>
                   <TableCell className="text-center w-[100px]">
                     <span className="inline-flex items-center justify-center h-6 min-w-[48px] rounded-full bg-gray-50/80 backdrop-blur-sm text-sm font-medium text-[#1D1D1F] ring-1 ring-black/[0.04] whitespace-nowrap">
-                      {portfolio.portfolioMetric.holdings ?? 0}
+                      {portfolio.bestPortfolioResponseDTO.holdingCount ?? 0}
                     </span>
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap w-[100px]">
                     <span className="font-medium text-[#1D1D1F]">
-                      {formatCount(portfolio.user.followers)}
+                      {formatCount(portfolio.user.followerCount)}
                     </span>
                   </TableCell>
                   <TableCell className="w-[100px]">

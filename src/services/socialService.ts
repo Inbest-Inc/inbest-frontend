@@ -25,6 +25,7 @@ export interface Post {
   stockSymbol: string;
   likeCount: number;
   commentCount: number;
+  liked?: boolean;
   userDTO: {
     username: string;
     email: string;

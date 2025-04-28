@@ -15,6 +15,7 @@ import {
   createComment,
   Comment,
 } from "@/services/socialService";
+import { getApiUrl } from "@/config/env";
 import { format, formatDistanceToNow } from "date-fns";
 import Avatar from "@/components/Avatar";
 import {
@@ -532,20 +533,18 @@ export default function UserPosts({
         if (response.status === "success" && response.data) {
           setPosts(response.data);
 
-          // Initialize like counts with the data from posts
+          // Initialize like counts and liked status with the data from posts
           const initialLikeCounts: { [key: number]: number } = {};
+          const initialLikedPosts: { [key: number]: boolean } = {};
           const initialCommentCounts: { [key: number]: number } = {};
           response.data.forEach((post) => {
             initialLikeCounts[post.id] = post.likeCount || 0;
+            initialLikedPosts[post.id] = post.liked || false;
             initialCommentCounts[post.id] = post.commentCount || 0;
           });
           setLikeCounts(initialLikeCounts);
+          setLikedPosts(initialLikedPosts);
           setCommentCounts(initialCommentCounts);
-
-          // Fetch like status for each post
-          for (const post of response.data) {
-            fetchLikeStatus(post.id);
-          }
         } else {
           setError(response.message || "Failed to load posts");
         }
@@ -559,17 +558,6 @@ export default function UserPosts({
 
     fetchPosts();
   }, [username, isOwnProfile]);
-
-  const fetchLikeStatus = async (postId: number) => {
-    try {
-      const response = await checkPostLikeStatus(postId);
-      if (response.status === "success" && response.data) {
-        setLikedPosts((prev) => ({ ...prev, [postId]: response.data!.liked }));
-      }
-    } catch (error) {
-      console.error(`Error fetching like status for post ${postId}:`, error);
-    }
-  };
 
   const fetchLikeCount = async (postId: number) => {
     try {
@@ -593,6 +581,7 @@ export default function UserPosts({
 
     try {
       const isCurrentlyLiked = likedPosts[postId] || false;
+      const previousCount = likeCounts[postId] || 0;
 
       // Optimistic update
       setLikedPosts((prev) => ({ ...prev, [postId]: !isCurrentlyLiked }));
@@ -602,6 +591,21 @@ export default function UserPosts({
           ? Math.max(0, (prev[postId] || 0) - 1)
           : (prev[postId] || 0) + 1,
       }));
+
+      // Update likeCount in the posts array
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                likeCount: isCurrentlyLiked
+                  ? Math.max(0, post.likeCount - 1)
+                  : post.likeCount + 1,
+                liked: !isCurrentlyLiked,
+              }
+            : post
+        )
+      );
 
       // Make API call
       let response;
@@ -617,12 +621,16 @@ export default function UserPosts({
       if (response.status !== "success") {
         // Revert optimistic update if there was an error
         setLikedPosts((prev) => ({ ...prev, [postId]: isCurrentlyLiked }));
-        setLikeCounts((prev) => ({
-          ...prev,
-          [postId]: isCurrentlyLiked
-            ? (prev[postId] || 0) + 1
-            : Math.max(0, (prev[postId] || 0) - 1),
-        }));
+        setLikeCounts((prev) => ({ ...prev, [postId]: previousCount }));
+
+        // Revert the posts array update
+        setPosts((prevPosts) =>
+          prevPosts.map((post) =>
+            post.id === postId
+              ? { ...post, likeCount: previousCount, liked: isCurrentlyLiked }
+              : post
+          )
+        );
 
         toast.error(
           response.message ||
@@ -636,8 +644,55 @@ export default function UserPosts({
             : "Post liked successfully"
         );
 
-        // Update the like count based on the response
-        await fetchLikeCount(postId);
+        // Fetch and apply the latest count from the API directly
+        const API_URL = getApiUrl();
+        const token = localStorage.getItem("token");
+
+        try {
+          console.log(`Fetching like count for post ${postId}`);
+          const countResponse = await fetch(
+            `${API_URL}/api/likes/posts/${postId}/count`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (countResponse.ok) {
+            const countData = await countResponse.json();
+            console.log("Like count response:", countData);
+
+            // Use the likeCount directly from the response
+            if (
+              countData.status === "success" &&
+              countData.likeCount !== undefined
+            ) {
+              // Update likeCounts state
+              setLikeCounts((prev) => ({
+                ...prev,
+                [postId]: countData.likeCount,
+              }));
+
+              // Update the posts array with the accurate count from server
+              setPosts((prevPosts) =>
+                prevPosts.map((post) =>
+                  post.id === postId
+                    ? { ...post, likeCount: countData.likeCount }
+                    : post
+                )
+              );
+
+              console.log(`Updated like count to: ${countData.likeCount}`);
+            }
+          }
+        } catch (countError) {
+          console.error(
+            `Error fetching like count for post ${postId}:`,
+            countError
+          );
+        }
       }
     } catch (error) {
       console.error(`Error handling like action for post ${postId}:`, error);

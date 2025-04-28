@@ -123,11 +123,11 @@ export default function SinglePostPage() {
         if (data.status === "success" && data.data) {
           setPost(data.data);
           setLikeCount(data.data.likeCount || 0);
+          setIsLiked(data.data.liked || false);
           setCommentCount(data.data.commentCount || 0);
 
-          // Fetch like status and comments
+          // Fetch comments
           if (data.data.id) {
-            fetchLikeStatus(data.data.id);
             fetchComments(data.data.id);
           } else {
             console.log("Warning: Post data missing ID property");
@@ -148,17 +148,6 @@ export default function SinglePostPage() {
       fetchPost();
     }
   }, [params.postId]);
-
-  const fetchLikeStatus = async (postId: number) => {
-    try {
-      const response = await checkPostLikeStatus(postId);
-      if (response.status === "success" && response.data) {
-        setIsLiked(response.data.liked);
-      }
-    } catch (error) {
-      console.error("Error checking like status:", error);
-    }
-  };
 
   const fetchLikeCount = async (postId: number) => {
     try {
@@ -242,11 +231,26 @@ export default function SinglePostPage() {
     setIsLikeActionPending(true);
 
     try {
+      // Store current state for potential revert
+      const previousIsLiked = isLiked;
+      const previousCount = likeCount;
+
       // Optimistic update
       setIsLiked(!isLiked);
       setLikeCount((prevCount) =>
         isLiked ? Math.max(0, prevCount - 1) : prevCount + 1
       );
+
+      // Update post object too
+      if (post) {
+        setPost({
+          ...post,
+          likeCount: isLiked
+            ? Math.max(0, post.likeCount - 1)
+            : post.likeCount + 1,
+          liked: !isLiked,
+        });
+      }
 
       // Make API call
       let response;
@@ -259,10 +263,18 @@ export default function SinglePostPage() {
       // Handle errors
       if (response.status !== "success") {
         // Revert optimistic update if there was an error
-        setIsLiked(isLiked);
-        setLikeCount((prevCount) =>
-          isLiked ? prevCount + 1 : Math.max(0, prevCount - 1)
-        );
+        setIsLiked(previousIsLiked);
+        setLikeCount(previousCount);
+
+        // Revert post object update
+        if (post) {
+          setPost({
+            ...post,
+            likeCount: previousCount,
+            liked: previousIsLiked,
+          });
+        }
+
         toast.error(
           response.message || `Failed to ${isLiked ? "unlike" : "like"} post`
         );
@@ -271,10 +283,50 @@ export default function SinglePostPage() {
         toast.success(
           isLiked ? "Post unliked successfully" : "Post liked successfully"
         );
-      }
 
-      // Fetch the latest count
-      await fetchLikeCount(post.id);
+        // Fetch the latest count from the API
+        const API_URL =
+          process.env.NEXT_PUBLIC_API_URL || "https://api.inbest.app";
+        const token = localStorage.getItem("token");
+
+        try {
+          console.log(`Fetching like count for post ${post.id}`);
+          const countResponse = await fetch(
+            `${API_URL}/api/likes/posts/${post.id}/count`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (countResponse.ok) {
+            const countData = await countResponse.json();
+            console.log("Like count response:", countData);
+
+            // Use the likeCount directly from the response
+            if (
+              countData.status === "success" &&
+              countData.likeCount !== undefined
+            ) {
+              setLikeCount(countData.likeCount);
+
+              // Update the post object too
+              if (post) {
+                setPost({
+                  ...post,
+                  likeCount: countData.likeCount,
+                });
+              }
+
+              console.log(`Updated like count to: ${countData.likeCount}`);
+            }
+          }
+        } catch (countError) {
+          console.error("Error fetching like count:", countError);
+        }
+      }
     } catch (error) {
       console.error("Error handling like action:", error);
       toast.error(

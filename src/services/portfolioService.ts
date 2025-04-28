@@ -751,10 +751,12 @@ export interface BestPortfolioResponse {
       name: string;
       surname: string;
       image_url: string | null;
+      followerCount: number;
     };
-    portfolioDTO: {
+    bestPortfolioResponseDTO: {
       portfolioName: string;
       visibility: string;
+      holdingCount: number;
     };
   }>;
 }
