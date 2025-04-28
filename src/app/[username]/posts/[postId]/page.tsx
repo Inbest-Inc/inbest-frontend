@@ -81,22 +81,19 @@ export default function SinglePostPage() {
       try {
         // Fetch the specific post by its ID
         const token = localStorage.getItem("token");
-        if (!token) {
-          console.log("Authentication error: No token found");
-          setError("Authentication required to view this post");
-          setIsLoading(false);
-          return;
-        }
-
         const API_URL =
           process.env.NEXT_PUBLIC_API_URL || "https://api.inbest.app";
         console.log(`Fetching post with ID: ${params.postId}`);
 
+        // Create headers object conditionally to include token if available
+        const headers: HeadersInit = {};
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_URL}/api/posts/${params.postId}`, {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers,
         });
 
         if (!response.ok) {
@@ -121,14 +118,20 @@ export default function SinglePostPage() {
         console.log("Post data received:", data.status);
 
         if (data.status === "success" && data.data) {
-          setPost(data.data);
-          setLikeCount(data.data.likeCount || 0);
-          setIsLiked(data.data.liked || false);
-          setCommentCount(data.data.commentCount || 0);
+          // Ensure the post has a valid liked field
+          const processedPost = {
+            ...data.data,
+            liked: data.data.liked === true, // Ensure it's a boolean
+          };
+
+          setPost(processedPost);
+          setLikeCount(processedPost.likeCount || 0);
+          setIsLiked(processedPost.liked);
+          setCommentCount(processedPost.commentCount || 0);
 
           // Fetch comments
-          if (data.data.id) {
-            fetchComments(data.data.id);
+          if (processedPost.id) {
+            fetchComments(processedPost.id);
           } else {
             console.log("Warning: Post data missing ID property");
           }
@@ -164,22 +167,20 @@ export default function SinglePostPage() {
     setIsCommentsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        console.log(
-          "Authentication error: No token found when fetching comments"
-        );
-        return;
-      }
-
       const API_URL =
         process.env.NEXT_PUBLIC_API_URL || "https://api.inbest.app";
 
       console.log(`Fetching comments for post: ${postId}`);
+
+      // Create headers object conditionally to include token if available
+      const headers: HeadersInit = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -196,12 +197,19 @@ export default function SinglePostPage() {
       if (data.status === "success" && data.data) {
         // Check the format of the comments and normalize if needed
         const formattedComments = data.data.map((comment: any) => {
+          console.log("Processing single post comment:", comment);
+
+          // Get content field, handling different API formats
+          const commentContent = comment.content || comment.comment || "";
+
           // If the comment is from the old format (without userDTO), transform it
           if (!comment.userDTO && comment.username) {
             return {
               id: comment.id || Date.now() + Math.random() * 10000,
-              content: comment.comment || "",
+              content: commentContent,
               createdAt: comment.createdAt || new Date().toISOString(),
+              imageUrl: comment.imageUrl || null,
+              fullName: comment.fullName || comment.username || "",
               userDTO: {
                 username: comment.username || "",
                 email: "",
@@ -210,7 +218,12 @@ export default function SinglePostPage() {
               },
             };
           }
-          return comment;
+
+          // For standard format, ensure content is set correctly
+          return {
+            ...comment,
+            content: commentContent, // Ensure content is set correctly
+          };
         });
 
         console.log("Formatted comments:", formattedComments);
@@ -363,35 +376,6 @@ export default function SinglePostPage() {
       return;
     }
 
-    // Optimistically add the comment with current user information from localStorage
-    // Using a numeric ID for the temporary comment to match the Comment type
-    const tempId = Date.now(); // Using timestamp as a numeric ID
-
-    // Get user info from userInfo state if available or use localStorage as fallback
-    const commentUser = {
-      username: userInfo?.username || storedUsername || "",
-      name: userInfo?.name || storedUsername || "",
-      surname: userInfo?.surname || "",
-      email: userInfo?.email || "",
-      // image_url is optional so we can omit it if it doesn't exist
-    };
-
-    console.log("Creating temp comment with user data:", commentUser);
-
-    // Create a temporary comment that matches the Comment type structure
-    const tempComment: Comment = {
-      id: tempId,
-      content: newComment,
-      createdAt: new Date().toISOString(),
-      userDTO: commentUser,
-    };
-
-    setComments((prev) => [tempComment, ...prev]);
-    setNewComment("");
-
-    // Update comment count
-    setCommentCount((prevCount) => prevCount + 1);
-
     try {
       console.log(
         `Submitting comment to API for post ID: ${post?.id}, content: "${newComment}"`
@@ -404,30 +388,34 @@ export default function SinglePostPage() {
       console.log("Comment API response:", response);
 
       if (response.status === "success") {
+        // Clear the input field
+        setNewComment("");
+
+        // Show success message
         toast.success(response.message || "Comment added successfully");
 
-        // Replace the temp comment with the real one if we have data
-        if (response.data) {
-          setComments((prev) =>
-            prev.map((c) => (c.id === tempId ? response.data! : c))
-          );
+        // Increment comment count
+        setCommentCount((prevCount) => prevCount + 1);
+
+        // Update post object too if available
+        if (post) {
+          setPost({
+            ...post,
+            commentCount: post.commentCount + 1,
+          });
+        }
+
+        // Refetch all comments to get the latest data
+        if (post) {
+          console.log("Refreshing comments after successful submission");
+          await fetchComments(post.id);
         }
       } else {
-        // Remove the temp comment if there was an error
-        setComments((prev) => prev.filter((c) => c.id !== tempId));
-        // Revert comment count
-        setCommentCount((prevCount) => Math.max(0, prevCount - 1));
         toast.error(response.message || "Failed to add comment");
-        setNewComment(newComment); // Restore the comment text
       }
     } catch (error) {
       console.error("Error submitting comment:", error);
-      // Remove the temp comment if there was an error
-      setComments((prev) => prev.filter((c) => c.id !== tempId));
-      // Revert comment count
-      setCommentCount((prevCount) => Math.max(0, prevCount - 1));
       toast.error("An error occurred while adding your comment");
-      setNewComment(newComment); // Restore the comment text
     } finally {
       setIsSubmittingComment(false);
     }
@@ -927,16 +915,19 @@ export default function SinglePostPage() {
               <div key={comment.id} className="bg-gray-50/60 p-3 rounded-xl">
                 <div className="flex items-start gap-3">
                   <Avatar
-                    src={comment.userDTO?.image_url || null}
-                    name={`${comment.userDTO?.name || ""} ${comment.userDTO?.surname || ""}`}
+                    src={comment.imageUrl || comment.userDTO?.image_url || null}
+                    name={
+                      comment.fullName ||
+                      `${comment.userDTO?.name || ""} ${comment.userDTO?.surname || ""}`
+                    }
                     size="sm"
                   />
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <div>
                         <span className="font-medium text-[#1D1D1F] text-sm">
-                          {comment.userDTO?.name || ""}{" "}
-                          {comment.userDTO?.surname || ""}
+                          {comment.fullName ||
+                            `${comment.userDTO?.name || ""} ${comment.userDTO?.surname || ""}`}
                         </span>
                         <Link href={`/${comment.userDTO?.username || "#"}`}>
                           <span className="ml-1 text-xs text-[#6E6E73] hover:text-blue-600 transition-colors">

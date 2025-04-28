@@ -127,6 +127,7 @@ export default function Header() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
+        isAuthenticated &&
         searchRef.current &&
         !searchRef.current.contains(event.target as Node)
       ) {
@@ -148,17 +149,19 @@ export default function Header() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   // Focus input when search is opened
   useEffect(() => {
-    if (isSearchOpen && searchInputRef.current) {
+    if (isAuthenticated && isSearchOpen && searchInputRef.current) {
       searchInputRef.current.focus();
     }
-  }, [isSearchOpen]);
+  }, [isSearchOpen, isAuthenticated]);
 
   // Search for users when search term changes
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const searchTimeout = setTimeout(async () => {
       if (searchTerm.length >= 3) {
         setIsSearching(true);
@@ -184,7 +187,7 @@ export default function Header() {
     }, 300);
 
     return () => clearTimeout(searchTimeout);
-  }, [searchTerm]);
+  }, [searchTerm, isAuthenticated]);
 
   // Improved event handler for profile photo update with type safety
   const handleProfilePhotoUpdated = (event: Event) => {
@@ -312,7 +315,13 @@ export default function Header() {
     setIsAuthenticated(!!storedUsername);
     setUsername(storedUsername || "");
 
-    if (storedUsername) {
+    // Reset search state if user is logged out
+    if (!storedUsername) {
+      setIsSearchOpen(false);
+      setSearchTerm("");
+      setSearchResults([]);
+      setProfilePhoto(null);
+    } else {
       // Also check auth status with the server when localStorage changes
       checkAuthStatus().then((authStatus) => {
         if (authStatus.status === "error") {
@@ -321,12 +330,15 @@ export default function Header() {
           setIsAuthenticated(false);
           setUsername("");
           setProfilePhoto(null);
+
+          // Reset search state on logout
+          setIsSearchOpen(false);
+          setSearchTerm("");
+          setSearchResults([]);
         } else {
           fetchUserInfo();
         }
       });
-    } else {
-      setProfilePhoto(null);
     }
   };
 
@@ -339,6 +351,11 @@ export default function Header() {
     setIsAuthenticated(false);
     setUsername("");
     setProfilePhoto(null);
+
+    // Reset search state on logout
+    setIsSearchOpen(false);
+    setSearchTerm("");
+    setSearchResults([]);
 
     // Navigate to login page
     router.push("/login");
@@ -362,6 +379,8 @@ export default function Header() {
   };
 
   const handleSearchClick = () => {
+    if (!isAuthenticated) return;
+
     setIsSearchOpen(!isSearchOpen);
     if (!isSearchOpen && searchInputRef.current) {
       // Focus the input after opening
@@ -393,102 +412,104 @@ export default function Header() {
         Opinions
       </Link>
 
-      {/* Search Component */}
-      <div className="relative" ref={searchRef}>
-        <button
-          onClick={handleSearchClick}
-          className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-50/80 hover:bg-gray-100/80 text-[#1D1D1F] transition-all duration-200"
-          aria-label="Search users"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      {/* Search Component - Only show for authenticated users */}
+      {isAuthenticated && (
+        <div className="relative" ref={searchRef}>
+          <button
+            onClick={handleSearchClick}
+            className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-50/80 hover:bg-gray-100/80 text-[#1D1D1F] transition-all duration-200"
+            aria-label="Search users"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        </button>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </button>
 
-        {isSearchOpen && (
-          <div className="absolute left-0 mt-2 w-72 bg-white rounded-xl shadow-lg ring-1 ring-black/[0.08] overflow-hidden z-10">
-            <div className="p-2">
-              <div className="relative">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search users (min 3 chars)"
-                  className="w-full px-3 py-2 pl-9 text-[15px] leading-[20px] bg-gray-50/80 rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <svg
-                  className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6E6E73]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          {isSearchOpen && (
+            <div className="absolute left-0 mt-2 w-72 bg-white rounded-xl shadow-lg ring-1 ring-black/[0.08] overflow-hidden z-10">
+              <div className="p-2">
+                <div className="relative">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search users (min 3 chars)"
+                    className="w-full px-3 py-2 pl-9 text-[15px] leading-[20px] bg-gray-50/80 rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                </svg>
-              </div>
+                  <svg
+                    className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6E6E73]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
 
-              {/* Search Results */}
-              <div className="mt-2 max-h-64 overflow-y-auto">
-                {isSearching ? (
-                  <div className="py-4 text-center">
-                    <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                  </div>
-                ) : searchTerm.length >= 3 && searchResults.length === 0 ? (
-                  <div className="py-4 text-center text-[13px] leading-[18px] text-[#6E6E73]">
-                    No users found
-                  </div>
-                ) : searchTerm.length < 3 ? (
-                  <div className="py-4 text-center text-[13px] leading-[18px] text-[#6E6E73]">
-                    Enter at least 3 characters to search
-                  </div>
-                ) : (
-                  searchResults.map((user) => (
-                    <Link
-                      key={user.username}
-                      href={`/${user.username}`}
-                      className="flex items-center gap-3 p-3 hover:bg-gray-50/80 rounded-lg transition-colors"
-                      onClick={() => {
-                        setIsSearchOpen(false);
-                        setSearchTerm("");
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      <Avatar
-                        src={user.imageUrl}
-                        name={user.fullName}
-                        size="sm"
-                      />
-                      <div>
-                        <div className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                          {user.fullName}
+                {/* Search Results */}
+                <div className="mt-2 max-h-64 overflow-y-auto">
+                  {isSearching ? (
+                    <div className="py-4 text-center">
+                      <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : searchTerm.length >= 3 && searchResults.length === 0 ? (
+                    <div className="py-4 text-center text-[13px] leading-[18px] text-[#6E6E73]">
+                      No users found
+                    </div>
+                  ) : searchTerm.length < 3 ? (
+                    <div className="py-4 text-center text-[13px] leading-[18px] text-[#6E6E73]">
+                      Enter at least 3 characters to search
+                    </div>
+                  ) : (
+                    searchResults.map((user) => (
+                      <Link
+                        key={user.username}
+                        href={`/${user.username}`}
+                        className="flex items-center gap-3 p-3 hover:bg-gray-50/80 rounded-lg transition-colors"
+                        onClick={() => {
+                          setIsSearchOpen(false);
+                          setSearchTerm("");
+                          setIsMobileMenuOpen(false);
+                        }}
+                      >
+                        <Avatar
+                          src={user.imageUrl}
+                          name={user.fullName}
+                          size="sm"
+                        />
+                        <div>
+                          <div className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                            {user.fullName}
+                          </div>
+                          <div className="text-[13px] leading-[18px] text-[#6E6E73]">
+                            @{user.username}
+                          </div>
                         </div>
-                        <div className="text-[13px] leading-[18px] text-[#6E6E73]">
-                          @{user.username}
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                )}
+                      </Link>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </>
   );
 

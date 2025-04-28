@@ -25,7 +25,7 @@ export interface Post {
   stockSymbol: string;
   likeCount: number;
   commentCount: number;
-  liked?: boolean;
+  liked: boolean;
   userDTO: {
     username: string;
     email: string;
@@ -207,9 +207,13 @@ export async function sharePost(
 export async function getUserPosts(): Promise<PostsResponse> {
   try {
     const token = localStorage.getItem("token");
+
     if (!token) {
-      console.error("No auth token found in localStorage");
-      return { status: "error", message: "Not authenticated" };
+      console.error("Cannot fetch user's own posts without authentication");
+      return {
+        status: "error",
+        message: "Authentication required for personal posts",
+      };
     }
 
     const response = await fetch(`${API_URL}/api/posts/me`, {
@@ -262,16 +266,19 @@ export async function getUserPostsByUsername(
 ): Promise<PostsResponse> {
   try {
     const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No auth token found in localStorage");
-      return { status: "error", message: "Not authenticated" };
+
+    // Create headers object conditionally to include token if available
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_URL}/api/posts/user/${username}`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -638,6 +645,8 @@ export interface Comment {
   id: number;
   content: string;
   createdAt: string;
+  imageUrl?: string;
+  fullName?: string;
   userDTO: {
     username: string;
     email: string;
@@ -735,44 +744,12 @@ export async function createComment(
     const responseData = await response.json();
     console.log("Comment created successfully:", responseData);
 
-    // Check if the API returned the comment structure we expect
-    if (responseData.status === "success") {
-      // Create a proper Comment object for the response, handling both
-      // new API format (data in data field) and old API format
-      let commentData: Comment;
-
-      if (responseData.data && typeof responseData.data === "object") {
-        // New format: Comment data is in responseData.data
-        commentData = responseData.data;
-      } else {
-        // Old format or missing data: Construct a comment object from available info
-        const storedUsername = localStorage.getItem("username") || "user";
-
-        commentData = {
-          id: Date.now(), // Generate a temporary ID
-          content: data.comment,
-          createdAt: new Date().toISOString(),
-          userDTO: {
-            username: storedUsername,
-            email: "",
-            name: storedUsername,
-            surname: "",
-          },
-        };
-      }
-
-      return {
-        status: "success",
-        message: responseData.message || "Comment added successfully",
-        data: commentData,
-      };
-    } else {
-      console.error("API returned non-success status:", responseData);
-      return {
-        status: "error",
-        message: responseData.message || "Failed to create comment",
-      };
-    }
+    // Simply return the response from the API
+    return {
+      status: "success",
+      message: responseData.message || "Comment added successfully",
+      data: responseData.data,
+    };
   } catch (error) {
     console.error("Error creating comment:", error);
     return {
@@ -792,18 +769,21 @@ export async function getPostComments(
 ): Promise<CommentsResponse> {
   try {
     const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No auth token found in localStorage");
-      return { status: "error", message: "Not authenticated" };
+
+    // Create headers object conditionally to include token if available
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(
       `${API_URL}/api/comments/get-all-comments/${postId}`,
       {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
       }
     );
 
@@ -826,15 +806,113 @@ export async function getPostComments(
     }
 
     const data = await response.json();
+
+    console.log("Raw comments API response:", JSON.stringify(data, null, 2));
+
+    // Process comments to ensure they have consistent fields
+    let processedComments = [];
+    if (data.data && Array.isArray(data.data)) {
+      console.log("Processing comment array of length:", data.data.length);
+
+      processedComments = data.data.map((comment: any) => {
+        console.log("Raw comment object:", JSON.stringify(comment, null, 2));
+
+        // Check if comment data uses 'comment' field instead of 'content'
+        const commentContent = comment.content || comment.comment || "";
+
+        // Ensure all comments have the new fields with appropriate fallbacks
+        return {
+          ...comment,
+          // Ensure content is set correctly even if API returns 'comment' field instead
+          content: commentContent,
+          // If fullName is not provided, compose it from name and surname or use username
+          fullName:
+            comment.fullName ||
+            (comment.userDTO
+              ? `${comment.userDTO.name || ""} ${comment.userDTO.surname || ""}`.trim() ||
+                comment.userDTO.username
+              : comment.username || ""),
+          // Use imageUrl if provided, otherwise fall back to userDTO.image_url if available
+          imageUrl:
+            comment.imageUrl ||
+            (comment.userDTO ? comment.userDTO.image_url : undefined),
+        };
+      });
+
+      console.log(
+        "Processed comments:",
+        JSON.stringify(processedComments, null, 2)
+      );
+    } else {
+      console.log(
+        "No comments array found in API response or it's not an array"
+      );
+    }
+
     return {
       status: "success",
-      data: data.data || [],
+      data: processedComments,
     };
   } catch (error) {
     console.error("Error getting comments:", error);
     return {
       status: "error",
       message: "Failed to get comments. Please try again later.",
+    };
+  }
+}
+
+/**
+ * Fetch all public posts without requiring authentication
+ * @returns A promise that resolves to the response from the server
+ */
+export async function getAllPosts(): Promise<PostsResponse> {
+  try {
+    const token = localStorage.getItem("token");
+
+    // Create headers object conditionally to include token if available
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_URL}/api/posts`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Failed to fetch posts";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || "Failed to fetch posts";
+      } catch (e) {
+        if (response.status === 404) {
+          errorMessage = "Posts not found";
+        } else if (response.status === 500) {
+          errorMessage = "Server error. Please try again later.";
+        }
+      }
+      return {
+        status: "error",
+        message: errorMessage,
+      };
+    }
+
+    const data = await response.json();
+    return {
+      status: data.status,
+      message: data.message,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error fetching all posts:", error);
+    return {
+      status: "error",
+      message: "Failed to fetch posts. Please try again later.",
     };
   }
 }

@@ -211,15 +211,24 @@ const CommentsSection = ({
       setIsLoading(true);
       try {
         const response = await getPostComments(postId);
+        console.log("Comments response in component:", response);
+
         if (response.status === "success" && response.data) {
           // Map API response to Comment objects with proper structure
           const formattedComments = response.data.map((comment: any) => {
+            console.log("Processing comment in component:", comment);
+
+            // Get content field, handling different API formats
+            const commentContent = comment.content || comment.comment || "";
+
             // If the comment is from the old format (without userDTO), transform it
             if (!comment.userDTO && comment.username) {
               return {
                 id: comment.id || Math.random() * 100000, // Generate an id if none exists
-                content: comment.comment || "",
+                content: commentContent, // Use the extracted content
                 createdAt: comment.createdAt || new Date().toISOString(),
+                imageUrl: comment.imageUrl || null,
+                fullName: comment.fullName || comment.username || "",
                 userDTO: {
                   username: comment.username || "",
                   email: "",
@@ -228,8 +237,15 @@ const CommentsSection = ({
                 },
               };
             }
-            return comment;
+
+            // For standard format, ensure content is set correctly
+            return {
+              ...comment,
+              content: commentContent, // Ensure content is set correctly
+            };
           });
+
+          console.log("Final formatted comments:", formattedComments);
           setComments(formattedComments);
         } else {
           setError(response.message || "Failed to load comments");
@@ -261,36 +277,6 @@ const CommentsSection = ({
       return;
     }
 
-    // Create a unique ID for the temporary comment
-    const tempId = Date.now();
-
-    // Get current user information for the temporary comment
-    const username = localStorage.getItem("username") || "user";
-
-    // Create temporary comment object with proper structure matching the Comment type
-    const tempComment: Comment = {
-      id: tempId,
-      content: newComment,
-      createdAt: new Date().toISOString(),
-      userDTO: {
-        username: username,
-        email: "",
-        name: username,
-        surname: "",
-        // image_url is optional, so we can omit it
-      },
-    };
-
-    // Add the temporary comment optimistically
-    setComments((prev) => [tempComment, ...prev]);
-    setNewComment("");
-
-    // Update comment count in the parent component
-    setCommentsCount((prev) => ({
-      ...prev,
-      [postId]: (prev[postId] || 0) + 1,
-    }));
-
     try {
       // Submit the comment to the API
       console.log(
@@ -304,35 +290,29 @@ const CommentsSection = ({
       console.log("Comment creation API response:", response);
 
       if (response.status === "success") {
-        // Success case - replace the temp comment with the real one if we have data
+        // Clear the input field
+        setNewComment("");
+
+        // Success message
         toast.success(response.message || "Comment added successfully");
 
-        if (response.data) {
-          // Replace the temporary comment with the real one from the backend
-          setComments((prev) =>
-            prev.map((c) => (c.id === tempId ? response.data! : c))
-          );
-        }
-      } else {
-        // Error case - remove the temp comment and show error
-        setComments((prev) => prev.filter((c) => c.id !== tempId));
+        // Increment comment count
         setCommentsCount((prev) => ({
           ...prev,
-          [postId]: Math.max(0, (prev[postId] || 0) - 1),
+          [postId]: (prev[postId] || 0) + 1,
         }));
+
+        // Refetch comments to get the latest data
+        const commentsResponse = await getPostComments(postId);
+        if (commentsResponse.status === "success" && commentsResponse.data) {
+          setComments(commentsResponse.data);
+        }
+      } else {
         toast.error(response.message || "Failed to add comment");
-        setNewComment(newComment); // Restore the comment text
       }
     } catch (error) {
       console.error("Error submitting comment:", error);
-      // Remove the temporary comment and revert the count
-      setComments((prev) => prev.filter((c) => c.id !== tempId));
-      setCommentsCount((prev) => ({
-        ...prev,
-        [postId]: Math.max(0, (prev[postId] || 0) - 1),
-      }));
       toast.error("An error occurred while adding your comment");
-      setNewComment(newComment); // Restore the comment text
     } finally {
       setIsSubmitting(false);
     }
@@ -441,20 +421,26 @@ const CommentsSection = ({
       {/* Comments list */}
       {comments.length > 0 ? (
         <div className="space-y-4">
-          {comments.map((comment) => (
-            <div key={comment.id} className="bg-gray-50/60 p-3 rounded-xl">
+          {comments.map((comment, index) => (
+            <div
+              key={comment.id ? comment.id.toString() : `temp-comment-${index}`}
+              className="bg-gray-50/60 p-3 rounded-xl"
+            >
               <div className="flex items-start gap-3">
                 <Avatar
-                  src={comment.userDTO?.image_url || null}
-                  name={`${comment.userDTO?.name || ""} ${comment.userDTO?.surname || ""}`}
+                  src={comment.imageUrl || comment.userDTO?.image_url || null}
+                  name={
+                    comment.fullName ||
+                    `${comment.userDTO?.name || ""} ${comment.userDTO?.surname || ""}`
+                  }
                   size="sm"
                 />
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="font-medium text-[#1D1D1F] text-sm">
-                        {comment.userDTO?.name || ""}{" "}
-                        {comment.userDTO?.surname || ""}
+                        {comment.fullName ||
+                          `${comment.userDTO?.name || ""} ${comment.userDTO?.surname || ""}`}
                       </span>
                       <Link href={`/${comment.userDTO?.username || "#"}`}>
                         <span className="ml-1 text-xs text-[#6E6E73] hover:text-blue-600 transition-colors">
@@ -531,15 +517,21 @@ export default function UserPosts({
         }
 
         if (response.status === "success" && response.data) {
-          setPosts(response.data);
+          // Ensure all posts have a valid liked field
+          const processedPosts = response.data.map((post) => ({
+            ...post,
+            liked: post.liked === true, // Ensure it's a boolean
+          }));
+
+          setPosts(processedPosts);
 
           // Initialize like counts and liked status with the data from posts
           const initialLikeCounts: { [key: number]: number } = {};
           const initialLikedPosts: { [key: number]: boolean } = {};
           const initialCommentCounts: { [key: number]: number } = {};
-          response.data.forEach((post) => {
+          processedPosts.forEach((post) => {
             initialLikeCounts[post.id] = post.likeCount || 0;
-            initialLikedPosts[post.id] = post.liked || false;
+            initialLikedPosts[post.id] = post.liked; // This is now guaranteed to be a boolean
             initialCommentCounts[post.id] = post.commentCount || 0;
           });
           setLikeCounts(initialLikeCounts);
