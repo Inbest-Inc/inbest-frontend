@@ -10,6 +10,7 @@ import {
   searchUsers,
 } from "@/services/userService";
 import Avatar from "./Avatar";
+import VerificationNotification from "./VerificationNotification";
 
 // User search result type
 type UserSearchResult = {
@@ -514,133 +515,137 @@ export default function Header() {
   );
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link
-            href="/"
-            className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F] shrink-0"
-          >
-            Inbest
-          </Link>
-
-          {/* Mobile menu button */}
-          <button
-            className="md:hidden flex items-center justify-center h-9 w-9 rounded-full bg-gray-50/80 hover:bg-gray-100/80 text-[#1D1D1F] transition-all duration-200"
-            onClick={toggleMobileMenu}
-            aria-label="Toggle mobile menu"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+    <>
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Link
+              href="/"
+              className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F] shrink-0"
             >
-              {isMobileMenuOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              )}
-            </svg>
-          </button>
+              Inbest
+            </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8 mx-auto justify-center flex-1">
-            {renderNavLinks()}
-          </nav>
-
-          {/* Auth Buttons */}
-          <div className="flex items-center shrink-0 min-w-[180px] justify-end">
-            <div
-              className={`transition-opacity duration-200 ${isLoading ? "opacity-0" : "opacity-100"}`}
+            {/* Mobile menu button */}
+            <button
+              className="md:hidden flex items-center justify-center h-9 w-9 rounded-full bg-gray-50/80 hover:bg-gray-100/80 text-[#1D1D1F] transition-all duration-200"
+              onClick={toggleMobileMenu}
+              aria-label="Toggle mobile menu"
             >
-              {isAuthenticated ? (
-                <div className="relative group">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                {isMobileMenuOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-8 mx-auto justify-center flex-1">
+              {renderNavLinks()}
+            </nav>
+
+            {/* Auth Buttons */}
+            <div className="flex items-center shrink-0 min-w-[180px] justify-end">
+              <div
+                className={`transition-opacity duration-200 ${isLoading ? "opacity-0" : "opacity-100"}`}
+              >
+                {isAuthenticated ? (
+                  <div className="relative group">
+                    <div className="flex items-center gap-3">
+                      <Text className="hidden sm:block text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                        {username}
+                      </Text>
+                      {renderUserAvatar()}
+                    </div>
+                    <div className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-xl shadow-lg ring-1 ring-black/[0.04] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                      <Link
+                        href={`/${username}`}
+                        className="block px-4 py-2 text-[15px] leading-[20px] text-[#1D1D1F] hover:bg-gray-50"
+                      >
+                        Profile
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-[15px] leading-[20px] text-[#FF3B30] hover:bg-gray-50"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                   <div className="flex items-center gap-3">
-                    <Text className="hidden sm:block text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                      {username}
-                    </Text>
-                    {renderUserAvatar()}
-                  </div>
-                  <div className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-xl shadow-lg ring-1 ring-black/[0.04] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                     <Link
-                      href={`/${username}`}
-                      className="block px-4 py-2 text-[15px] leading-[20px] text-[#1D1D1F] hover:bg-gray-50"
+                      href="/login"
+                      className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
                     >
-                      Profile
+                      Log in
                     </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-[15px] leading-[20px] text-[#FF3B30] hover:bg-gray-50"
+                    <Link
+                      href="/register"
+                      className="inline-flex items-center px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors"
                     >
-                      Logout
-                    </button>
+                      Sign up
+                    </Link>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Menu */}
+          {isMobileMenuOpen && (
+            <div
+              ref={mobileMenuRef}
+              className="md:hidden py-4 bg-white border-t border-black/[0.04] space-y-4 flex flex-col items-center"
+            >
+              {renderNavLinks()}
+
+              {/* Mobile-only auth links if needed */}
+              {isAuthenticated && (
+                <div className="pt-2 border-t border-gray-100 w-full flex flex-col items-center">
                   <Link
-                    href="/login"
-                    className="text-[15px] leading-[20px] font-medium text-[#1D1D1F] hover:text-blue-600 transition-colors"
+                    href={`/${username}`}
+                    className="py-2 text-[15px] leading-[20px] text-[#1D1D1F]"
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    Log in
+                    Profile
                   </Link>
-                  <Link
-                    href="/register"
-                    className="inline-flex items-center px-4 py-2 text-[15px] leading-[20px] font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors"
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="py-2 text-[15px] leading-[20px] text-[#FF3B30]"
                   >
-                    Sign up
-                  </Link>
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
-          </div>
+          )}
         </div>
-
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div
-            ref={mobileMenuRef}
-            className="md:hidden py-4 bg-white border-t border-black/[0.04] space-y-4 flex flex-col items-center"
-          >
-            {renderNavLinks()}
-
-            {/* Mobile-only auth links if needed */}
-            {isAuthenticated && (
-              <div className="pt-2 border-t border-gray-100 w-full flex flex-col items-center">
-                <Link
-                  href={`/${username}`}
-                  className="py-2 text-[15px] leading-[20px] text-[#1D1D1F]"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Profile
-                </Link>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="py-2 text-[15px] leading-[20px] text-[#FF3B30]"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </header>
+      </header>
+      {/* Verification notification will only show when needed */}
+      <VerificationNotification />
+    </>
   );
 }

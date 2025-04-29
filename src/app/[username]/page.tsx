@@ -46,7 +46,7 @@ const SocialButton = ({
   icon: React.ReactNode;
   label: string;
   onClick?: () => void;
-  variant?: "default" | "primary" | "danger";
+  variant?: "default" | "primary" | "danger" | "success";
 }) => {
   // Determine the button style based on the variant
   const buttonStyle =
@@ -54,7 +54,9 @@ const SocialButton = ({
       ? "text-white bg-blue-600 hover:bg-blue-700"
       : variant === "danger"
         ? "text-white bg-red-600 hover:bg-red-700"
-        : "text-[#1D1D1F] bg-gray-50/80 hover:bg-gray-100/80";
+        : variant === "success"
+          ? "text-white bg-green-600 hover:bg-green-700"
+          : "text-[#1D1D1F] bg-gray-50/80 hover:bg-gray-100/80";
 
   return (
     <button
@@ -761,7 +763,7 @@ export default function UserProfilePage() {
                         </svg>
                       )
                     }
-                    variant={isFollowing ? "default" : "primary"}
+                    variant={isFollowing ? "success" : "primary"}
                     label={
                       isFollowActionLoading
                         ? "Loading..."

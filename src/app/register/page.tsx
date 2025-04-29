@@ -11,21 +11,106 @@ export default function RegisterPage() {
     username: "",
     email: "",
     password: "",
+    confirmPassword: "",
     name: "",
     surname: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
   const API_URL = getApiUrl();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Force username to lowercase
+    if (name === "username") {
+      setFormData((prev) => ({ ...prev, [name]: value.toLowerCase() }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+
+    // Remove custom email validation - rely on browser's built-in validation
+
+    // Validate password match if confirmPassword is being changed
+    if (
+      name === "confirmPassword" ||
+      (name === "password" && formData.confirmPassword)
+    ) {
+      if (name === "password" && value !== formData.confirmPassword) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          confirmPassword: "Passwords don't match",
+        }));
+      } else if (name === "confirmPassword" && value !== formData.password) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          confirmPassword: "Passwords don't match",
+        }));
+      } else {
+        setValidationErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.confirmPassword;
+          return newErrors;
+        });
+      }
+    }
+
+    // Validate username format
+    if (name === "username" && value) {
+      const lowercaseValue = value.toLowerCase();
+
+      // Check if the username contains uppercase letters
+      if (value !== lowercaseValue) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          username: "Username must be lowercase only",
+        }));
+      }
+    }
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    // Remove custom email validation - rely on browser's built-in validation
+
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = "Passwords don't match";
+    }
+
+    if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+    }
+
+    // Validate username is lowercase
+    if (formData.username !== formData.username.toLowerCase()) {
+      errors.username = "Username must be lowercase only";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
     setError("");
 
@@ -46,12 +131,11 @@ export default function RegisterPage() {
         );
       }
 
-      // Store the token and username
-      localStorage.setItem("token", data.token);
+      // Store username only for verification (but not token - not logged in yet)
       localStorage.setItem("username", formData.username);
 
-      // Redirect to profile page with a full page refresh
-      window.location.href = `/${formData.username}`;
+      // Redirect to login page instead of profile page
+      window.location.href = "/login?registered=true";
     } catch (error) {
       console.error("Registration failed:", error);
       setError(
@@ -62,6 +146,16 @@ export default function RegisterPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Function to get input class based on validation state
+  const getInputClass = (fieldName: string) => {
+    const baseClass =
+      "w-full h-[44px] px-4 rounded-xl border bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:border-blue-600 transition-all";
+
+    return validationErrors[fieldName]
+      ? `${baseClass} border-red-500 focus:ring-red-600/20`
+      : `${baseClass} border-black/[0.08] focus:ring-blue-600/20`;
   };
 
   return (
@@ -109,11 +203,16 @@ export default function RegisterPage() {
               required
               value={formData.username}
               onChange={handleChange}
-              className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+              className={getInputClass("username")}
               placeholder="your_username"
               minLength={3}
               maxLength={50}
             />
+            {validationErrors.username && (
+              <p className="mt-1 text-sm text-red-600">
+                {validationErrors.username}
+              </p>
+            )}
           </div>
 
           {/* Email Input */}
@@ -132,9 +231,14 @@ export default function RegisterPage() {
               required
               value={formData.email}
               onChange={handleChange}
-              className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+              className={getInputClass("email")}
               placeholder="you@example.com"
             />
+            {validationErrors.email && (
+              <p className="mt-1 text-sm text-red-600">
+                {validationErrors.email}
+              </p>
+            )}
           </div>
 
           {/* Name Input */}
@@ -153,9 +257,14 @@ export default function RegisterPage() {
               required
               value={formData.name}
               onChange={handleChange}
-              className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+              className={getInputClass("name")}
               placeholder="John"
             />
+            {validationErrors.name && (
+              <p className="mt-1 text-sm text-red-600">
+                {validationErrors.name}
+              </p>
+            )}
           </div>
 
           {/* Surname Input */}
@@ -174,9 +283,14 @@ export default function RegisterPage() {
               required
               value={formData.surname}
               onChange={handleChange}
-              className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+              className={getInputClass("surname")}
               placeholder="Doe"
             />
+            {validationErrors.surname && (
+              <p className="mt-1 text-sm text-red-600">
+                {validationErrors.surname}
+              </p>
+            )}
           </div>
 
           {/* Password Input */}
@@ -195,10 +309,42 @@ export default function RegisterPage() {
               required
               value={formData.password}
               onChange={handleChange}
-              className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+              className={getInputClass("password")}
               placeholder="••••••••"
               minLength={6}
             />
+            {validationErrors.password && (
+              <p className="mt-1 text-sm text-red-600">
+                {validationErrors.password}
+              </p>
+            )}
+          </div>
+
+          {/* Confirm Password Input */}
+          <div className="space-y-2">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-[15px] leading-[20px] font-medium text-[#1D1D1F]"
+            >
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className={getInputClass("confirmPassword")}
+              placeholder="••••••••"
+              minLength={6}
+            />
+            {validationErrors.confirmPassword && (
+              <p className="mt-1 text-sm text-red-600">
+                {validationErrors.confirmPassword}
+              </p>
+            )}
           </div>
 
           {/* Submit Button */}

@@ -285,10 +285,19 @@ export async function getUserPostsByUsername(
       let errorMessage = "Failed to fetch posts";
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || "Failed to fetch posts";
+
+        // If the error message contains "No posts found for user: [username]", replace with a more professional message
+        if (
+          errorData.message &&
+          errorData.message.includes("No posts found for user:")
+        ) {
+          errorMessage = "No content available";
+        } else {
+          errorMessage = errorData.message || "Failed to fetch posts";
+        }
       } catch (e) {
         if (response.status === 404) {
-          errorMessage = "User not found";
+          errorMessage = "Profile not found";
         } else if (response.status === 500) {
           errorMessage = "Server error. Please try again later.";
         }
@@ -910,6 +919,278 @@ export async function getAllPosts(): Promise<PostsResponse> {
     };
   } catch (error) {
     console.error("Error fetching all posts:", error);
+    return {
+      status: "error",
+      message: "Failed to fetch posts. Please try again later.",
+    };
+  }
+}
+
+/**
+ * Fetch posts for a specific portfolio by ID
+ * @param portfolioId - The ID of the portfolio to fetch posts for
+ * @returns A promise that resolves to the response from the server
+ */
+export async function getPortfolioPosts(
+  portfolioId: number | string
+): Promise<PostsResponse> {
+  try {
+    console.log(`Fetching posts for portfolio ID: ${portfolioId}`);
+
+    const token = localStorage.getItem("token");
+    console.log(`Token available: ${!!token}`);
+
+    // Create headers object conditionally to include token if available
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const url = `${API_URL}/api/posts/portfolio/${portfolioId}`;
+    console.log(`Request URL: ${url}`);
+    console.log(`Request headers:`, headers);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+    });
+
+    console.log(`Portfolio posts response status: ${response.status}`);
+
+    // Log response headers for debugging
+    const headerObj: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      headerObj[key] = value;
+    });
+    console.log("Response headers:", headerObj);
+
+    // Handle 404 as a successful empty response to handle portfolios with no posts
+    if (response.status === 404) {
+      console.log(
+        "No posts found for this portfolio (404). Returning empty array."
+      );
+      return {
+        status: "success",
+        message: "No content available",
+        data: [],
+      };
+    }
+
+    if (!response.ok) {
+      let errorMessage = "Failed to fetch portfolio posts";
+      try {
+        const errorData = await response.json();
+        console.error("Error response data:", errorData);
+        errorMessage = errorData.message || "Failed to fetch portfolio posts";
+      } catch (e) {
+        console.error("Could not parse error response:", e);
+        if (response.status === 500) {
+          errorMessage = "Server error. Please try again later.";
+        } else if (response.status === 403 || response.status === 401) {
+          errorMessage = "Not authorized to view these posts";
+        }
+      }
+      return {
+        status: "error",
+        message: errorMessage,
+      };
+    }
+
+    // Get the raw text first to log it
+    const responseText = await response.text();
+    console.log(
+      "Raw response text:",
+      responseText.substring(0, 500) + (responseText.length > 500 ? "..." : "")
+    );
+
+    // Now parse as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Error parsing JSON response:", error);
+      return {
+        status: "error",
+        message: "Invalid response format from server",
+      };
+    }
+
+    console.log("Portfolio posts data:", data);
+    console.log("Portfolio posts data type:", typeof data);
+
+    if (data) {
+      console.log(
+        "Portfolio posts data structure:",
+        JSON.stringify(data, null, 2).substring(0, 300) + "..."
+      );
+      if (typeof data === "object" && !Array.isArray(data)) {
+        console.log("Object keys:", Object.keys(data));
+      }
+    }
+
+    // Check if data is directly an array (different from other endpoints)
+    if (Array.isArray(data)) {
+      console.log("Data is directly an array of length:", data.length);
+      return {
+        status: "success",
+        message: "Posts retrieved successfully",
+        data: data,
+      };
+    }
+
+    // Handle nested data structures - some API responses might have data in a different path
+    if (data && typeof data === "object") {
+      // Try to find posts data in common paths
+      if (Array.isArray(data.data)) {
+        console.log("Found posts in data.data with length:", data.data.length);
+        return {
+          status: data.status || "success",
+          message: data.message || "Posts retrieved successfully",
+          data: data.data,
+        };
+      }
+
+      // Check for posts in content field (common in pagination)
+      if (data.content && Array.isArray(data.content)) {
+        console.log(
+          "Found posts in data.content with length:",
+          data.content.length
+        );
+        return {
+          status: "success",
+          message: "Posts retrieved successfully",
+          data: data.content,
+        };
+      }
+
+      // Check if top-level object properties might be the posts
+      if (
+        Object.keys(data).some(
+          (key) => typeof data[key] === "object" && data[key] !== null
+        )
+      ) {
+        // Try to find an array in the data
+        for (const key in data) {
+          if (Array.isArray(data[key])) {
+            console.log(
+              `Found posts array in field: ${key} with length:`,
+              data[key].length
+            );
+            return {
+              status: "success",
+              message: "Posts retrieved successfully",
+              data: data[key],
+            };
+          }
+        }
+      }
+
+      // Special case handling: If console shows array but it's not being detected
+      if (
+        typeof data.toString === "function" &&
+        data.toString().includes("Array")
+      ) {
+        console.log(
+          "Data might be an array-like object, attempting to convert"
+        );
+        try {
+          // Try to convert to a regular array and ensure it matches Post[] type
+          const arrayData = Array.from(data).filter(
+            (item) => typeof item === "object" && item !== null && "id" in item // Verify it has at least the ID field required for a Post
+          ) as Post[];
+
+          if (arrayData.length > 0) {
+            console.log(
+              "Successfully converted to array with length:",
+              arrayData.length
+            );
+            return {
+              status: "success",
+              message: "Posts retrieved successfully",
+              data: arrayData,
+            };
+          }
+        } catch (error) {
+          console.error("Error converting to array:", error);
+        }
+      }
+    }
+
+    // Last resort: Check if we can convert the logged array to a usable format
+    console.log(
+      "Using fallback array handling - data might be in an unexpected format"
+    );
+
+    // If data.data is null or undefined, return an empty array
+    const result = {
+      status: data?.status || "success",
+      message: data?.message || "Posts retrieved successfully",
+      data: data?.data || [],
+    };
+
+    console.log("Final result being returned:", result);
+    return result;
+  } catch (error) {
+    console.error("Error fetching portfolio posts:", error);
+    return {
+      status: "error",
+      message: "Failed to fetch portfolio posts. Please try again later.",
+    };
+  }
+}
+
+/**
+ * Fetch posts from users that the current authenticated user follows
+ * @returns A promise that resolves to the response from the server
+ */
+export async function getFollowedPosts(): Promise<PostsResponse> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      console.error("Cannot fetch followed posts without authentication");
+      return {
+        status: "error",
+        message: "Authentication required to view followed posts",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/api/posts/followed`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Failed to fetch posts";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || "Failed to fetch posts";
+      } catch (e) {
+        if (response.status === 404) {
+          errorMessage = "Posts not found";
+        } else if (response.status === 500) {
+          errorMessage = "Server error. Please try again later.";
+        }
+      }
+      return {
+        status: "error",
+        message: errorMessage,
+      };
+    }
+
+    const data = await response.json();
+    return {
+      status: data.status,
+      message: data.message,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error fetching followed posts:", error);
     return {
       status: "error",
       message: "Failed to fetch posts. Please try again later.",

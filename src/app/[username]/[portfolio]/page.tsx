@@ -10,6 +10,7 @@ import { useParams } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
 import ActivityTable from "@/components/ActivityTable";
 import OpinionsFeed from "@/components/OpinionsFeed";
+import UserPosts from "@/components/UserPosts";
 import {
   getPortfolioHoldings,
   getPortfolioMetrics,
@@ -993,11 +994,11 @@ export default function PortfolioPage() {
           <Card className="overflow-hidden bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
             <div className="p-6 border-b border-black/[0.04]">
               <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                Recent Activity
+                Portfolio Posts
               </Text>
             </div>
             <div className="p-6">
-              <OpinionsFeed activeTab="following" />
+              <UserPosts portfolioId={Number(params.portfolio)} />
             </div>
           </Card>
         </motion.div>

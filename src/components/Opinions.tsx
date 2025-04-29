@@ -4,9 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  getUserPosts,
-  getUserPostsByUsername,
-  getPortfolioPosts,
   getAllPosts,
   getFollowedPosts,
   Post,
@@ -33,7 +30,7 @@ import {
 } from "react-share";
 import { toast } from "react-hot-toast";
 
-interface UserPostsProps {
+interface OpinionsProps {
   username?: string;
   isOwnProfile?: boolean;
   portfolioId?: string | number;
@@ -531,12 +528,12 @@ const CommentsSection = ({
   );
 };
 
-export default function UserPosts({
+export default function Opinions({
   username,
   isOwnProfile = false,
   portfolioId,
-  view,
-}: UserPostsProps) {
+  view = "forYou",
+}: OpinionsProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -557,22 +554,14 @@ export default function UserPosts({
       try {
         let response;
 
-        if (view === "forYou") {
-          // For the "For You" tab in the Opinions page
-          response = await getAllPosts();
-          console.log("For You posts response:", response);
-        } else if (view === "followed") {
-          // For the "Following" tab in the Opinions page
+        // Use the appropriate endpoint based on the view prop
+        if (view === "followed") {
           response = await getFollowedPosts();
           console.log("Followed posts response:", response);
-        } else if (portfolioId) {
-          // If portfolioId is provided, fetch posts for that portfolio
-          response = await getPortfolioPosts(portfolioId);
-          console.log("Portfolio posts response:", response);
-        } else if (isOwnProfile || !username) {
-          response = await getUserPosts();
         } else {
-          response = await getUserPostsByUsername(username);
+          // Default to "forYou" view
+          response = await getAllPosts();
+          console.log("For You posts response:", response);
         }
 
         // If response is success but data is empty array, just set posts to empty array without error
@@ -610,7 +599,7 @@ export default function UserPosts({
     };
 
     fetchPosts();
-  }, [username, isOwnProfile, portfolioId, view]);
+  }, [view]);
 
   const fetchLikeCount = async (postId: number) => {
     try {
@@ -882,7 +871,7 @@ export default function UserPosts({
         {[1, 2, 3].map((index) => (
           <Card
             key={index}
-            className="bg-white/60 backdrop-blur-md p-5 ring-1 ring-black/[0.04] shadow-sm rounded-2xl"
+            className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6"
           >
             <div className="animate-pulse">
               <div className="flex items-center justify-between mb-4">
@@ -915,7 +904,7 @@ export default function UserPosts({
   // Error state
   if (error) {
     return (
-      <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm rounded-2xl">
+      <Card className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
         <div className="flex flex-col items-center justify-center py-8">
           <div className="h-16 w-16 rounded-full bg-red-50 flex items-center justify-center mb-4">
             <svg
@@ -935,25 +924,17 @@ export default function UserPosts({
           <Text className="text-red-500 font-medium text-lg mb-2">
             {view === "followed"
               ? "Failed to load followed posts"
-              : view === "forYou"
-                ? "Failed to load posts"
-                : portfolioId
-                  ? "Failed to load portfolio posts"
-                  : error}
+              : "Failed to load posts"}
           </Text>
           <Text className="text-gray-500 text-center">
-            {portfolioId
-              ? "We couldn't retrieve posts for this portfolio. It might be private or no longer available."
-              : "We couldn't load the content. Please try again later."}
+            We couldn't load the content. Please try again later.
           </Text>
-          {(portfolioId || view) && (
-            <button
-              className="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-200 transition-colors"
-              onClick={() => window.location.reload()}
-            >
-              Refresh page
-            </button>
-          )}
+          <button
+            className="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-200 transition-colors"
+            onClick={() => window.location.reload()}
+          >
+            Refresh page
+          </button>
         </div>
       </Card>
     );
@@ -962,7 +943,7 @@ export default function UserPosts({
   // Empty state
   if (posts.length === 0) {
     return (
-      <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm rounded-2xl">
+      <Card className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
         <div className="flex flex-col items-center justify-center py-12">
           <div className="h-20 w-20 rounded-full bg-gray-50 flex items-center justify-center mb-6">
             <svg
@@ -985,13 +966,7 @@ export default function UserPosts({
           <Text className="text-[#6E6E73] text-center max-w-md">
             {view === "followed"
               ? "Follow more investors to see their posts in your feed."
-              : view === "forYou"
-                ? "Explore more content and check back soon for investment updates."
-                : portfolioId
-                  ? "This portfolio doesn't have any posts yet."
-                  : isOwnProfile
-                    ? "Share your first investment insight to see it here!"
-                    : "No content available at this time."}
+              : "Explore more content and check back soon for investment updates."}
           </Text>
         </div>
       </Card>
@@ -1007,178 +982,258 @@ export default function UserPosts({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Card className="bg-white/60 backdrop-blur-md p-5 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl">
-            {/* Post header with user info and share button */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Avatar
-                  src={post.userDTO.image_url}
-                  name={`${post.userDTO.name} ${post.userDTO.surname}`}
-                  size="md"
-                />
-                <div>
-                  <div className="font-medium text-[#1D1D1F]">
-                    {post.userDTO.name} {post.userDTO.surname}
-                  </div>
-                  <Link href={`/${post.userDTO.username}`}>
-                    <span className="text-sm text-[#6E6E73] hover:text-blue-600 transition-colors">
-                      @{post.userDTO.username}
-                    </span>
-                  </Link>
-                </div>
-              </div>
-              <SharePostButton post={post} />
-            </div>
-
-            {/* Stock action card */}
-            <div className="p-4 mb-4 bg-gray-50/50 backdrop-blur-sm rounded-xl border border-black/[0.02]">
-              <div className="flex items-center gap-3">
-                {getActionIcon(post.investmentActivityResponseDTO.actionType)}
-                <div className="flex-grow space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="relative w-5 h-5 rounded-md overflow-hidden bg-white shadow-sm">
-                      <Image
-                        src={getStockLogo(post.stockSymbol)}
-                        alt={post.stockSymbol}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <span className="font-semibold text-[#1D1D1F]">
-                      ${post.stockSymbol}
-                    </span>
-                  </div>
-                  <div className="text-sm text-[#6E6E73]">
-                    {getActionMessage(
-                      post.investmentActivityResponseDTO.actionType,
-                      post.stockSymbol,
-                      post.investmentActivityResponseDTO.new_position_weight
-                    )}
-                  </div>
-                </div>
-                <Link
-                  href={`/${post.userDTO.username}/${post.investmentActivityResponseDTO.portfolioId}`}
-                  className="p-2 text-[#6E6E73] hover:text-blue-600 transition-colors"
-                  title="View Portfolio"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
-                  </svg>
-                </Link>
-              </div>
-            </div>
-
-            {/* Post content */}
-            {post.content && (
-              <div className="mb-4">
-                <p className="text-[#1D1D1F] text-[15px] leading-[20px] whitespace-pre-line">
-                  {post.content}
-                </p>
-              </div>
-            )}
-
-            {/* Interaction buttons */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="flex items-center gap-5">
-                <button
-                  className={`flex items-center gap-2 ${
-                    likedPosts[post.id]
-                      ? "text-red-500 hover:text-red-600"
-                      : "text-[#6E6E73] hover:text-blue-600"
-                  } transition-colors`}
-                  onClick={() => handleLikeAction(post.id)}
-                  disabled={isLikeActionPending[post.id]}
-                >
-                  <svg
-                    className={`w-5 h-5 ${isLikeActionPending[post.id] ? "animate-pulse" : ""}`}
-                    fill={likedPosts[post.id] ? "currentColor" : "none"}
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                  <span className="text-sm font-medium">
-                    {likeCounts[post.id] || post.likeCount || 0}
-                  </span>
-                </button>
-                <button
-                  className="flex items-center gap-2 text-[#6E6E73] hover:text-blue-600 transition-colors"
-                  onClick={() => toggleExpand(post.id)}
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                  </svg>
-                  <span className="text-sm font-medium">
-                    {commentCounts[post.id] || post.commentCount || 0}
-                  </span>
-                </button>
-              </div>
-
-              <div
-                className="text-sm text-[#6E6E73] cursor-help"
-                title={formatExactDate(post.createdAt)}
-              >
-                {formatRelativeTime(post.createdAt)}
-              </div>
-            </div>
-
-            {/* Comments section (expandable) */}
-            <AnimatePresence>
-              {expandedPostId === post.id && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-4 pt-4 border-t border-gray-100"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <Text className="font-medium text-[#1D1D1F]">Comments</Text>
-                    <button
-                      onClick={() => setExpandedPostId(null)}
-                      className="text-sm text-[#6E6E73] hover:text-[#1D1D1F]"
-                    >
-                      Close
-                    </button>
-                  </div>
-
-                  <CommentsSection
-                    postId={post.id}
-                    commentCount={
-                      commentCounts[post.id] || post.commentCount || 0
-                    }
-                    setCommentsCount={setCommentCounts}
-                    formatExactDate={formatExactDate}
-                    formatRelativeTime={formatRelativeTime}
+          <Card className="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+            <div className="p-6">
+              {/* Post header with user info and share button */}
+              <div className="flex items-start gap-4">
+                <div className="relative h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
+                  <Avatar
+                    src={post.userDTO.image_url}
+                    name={`${post.userDTO.name} ${post.userDTO.surname}`}
+                    size="md"
                   />
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+                <div className="flex-1 min-w-0">
+                  {/* User Info and Timestamp */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="font-semibold text-[#1D1D1F]">
+                        {post.userDTO.name} {post.userDTO.surname}
+                      </div>
+                      <Link href={`/${post.userDTO.username}`}>
+                        <span className="text-sm text-[#6E6E73] hover:text-blue-600 transition-colors">
+                          @{post.userDTO.username}
+                        </span>
+                      </Link>
+                    </div>
+                    <div
+                      className="text-sm text-[#6E6E73]"
+                      title={formatExactDate(post.createdAt)}
+                    >
+                      {formatRelativeTime(post.createdAt)}
+                    </div>
+                  </div>
+
+                  {/* Stock action card */}
+                  <div className="border border-gray-100 rounded-xl p-3 mb-4">
+                    <div className="flex items-center">
+                      {/* Action Icon */}
+                      <div className="mr-3">
+                        <div
+                          className={`h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm ${
+                            post.investmentActivityResponseDTO.actionType.toUpperCase() ===
+                            "BUY"
+                              ? "bg-emerald-50/80"
+                              : post.investmentActivityResponseDTO.actionType.toUpperCase() ===
+                                  "SELL"
+                                ? "bg-red-50/80"
+                                : "bg-blue-50/80"
+                          }`}
+                        >
+                          <svg
+                            className={`w-5 h-5 ${
+                              post.investmentActivityResponseDTO.actionType.toUpperCase() ===
+                              "BUY"
+                                ? "text-emerald-600"
+                                : post.investmentActivityResponseDTO.actionType.toUpperCase() ===
+                                    "SELL"
+                                  ? "text-red-600"
+                                  : "text-blue-600"
+                            }`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            {post.investmentActivityResponseDTO.actionType.toUpperCase() ===
+                            "BUY" ? (
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M12 4v16m8-8H4"
+                              />
+                            ) : post.investmentActivityResponseDTO.actionType.toUpperCase() ===
+                              "SELL" ? (
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M20 12H4"
+                              />
+                            ) : (
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M9 5l7 7-7 7"
+                              />
+                            )}
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Action Description */}
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <span className="text-[#1D1D1F] font-medium">
+                            {post.investmentActivityResponseDTO.actionType.toUpperCase() ===
+                            "BUY"
+                              ? "Bought"
+                              : post.investmentActivityResponseDTO.actionType.toUpperCase() ===
+                                  "SELL"
+                                ? "Sold"
+                                : "Adjusted position in"}
+                          </span>
+
+                          {/* Stock Info */}
+                          <div className="flex items-center ml-2">
+                            <div className="relative h-5 w-5 rounded-md overflow-hidden bg-white shadow-sm mr-1">
+                              <Image
+                                src={getStockLogo(post.stockSymbol)}
+                                alt={post.stockSymbol}
+                                fill
+                                className="object-contain p-0.5"
+                              />
+                            </div>
+                            <span className="font-semibold text-[#1D1D1F]">
+                              ${post.stockSymbol}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Position Details */}
+                        <div className="text-sm text-[#6E6E73] mt-1">
+                          {post.investmentActivityResponseDTO.actionType.toUpperCase() ===
+                          "BUY"
+                            ? `New position: ${post.investmentActivityResponseDTO.new_position_weight.toFixed(2)}% of portfolio`
+                            : post.investmentActivityResponseDTO.actionType.toUpperCase() ===
+                                "SELL"
+                              ? `Reduced to ${post.investmentActivityResponseDTO.new_position_weight.toFixed(2)}% of portfolio`
+                              : `Position is now ${post.investmentActivityResponseDTO.new_position_weight.toFixed(2)}% of portfolio`}
+                        </div>
+                      </div>
+
+                      {/* Portfolio Link */}
+                      <Link
+                        href={`/${post.userDTO.username}/${post.investmentActivityResponseDTO.portfolioId}`}
+                        className="p-2 text-[#6E6E73] hover:text-blue-600 transition-colors"
+                        title="View Portfolio"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                          />
+                        </svg>
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Post content */}
+                  {post.content && (
+                    <div className="mb-4">
+                      <p className="text-[#1D1D1F] text-[15px] leading-[20px] whitespace-pre-line">
+                        {post.content}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Interaction buttons */}
+                  <div className="flex items-center gap-6 mt-4">
+                    <button
+                      className={`flex items-center gap-2 text-sm ${
+                        likedPosts[post.id]
+                          ? "text-[#0071E3]"
+                          : "text-[#6E6E73] hover:text-[#0071E3]"
+                      } transition-colors`}
+                      onClick={() => handleLikeAction(post.id)}
+                      disabled={isLikeActionPending[post.id]}
+                    >
+                      <svg
+                        className={`w-5 h-5 ${isLikeActionPending[post.id] ? "animate-pulse" : ""}`}
+                        fill={likedPosts[post.id] ? "currentColor" : "none"}
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
+                        />
+                      </svg>
+                      <span>{likeCounts[post.id] || post.likeCount || 0}</span>
+                    </button>
+                    <button
+                      className="flex items-center gap-2 text-sm text-[#6E6E73] hover:text-[#0071E3] transition-colors"
+                      onClick={() => toggleExpand(post.id)}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
+                      </svg>
+                      <span>
+                        {commentCounts[post.id] || post.commentCount || 0}
+                      </span>
+                    </button>
+                    <div className="relative">
+                      <SharePostButton post={post} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Comments section (expandable) */}
+              <AnimatePresence>
+                {expandedPostId === post.id && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="mt-6 pt-4 border-t border-gray-100"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <Text className="font-medium text-[#1D1D1F]">
+                        Comments
+                      </Text>
+                      <button
+                        onClick={() => setExpandedPostId(null)}
+                        className="text-sm text-[#6E6E73] hover:text-[#1D1D1F]"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    <CommentsSection
+                      postId={post.id}
+                      commentCount={
+                        commentCounts[post.id] || post.commentCount || 0
+                      }
+                      setCommentsCount={setCommentCounts}
+                      formatExactDate={formatExactDate}
+                      formatRelativeTime={formatRelativeTime}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </Card>
         </motion.div>
       ))}

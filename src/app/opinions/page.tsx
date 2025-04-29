@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import OpinionsFeed from "@/components/OpinionsFeed";
+import UserPosts from "@/components/UserPosts";
 import { motion } from "framer-motion";
 
 export default function OpinionsPage() {
-  const [activeTab, setActiveTab] = useState<"for-you" | "following">(
-    "for-you"
-  );
+  const [activeTab, setActiveTab] = useState<"forYou" | "followed">("forYou");
 
   return (
     <main className="min-h-screen bg-white">
@@ -37,13 +35,13 @@ export default function OpinionsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          {/* Tab Selection - Redesigned with more emphasis */}
+          {/* Tab Selection */}
           <div className="mb-6">
             <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-full w-fit">
               <button
-                onClick={() => setActiveTab("for-you")}
+                onClick={() => setActiveTab("forYou")}
                 className={`px-6 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ${
-                  activeTab === "for-you"
+                  activeTab === "forYou"
                     ? "bg-white text-[#1D1D1F] shadow-sm"
                     : "text-[#6E6E73] hover:text-[#1D1D1F]"
                 }`}
@@ -51,9 +49,9 @@ export default function OpinionsPage() {
                 For You
               </button>
               <button
-                onClick={() => setActiveTab("following")}
+                onClick={() => setActiveTab("followed")}
                 className={`px-6 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ${
-                  activeTab === "following"
+                  activeTab === "followed"
                     ? "bg-white text-[#1D1D1F] shadow-sm"
                     : "text-[#6E6E73] hover:text-[#1D1D1F]"
                 }`}
@@ -63,9 +61,9 @@ export default function OpinionsPage() {
             </div>
           </div>
 
-          {/* Feed Content - No card wrapper for cleaner look */}
+          {/* Feed Content */}
           <div className="mt-4">
-            <OpinionsFeed activeTab={activeTab} />
+            <UserPosts view={activeTab} />
           </div>
         </motion.div>
       </div>

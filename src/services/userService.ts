@@ -246,6 +246,8 @@ export async function checkAuthStatus(): Promise<{
   status: "success" | "error";
   username?: string;
   imageUrl?: string;
+  isVerified?: boolean;
+  email?: string;
   message?: string;
 }> {
   try {
