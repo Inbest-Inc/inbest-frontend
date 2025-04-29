@@ -667,7 +667,12 @@ export async function deleteStockFromPortfolio(
 }
 
 export interface AuthenticationResponse {
-  token: string;
+  status: string;
+  message: string;
+  data: {
+    token: string;
+  };
+  result?: string; // For error responses
 }
 
 export interface RegisterRequest {

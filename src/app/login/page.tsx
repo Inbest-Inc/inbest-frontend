@@ -31,13 +31,23 @@ export default function LoginPage() {
       });
 
       const data = await response.json();
+      console.log("Login response:", data);
 
       if (!response.ok) {
-        throw new Error(data.message || "Invalid username or password");
+        throw new Error(
+          data.result || data.message || "Invalid username or password"
+        );
+      }
+
+      // Check if token exists in the expected location
+      const token = data.data?.token || data.token;
+      if (!token) {
+        console.error("No token found in response:", data);
+        throw new Error("No authentication token in response");
       }
 
       // Store the token and username
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", token);
       localStorage.setItem("username", username);
 
       // Redirect to profile page with a full page refresh
