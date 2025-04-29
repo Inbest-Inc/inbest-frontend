@@ -124,6 +124,7 @@ export default function RegisterPage() {
       });
 
       const data = await response.json();
+      console.log("Registration response:", data);
 
       if (!response.ok) {
         throw new Error(
@@ -131,10 +132,11 @@ export default function RegisterPage() {
         );
       }
 
-      // Store username only for verification (but not token - not logged in yet)
+      // Successfully registered, but we're not logging in automatically
+      // so we only store the username
       localStorage.setItem("username", formData.username);
 
-      // Redirect to login page instead of profile page
+      // Redirect to login page
       window.location.href = "/login?registered=true";
     } catch (error) {
       console.error("Registration failed:", error);

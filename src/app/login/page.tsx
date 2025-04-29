@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Text } from "@tremor/react";
@@ -15,6 +15,28 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Check for registration success
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Parse the URL for query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const registered = urlParams.get("registered");
+
+      if (registered === "true") {
+        setSuccessMessage(
+          "Registration successful! Please sign in to continue."
+        );
+
+        // Get the username from localStorage if available
+        const storedUsername = localStorage.getItem("username");
+        if (storedUsername) {
+          setUsername(storedUsername);
+        }
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +106,15 @@ export default function LoginPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Success Message */}
+          {successMessage && (
+            <div className="p-4 rounded-xl bg-green-50 border border-green-100">
+              <Text className="text-[15px] leading-[20px] text-green-600">
+                {successMessage}
+              </Text>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="p-4 rounded-xl bg-red-50 border border-red-100">
