@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import UserPosts from "@/components/UserPosts";
 import { motion } from "framer-motion";
+import Posts from "@/components/posts/Posts";
 
 export default function OpinionsPage() {
   const [activeTab, setActiveTab] = useState<"forYou" | "followed">("forYou");
@@ -63,7 +63,7 @@ export default function OpinionsPage() {
 
           {/* Feed Content */}
           <div className="mt-4">
-            <UserPosts view={activeTab} />
+            <Posts view={activeTab} />
           </div>
         </motion.div>
       </div>

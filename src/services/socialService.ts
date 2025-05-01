@@ -1197,3 +1197,116 @@ export async function getFollowedPosts(): Promise<PostsResponse> {
     };
   }
 }
+
+/**
+ * Delete a post by its ID
+ * @param postId - The ID of the post to delete
+ * @returns A promise that resolves to the response from the server
+ */
+export async function deletePost(postId: number): Promise<any> {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authentication error: No token found when deleting post");
+      return { status: "error", message: "Not authenticated" };
+    }
+
+    const response = await fetch(`${API_URL}/api/posts/${postId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Failed to delete post";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        if (response.status === 404) {
+          errorMessage = "Post not found";
+        } else if (response.status === 403) {
+          errorMessage = "You don't have permission to delete this post";
+        } else if (response.status === 500) {
+          errorMessage = "Server error. Please try again later.";
+        }
+      }
+      return {
+        status: "error",
+        message: errorMessage,
+      };
+    }
+
+    const data = await response.json();
+    return {
+      status: data.status || "success",
+      message: data.message || "Post deleted successfully",
+    };
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    return {
+      status: "error",
+      message: "Failed to delete post. Please try again later.",
+    };
+  }
+}
+
+/**
+ * Delete a comment by its ID
+ * @param commentId - The ID of the comment to delete
+ * @returns A promise that resolves to the response from the server
+ */
+export async function deleteComment(commentId: number): Promise<any> {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error(
+        "Authentication error: No token found when deleting comment"
+      );
+      return { status: "error", message: "Not authenticated" };
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/comments/delete/comment/${commentId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = "Failed to delete comment";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        if (response.status === 404) {
+          errorMessage = "Comment not found";
+        } else if (response.status === 403) {
+          errorMessage = "You don't have permission to delete this comment";
+        } else if (response.status === 500) {
+          errorMessage = "Server error. Please try again later.";
+        }
+      }
+      return {
+        status: "error",
+        message: errorMessage,
+      };
+    }
+
+    const data = await response.json();
+    return {
+      status: data.status || "success",
+      message: data.message || "Comment deleted successfully",
+    };
+  } catch (error) {
+    console.error("Error deleting comment:", error);
+    return {
+      status: "error",
+      message: "Failed to delete comment. Please try again later.",
+    };
+  }
+}

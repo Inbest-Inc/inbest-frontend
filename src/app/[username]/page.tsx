@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
-import UserPosts from "@/components/UserPosts";
+import Posts from "@/components/posts/Posts";
 import CreatePortfolioModal from "@/components/CreatePortfolioModal";
 import {
   createPortfolio,
@@ -961,7 +961,7 @@ export default function UserProfilePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <UserPosts
+              <Posts
                 username={params.username as string}
                 isOwnProfile={isOwnProfile}
               />

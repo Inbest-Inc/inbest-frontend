@@ -10,7 +10,6 @@ import { useParams } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
 import ActivityTable from "@/components/ActivityTable";
 import OpinionsFeed from "@/components/OpinionsFeed";
-import UserPosts from "@/components/UserPosts";
 import {
   getPortfolioHoldings,
   getPortfolioMetrics,
@@ -32,6 +31,9 @@ import {
   WhatsappIcon,
   TelegramIcon,
 } from "react-share";
+import Posts from "@/components/posts/Posts";
+import toast from "react-hot-toast";
+import { getApiUrl } from "@/config/env";
 
 const portfolioReturns = {
   "1M": -2.3,
@@ -985,7 +987,7 @@ export default function PortfolioPage() {
           </Card>
         </motion.div>
 
-        {/* Recent Activity */}
+        {/* Portfolio Posts */}
         <motion.div
           initial={{ opacity: 0, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
@@ -998,7 +1000,7 @@ export default function PortfolioPage() {
               </Text>
             </div>
             <div className="p-6">
-              <UserPosts portfolioId={Number(params.portfolio)} />
+              <Posts portfolioId={Number(params.portfolio)} />
             </div>
           </Card>
         </motion.div>
