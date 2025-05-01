@@ -18,6 +18,8 @@ import {
   deleteStockFromPortfolio,
 } from "@/services/portfolioService";
 import { formatQuantity } from "@/utils/quantityUtils";
+import Tooltip from "./Tooltip";
+import InfoTooltip, { metricExplanations } from "./InfoTooltip";
 
 interface Holding {
   symbol: string;
@@ -539,16 +541,42 @@ export default function ManageableActivityTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Asset</TableHead>
-              <TableHead className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  Shares
-                </div>
+              <TableHead>
+                <span className="flex items-center gap-1">
+                  Asset
+                  <InfoTooltip content={metricExplanations.asset} />
+                </span>
               </TableHead>
-              <TableHead className="text-right">Allocation %</TableHead>
-              <TableHead className="text-right">Avg Price</TableHead>
-              <TableHead className="text-right">Current Price</TableHead>
-              <TableHead className="text-right">Return</TableHead>
+              <TableHead className="text-right">
+                <span className="flex items-center justify-end gap-1">
+                  Shares
+                  <InfoTooltip content={metricExplanations.shares} />
+                </span>
+              </TableHead>
+              <TableHead className="text-right">
+                <span className="flex items-center justify-end gap-1">
+                  Allocation %
+                  <InfoTooltip content={metricExplanations.allocation} />
+                </span>
+              </TableHead>
+              <TableHead className="text-right">
+                <span className="flex items-center justify-end gap-1">
+                  Avg Price
+                  <InfoTooltip content={metricExplanations.averagePrice} />
+                </span>
+              </TableHead>
+              <TableHead className="text-right">
+                <span className="flex items-center justify-end gap-1">
+                  Current Price
+                  <InfoTooltip content={metricExplanations.currentPrice} />
+                </span>
+              </TableHead>
+              <TableHead className="text-right">
+                <span className="flex items-center justify-end gap-1">
+                  Return
+                  <InfoTooltip content={metricExplanations.return} />
+                </span>
+              </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -599,21 +627,31 @@ export default function ManageableActivityTable({
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  {holding.allocation.toFixed(1)}%
+                  <Tooltip content={`${holding.allocation}%`}>
+                    <span>{holding.allocation.toFixed(1)}%</span>
+                  </Tooltip>
                 </TableCell>
                 <TableCell className="text-right">
-                  ${holding.averagePrice.toFixed(2)}
+                  <Tooltip content={`$${holding.averagePrice}`}>
+                    <span>${holding.averagePrice.toFixed(2)}</span>
+                  </Tooltip>
                 </TableCell>
                 <TableCell className="text-right">
-                  ${holding.currentPrice.toFixed(2)}
+                  <Tooltip content={`$${holding.currentPrice}`}>
+                    <span>${holding.currentPrice.toFixed(2)}</span>
+                  </Tooltip>
                 </TableCell>
                 <TableCell
                   className={`text-right font-medium ${
                     holding.return >= 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
-                  {holding.return >= 0 ? "+" : ""}
-                  {holding.return.toFixed(2)}%
+                  <Tooltip content={`${holding.return}%`}>
+                    <span>
+                      {holding.return >= 0 ? "+" : ""}
+                      {holding.return.toFixed(2)}%
+                    </span>
+                  </Tooltip>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end">

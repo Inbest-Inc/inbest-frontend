@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
+import PortfolioPerformanceChart from "@/components/PortfolioPerformanceChart";
 import Posts from "@/components/posts/Posts";
 import CreatePortfolioModal from "@/components/CreatePortfolioModal";
 import {
@@ -825,12 +826,9 @@ export default function UserProfilePage() {
                         className="block group"
                       >
                         <Card className="bg-white/60 backdrop-blur-md p-6 ring-1 ring-black/[0.04] shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl">
-                          <PortfolioChart
+                          <PortfolioPerformanceChart
+                            portfolioId={portfolio.portfolioId}
                             title={portfolio.portfolioName}
-                            subtitle={
-                              portfolio.visibility === "public" ? "" : ""
-                            }
-                            showSocials={false}
                             privacy={portfolio.visibility}
                             showCompare={false}
                           />

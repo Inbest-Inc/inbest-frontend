@@ -10,6 +10,8 @@ import {
   TableRoot,
   TableRow,
 } from "./Table";
+import Tooltip from "./Tooltip";
+import InfoTooltip, { metricExplanations } from "./InfoTooltip";
 
 interface Holding {
   symbol: string;
@@ -92,12 +94,42 @@ export default function ActivityTable({ data }: { data: Holding[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Asset</TableHead>
-            <TableHead className="text-right">Allocation %</TableHead>
-            <TableHead className="text-right">Avg Price</TableHead>
-            <TableHead className="text-right">Current Price</TableHead>
-            <TableHead className="text-right">Return</TableHead>
-            <TableHead>Last Transaction</TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                Asset
+                <InfoTooltip content={metricExplanations.asset} />
+              </span>
+            </TableHead>
+            <TableHead className="text-right">
+              <span className="flex items-center justify-end gap-1">
+                Allocation %
+                <InfoTooltip content={metricExplanations.allocation} />
+              </span>
+            </TableHead>
+            <TableHead className="text-right">
+              <span className="flex items-center justify-end gap-1">
+                Avg Price
+                <InfoTooltip content={metricExplanations.averagePrice} />
+              </span>
+            </TableHead>
+            <TableHead className="text-right">
+              <span className="flex items-center justify-end gap-1">
+                Current Price
+                <InfoTooltip content={metricExplanations.currentPrice} />
+              </span>
+            </TableHead>
+            <TableHead className="text-right">
+              <span className="flex items-center justify-end gap-1">
+                Return
+                <InfoTooltip content={metricExplanations.return} />
+              </span>
+            </TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                Last Transaction
+                <InfoTooltip content={metricExplanations.lastTransaction} />
+              </span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -122,27 +154,77 @@ export default function ActivityTable({ data }: { data: Holding[] }) {
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                {holding.allocation.toFixed(1)}%
+                <Tooltip content={`${holding.allocation}%`}>
+                  <span>{holding.allocation.toFixed(1)}%</span>
+                </Tooltip>
               </TableCell>
               <TableCell className="text-right">
-                ${holding.averagePrice.toFixed(2)}
+                <Tooltip content={`$${holding.averagePrice}`}>
+                  <span>${holding.averagePrice.toFixed(2)}</span>
+                </Tooltip>
               </TableCell>
               <TableCell className="text-right">
-                ${holding.currentPrice.toFixed(2)}
+                <Tooltip content={`$${holding.currentPrice}`}>
+                  <span>${holding.currentPrice.toFixed(2)}</span>
+                </Tooltip>
               </TableCell>
-              <TableCell
-                className={`text-right font-medium ${
-                  holding.return >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {holding.return >= 0 ? "+" : ""}
-                {holding.return.toFixed(2)}%
+              <TableCell className="text-right">
+                <Tooltip content={`${holding.return}%`}>
+                  <span
+                    className={
+                      holding.return >= 0 ? "text-green-600" : "text-red-600"
+                    }
+                  >
+                    {holding.return >= 0 ? "+" : ""}
+                    {holding.return.toFixed(1)}%
+                  </span>
+                </Tooltip>
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <ActionIcon type={holding.lastTransaction.type} />
-                  <span className="text-sm text-gray-600">
-                    {holding.lastTransaction.date}
+                <div
+                  className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium ${
+                    holding.lastTransaction.type === "buy" ||
+                    holding.lastTransaction.type === "start" ||
+                    holding.lastTransaction.type === "increase"
+                      ? "bg-green-50 text-green-700"
+                      : "bg-red-50 text-red-700"
+                  } rounded-full`}
+                >
+                  {holding.lastTransaction.type === "buy" ||
+                  holding.lastTransaction.type === "start" ||
+                  holding.lastTransaction.type === "increase" ? (
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20 12H4"
+                      />
+                    </svg>
+                  )}
+                  <span>
+                    {holding.lastTransaction.type.charAt(0).toUpperCase() +
+                      holding.lastTransaction.type.slice(1)}{" "}
+                    • {holding.lastTransaction.date}
                   </span>
                 </div>
               </TableCell>

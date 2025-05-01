@@ -825,3 +825,48 @@ export async function getBestPortfoliosByDailyReturn(): Promise<BestPortfolioRes
     throw error;
   }
 }
+
+export interface YearlyReturnsResponse {
+  status: string;
+  message: string;
+  data: Array<{
+    date: string;
+    portfolioReturn: number;
+    goldReturn: number;
+    spyReturn: number;
+  }>;
+}
+
+export async function getPortfolioYearlyReturns(
+  portfolioId: number
+): Promise<YearlyReturnsResponse> {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/portfolio-metrics/yearly-returns?portfolioId=${portfolioId}`,
+      {
+        headers: {
+          // Only add Authorization header if token exists
+          ...(localStorage.getItem("token") && {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          }),
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch yearly returns");
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching portfolio yearly returns:", error);
+    // Return empty data with error status instead of throwing
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "An error occurred",
+      data: [],
+    };
+  }
+}

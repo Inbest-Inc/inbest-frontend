@@ -404,7 +404,9 @@ export default function CommentsSection({
             />
           </svg>
           <Text className="text-[#6E6E73]">
-            No comments yet. Be the first to comment!
+            {currentUsername
+              ? "No comments yet. Be the first to comment!"
+              : "Login to see and write comments!"}
           </Text>
         </div>
       )}

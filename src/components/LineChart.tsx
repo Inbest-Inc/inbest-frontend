@@ -21,14 +21,18 @@ interface LineChartProps {
   onValueChange?: (v: any) => void;
   xAxisLabel?: string;
   yAxisLabel?: string;
+  colors?: string[];
+  connectNulls?: boolean;
 }
 
-const colors = {
+const defaultColors = {
   indigo: "#6366f1",
   slate: "#64748b",
   amber: "#f59e0b",
   violet: "#8b5cf6",
   emerald: "#10b981",
+  rose: "#e11d48",
+  blue: "#3b82f6",
 };
 
 export const LineChart = ({
@@ -40,15 +44,34 @@ export const LineChart = ({
   onValueChange,
   xAxisLabel,
   yAxisLabel,
+  colors: customColors,
+  connectNulls = false,
 }: LineChartProps) => {
   const [hiddenSeries, setHiddenSeries] = React.useState<Set<string>>(
     new Set()
   );
 
   const getColorForCategory = (category: string, index: number): string => {
-    if (category === "Portfolio") return colors.indigo;
-    const colorKeys = Object.keys(colors) as (keyof typeof colors)[];
-    return colors[colorKeys[(index - 1) % colorKeys.length]];
+    if (customColors && customColors.length > 0) {
+      if (category === "Portfolio") return getColorByName(customColors[0]);
+      const colorIndex = categories.indexOf(category);
+      if (colorIndex >= 0 && colorIndex < customColors.length) {
+        return getColorByName(customColors[colorIndex]);
+      }
+    }
+
+    if (category === "Portfolio") return defaultColors.indigo;
+    const colorKeys = Object.keys(
+      defaultColors
+    ) as (keyof typeof defaultColors)[];
+    return defaultColors[colorKeys[(index - 1) % colorKeys.length]];
+  };
+
+  const getColorByName = (colorName: string): string => {
+    if (colorName in defaultColors) {
+      return defaultColors[colorName as keyof typeof defaultColors];
+    }
+    return colorName;
   };
 
   const handleLegendClick = (e: any) => {
@@ -172,10 +195,11 @@ export const LineChart = ({
             key="Portfolio"
             type="monotone"
             dataKey="Portfolio"
-            stroke={colors.indigo}
+            stroke={getColorForCategory("Portfolio", 0)}
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4, strokeWidth: 2 }}
+            connectNulls={connectNulls}
           />
           {categories
             .filter((category) => category !== "Portfolio")
@@ -189,6 +213,7 @@ export const LineChart = ({
                 dot={false}
                 activeDot={{ r: 4, strokeWidth: 2 }}
                 hide={hiddenSeries.has(category)}
+                connectNulls={connectNulls}
               />
             ))}
         </RechartsLineChart>

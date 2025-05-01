@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
+import PortfolioPerformanceChart from "@/components/PortfolioPerformanceChart";
 import ActivityTable from "@/components/ActivityTable";
 import OpinionsFeed from "@/components/OpinionsFeed";
 import {
@@ -34,6 +35,9 @@ import {
 import Posts from "@/components/posts/Posts";
 import toast from "react-hot-toast";
 import { getApiUrl } from "@/config/env";
+import Tooltip from "@/components/Tooltip";
+import InfoTooltip, { metricExplanations } from "@/components/InfoTooltip";
+import PortfolioShareButton from "@/components/PortfolioShareButton";
 
 const portfolioReturns = {
   "1M": -2.3,
@@ -111,155 +115,6 @@ const SocialButton = ({
   </button>
 );
 
-const ShareButton = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const params = useParams();
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = useState(false);
-
-  // Generate a shareable URL for the current portfolio
-  const shareUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/${params.username}/${params.portfolio}`
-      : "";
-
-  const shareTitle = `Check out @${params.username}'s investment portfolio on Inbest!`;
-  const shareDescription = `Follow along with ${params.username}'s investment strategy and track portfolio performance on Inbest - the social investing platform.`;
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-        setCopied(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const handleCopyLink = () => {
-    if (
-      navigator.clipboard &&
-      typeof navigator.clipboard.writeText === "function"
-    ) {
-      navigator.clipboard
-        .writeText(shareUrl)
-        .then(() => {
-          setCopied(true);
-          setTimeout(() => {
-            setIsOpen(false);
-            setCopied(false);
-          }, 1500);
-        })
-        .catch((err) => {
-          console.error("Could not copy text: ", err);
-        });
-    }
-  };
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-2 px-4 py-2 text-[15px] leading-[20px] font-medium text-[#1D1D1F] bg-gray-50/80 backdrop-blur-sm rounded-full ring-1 ring-black/[0.04] hover:bg-gray-100/80 transition-all duration-200"
-      >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"
-          />
-        </svg>
-        Share
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-auto bg-white rounded-xl shadow-lg ring-1 ring-black/[0.08] overflow-hidden z-10">
-          <div className="p-3">
-            <div className="text-[13px] leading-[18px] text-[#6E6E73] mb-3 px-2">
-              Share this portfolio
-            </div>
-            <div className="flex items-center justify-between gap-2 px-2">
-              <XShareButton
-                url={shareUrl}
-                title={shareTitle}
-                className="hover:opacity-80 transition-opacity"
-              >
-                <XIcon size={36} round />
-              </XShareButton>
-
-              <LinkedinShareButton
-                url={shareUrl}
-                title={shareTitle}
-                summary={shareDescription}
-                className="hover:opacity-80 transition-opacity"
-              >
-                <LinkedinIcon size={36} round />
-              </LinkedinShareButton>
-
-              <WhatsappShareButton
-                url={shareUrl}
-                title={shareTitle}
-                className="hover:opacity-80 transition-opacity"
-              >
-                <WhatsappIcon size={36} round />
-              </WhatsappShareButton>
-
-              <TelegramShareButton
-                url={shareUrl}
-                title={shareTitle}
-                className="hover:opacity-80 transition-opacity"
-              >
-                <TelegramIcon size={36} round />
-              </TelegramShareButton>
-            </div>
-            <div className="mt-3 pt-2 border-t border-gray-100">
-              <button
-                className={`w-full text-left px-3 py-2 text-[13px] leading-[18px] ${copied ? "text-green-600 flex items-center" : "text-blue-600"} hover:bg-blue-50/50 rounded-lg transition-colors`}
-                onClick={handleCopyLink}
-              >
-                {copied ? (
-                  <>
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Link copied!
-                  </>
-                ) : (
-                  "Copy link to clipboard"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 export default function PortfolioPage() {
   const params = useParams();
   const [holdings, setHoldings] = useState<any[]>([]);
@@ -278,6 +133,9 @@ export default function PortfolioPage() {
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [portfolioName, setPortfolioName] = useState<string>("Portfolio");
   const [isPortfolioLoading, setIsPortfolioLoading] = useState(true);
+  const [portfolioVisibility, setPortfolioVisibility] = useState<
+    "public" | "private"
+  >("private");
 
   // Default user data
   const userData = {
@@ -307,18 +165,12 @@ export default function PortfolioPage() {
     const fetchPortfolio = async () => {
       setIsPortfolioLoading(true);
       try {
-        // We will try to get the portfolio data even if not authenticated
-        // This is safe because public portfolios can be viewed without auth
-        const token = localStorage.getItem("token");
-        if (token) {
-          try {
-            const response = await getPortfolio(Number(params.portfolio));
-            if (response.status === "success") {
-              setPortfolioName(response.data.portfolioName);
-            }
-          } catch (error) {
-            console.log("Not authorized or not found, using default name");
-          }
+        const response = await getPortfolio(Number(params.portfolio));
+        if (response.status === "success") {
+          setPortfolioName(response.data.portfolioName);
+          setPortfolioVisibility(response.data.visibility);
+        } else {
+          console.error("Error fetching portfolio:", response.message);
         }
       } catch (error) {
         console.error("Error fetching portfolio:", error);
@@ -557,7 +409,10 @@ export default function PortfolioPage() {
                   Manage
                 </Link>
               ) : null}
-              <ShareButton />
+              <PortfolioShareButton
+                username={params.username as string}
+                portfolioId={String(params.portfolio)}
+              />
             </div>
           </div>
         </motion.div>
@@ -565,7 +420,12 @@ export default function PortfolioPage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <StatCard
-            label="Ranking"
+            label={
+              <span className="flex items-center gap-1">
+                <span>Ranking</span>
+                <InfoTooltip content={metricExplanations.ranking} />
+              </span>
+            }
             value="-"
             subtext="of investors"
             icon={
@@ -585,11 +445,23 @@ export default function PortfolioPage() {
             }
           />
           <StatCard
-            label="Daily Return"
+            label={
+              <span className="flex items-center gap-1">
+                <span>Daily Return</span>
+                <InfoTooltip content={metricExplanations.dailyReturn} />
+              </span>
+            }
             value={
-              isMetricsLoading
-                ? "-"
-                : `${metrics?.dailyReturn >= 0 ? "+" : ""}${metrics?.dailyReturn.toFixed(2)}%`
+              isMetricsLoading ? (
+                "-"
+              ) : (
+                <Tooltip content={`${metrics?.dailyReturn}%`}>
+                  <span>
+                    {metrics?.dailyReturn >= 0 ? "+" : ""}
+                    {metrics?.dailyReturn.toFixed(2)}%
+                  </span>
+                </Tooltip>
+              )
             }
             trend={
               isMetricsLoading
@@ -619,11 +491,23 @@ export default function PortfolioPage() {
             }
           />
           <StatCard
-            label="Monthly Return"
+            label={
+              <span className="flex items-center gap-1">
+                <span>Monthly Return</span>
+                <InfoTooltip content={metricExplanations.monthlyReturn} />
+              </span>
+            }
             value={
-              isMetricsLoading
-                ? "-"
-                : `${metrics?.monthlyReturn >= 0 ? "+" : ""}${metrics?.monthlyReturn.toFixed(2)}%`
+              isMetricsLoading ? (
+                "-"
+              ) : (
+                <Tooltip content={`${metrics?.monthlyReturn}%`}>
+                  <span>
+                    {metrics?.monthlyReturn >= 0 ? "+" : ""}
+                    {metrics?.monthlyReturn.toFixed(2)}%
+                  </span>
+                </Tooltip>
+              )
             }
             trend={
               isMetricsLoading
@@ -653,11 +537,23 @@ export default function PortfolioPage() {
             }
           />
           <StatCard
-            label="Total Return"
+            label={
+              <span className="flex items-center gap-1">
+                <span>Total Return</span>
+                <InfoTooltip content={metricExplanations.totalReturn} />
+              </span>
+            }
             value={
-              isMetricsLoading
-                ? "-"
-                : `${metrics?.totalReturn >= 0 ? "+" : ""}${metrics?.totalReturn.toFixed(2)}%`
+              isMetricsLoading ? (
+                "-"
+              ) : (
+                <Tooltip content={`${metrics?.totalReturn}%`}>
+                  <span>
+                    {metrics?.totalReturn >= 0 ? "+" : ""}
+                    {metrics?.totalReturn.toFixed(2)}%
+                  </span>
+                </Tooltip>
+              )
             }
             trend={
               isMetricsLoading
@@ -696,7 +592,11 @@ export default function PortfolioPage() {
           className="mb-12"
         >
           <Card className="p-6 bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
-            <PortfolioChart showCompare={true} showSocials={false} />
+            <PortfolioPerformanceChart
+              portfolioId={Number(params.portfolio)}
+              showCompare={true}
+              privacy={isPortfolioLoading ? undefined : portfolioVisibility}
+            />
           </Card>
         </motion.div>
 
@@ -716,29 +616,48 @@ export default function PortfolioPage() {
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
-                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
-                    Beta (vs S&P 500)
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2 flex items-center gap-1">
+                    <span>Beta (vs S&P 500)</span>
+                    <InfoTooltip content={metricExplanations.beta} />
                   </Text>
                   <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                    {isMetricsLoading ? "-" : metrics?.beta.toFixed(2)}
+                    {isMetricsLoading ? (
+                      "-"
+                    ) : (
+                      <Tooltip content={`${metrics?.beta}`}>
+                        <span>{metrics?.beta.toFixed(2)}</span>
+                      </Tooltip>
+                    )}
                   </Text>
                 </div>
                 <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
-                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
-                    Sharpe Ratio
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2 flex items-center gap-1">
+                    <span>Sharpe Ratio</span>
+                    <InfoTooltip content={metricExplanations.sharpeRatio} />
                   </Text>
                   <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                    {isMetricsLoading ? "-" : metrics?.sharpeRatio.toFixed(2)}
+                    {isMetricsLoading ? (
+                      "-"
+                    ) : (
+                      <Tooltip content={`${metrics?.sharpeRatio}`}>
+                        <span>{metrics?.sharpeRatio.toFixed(2)}</span>
+                      </Tooltip>
+                    )}
                   </Text>
                 </div>
                 <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
-                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
-                    Volatility
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2 flex items-center gap-1">
+                    <span>Volatility</span>
+                    <InfoTooltip content={metricExplanations.volatility} />
                   </Text>
                   <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                    {isMetricsLoading
-                      ? "-"
-                      : `${metrics?.volatility.toFixed(1)}%`}
+                    {isMetricsLoading ? (
+                      "-"
+                    ) : (
+                      <Tooltip content={`${metrics?.volatility}%`}>
+                        <span>{metrics?.volatility.toFixed(2)}%</span>
+                      </Tooltip>
+                    )}
                   </Text>
                 </div>
               </div>
@@ -955,27 +874,35 @@ export default function PortfolioPage() {
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                            Allocation
+                          <Text className="text-[13px] leading-[18px] text-[#6E6E73] flex items-center gap-1">
+                            <span>Allocation</span>
+                            <InfoTooltip
+                              content={metricExplanations.allocation}
+                            />
                           </Text>
-                          <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                            {holding.allocation}%
-                          </Text>
+                          <Tooltip content={`${holding.allocation}%`}>
+                            <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                              {holding.allocation}%
+                            </Text>
+                          </Tooltip>
                         </div>
                         <div className="flex justify-between items-center">
-                          <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                            Return
+                          <Text className="text-[13px] leading-[18px] text-[#6E6E73] flex items-center gap-1">
+                            <span>Return</span>
+                            <InfoTooltip content={metricExplanations.return} />
                           </Text>
-                          <Text
-                            className={`text-[15px] leading-[20px] font-medium ${
-                              holding.return >= 0
-                                ? "text-[#00A852]"
-                                : "text-[#FF3B30]"
-                            }`}
-                          >
-                            {holding.return >= 0 ? "+" : ""}
-                            {holding.return}%
-                          </Text>
+                          <Tooltip content={`${holding.return}%`}>
+                            <Text
+                              className={`text-[15px] leading-[20px] font-medium ${
+                                holding.return >= 0
+                                  ? "text-[#00A852]"
+                                  : "text-[#FF3B30]"
+                              }`}
+                            >
+                              {holding.return >= 0 ? "+" : ""}
+                              {holding.return}%
+                            </Text>
+                          </Tooltip>
                         </div>
                         {/* Last Action row commented out as requested */}
                       </div>

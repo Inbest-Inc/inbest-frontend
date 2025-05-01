@@ -26,6 +26,8 @@ import { toast, Toaster } from "react-hot-toast";
 import Link from "next/link";
 import { getUserInfo } from "@/services/userService";
 import Avatar from "@/components/Avatar";
+import Tooltip from "@/components/Tooltip";
+import InfoTooltip, { metricExplanations } from "@/components/InfoTooltip";
 
 // Keep existing mock data
 const portfolioData = {
@@ -762,13 +764,19 @@ export default function ManagePortfolioPage() {
 
         {/* Stats Grid */}
         <motion.div
+          style={{ display: "none" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2, delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
         >
           <StatCard
-            label="Ranking"
+            label={
+              <span className="flex items-center gap-1">
+                <span>Ranking</span>
+                <InfoTooltip content={metricExplanations.ranking} />
+              </span>
+            }
             value="-"
             subtext="of investors"
             icon={
@@ -788,11 +796,23 @@ export default function ManagePortfolioPage() {
             }
           />
           <StatCard
-            label="Daily Return"
+            label={
+              <span className="flex items-center gap-1">
+                <span>Daily Return</span>
+                <InfoTooltip content={metricExplanations.dailyReturn} />
+              </span>
+            }
             value={
-              isMetricsLoading
-                ? "-"
-                : `${metrics?.dailyReturn >= 0 ? "+" : ""}${metrics?.dailyReturn.toFixed(2)}%`
+              isMetricsLoading ? (
+                "-"
+              ) : (
+                <Tooltip content={`${metrics?.dailyReturn}%`}>
+                  <span>
+                    {metrics?.dailyReturn >= 0 ? "+" : ""}
+                    {metrics?.dailyReturn.toFixed(2)}%
+                  </span>
+                </Tooltip>
+              )
             }
             trend={
               isMetricsLoading
@@ -822,11 +842,23 @@ export default function ManagePortfolioPage() {
             }
           />
           <StatCard
-            label="Monthly Return"
+            label={
+              <span className="flex items-center gap-1">
+                <span>Monthly Return</span>
+                <InfoTooltip content={metricExplanations.monthlyReturn} />
+              </span>
+            }
             value={
-              isMetricsLoading
-                ? "-"
-                : `${metrics?.monthlyReturn >= 0 ? "+" : ""}${metrics?.monthlyReturn.toFixed(2)}%`
+              isMetricsLoading ? (
+                "-"
+              ) : (
+                <Tooltip content={`${metrics?.monthlyReturn}%`}>
+                  <span>
+                    {metrics?.monthlyReturn >= 0 ? "+" : ""}
+                    {metrics?.monthlyReturn.toFixed(2)}%
+                  </span>
+                </Tooltip>
+              )
             }
             trend={
               isMetricsLoading
@@ -856,11 +888,23 @@ export default function ManagePortfolioPage() {
             }
           />
           <StatCard
-            label="Total Return"
+            label={
+              <span className="flex items-center gap-1">
+                <span>Total Return</span>
+                <InfoTooltip content={metricExplanations.totalReturn} />
+              </span>
+            }
             value={
-              isMetricsLoading
-                ? "-"
-                : `${metrics?.totalReturn >= 0 ? "+" : ""}${metrics?.totalReturn.toFixed(2)}%`
+              isMetricsLoading ? (
+                "-"
+              ) : (
+                <Tooltip content={`${metrics?.totalReturn}%`}>
+                  <span>
+                    {metrics?.totalReturn >= 0 ? "+" : ""}
+                    {metrics?.totalReturn.toFixed(2)}%
+                  </span>
+                </Tooltip>
+              )
             }
             trend={
               isMetricsLoading
@@ -891,20 +935,9 @@ export default function ManagePortfolioPage() {
           />
         </motion.div>
 
-        {/* Portfolio Chart */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="mb-12"
-        >
-          <Card className="p-6 bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
-            <PortfolioChart />
-          </Card>
-        </motion.div>
-
         {/* Risk Metrics */}
         <motion.div
+          style={{ display: "none" }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.15 }}
@@ -919,29 +952,48 @@ export default function ManagePortfolioPage() {
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
-                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
-                    Beta (vs S&P 500)
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2 flex items-center gap-1">
+                    <span>Beta (vs S&P 500)</span>
+                    <InfoTooltip content={metricExplanations.beta} />
                   </Text>
                   <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                    {isMetricsLoading ? "-" : metrics?.beta.toFixed(2)}
+                    {isMetricsLoading ? (
+                      "-"
+                    ) : (
+                      <Tooltip content={`${metrics?.beta}`}>
+                        <span>{metrics?.beta.toFixed(2)}</span>
+                      </Tooltip>
+                    )}
                   </Text>
                 </div>
                 <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
-                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
-                    Sharpe Ratio
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2 flex items-center gap-1">
+                    <span>Sharpe Ratio</span>
+                    <InfoTooltip content={metricExplanations.sharpeRatio} />
                   </Text>
                   <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                    {isMetricsLoading ? "-" : metrics?.sharpeRatio.toFixed(2)}
+                    {isMetricsLoading ? (
+                      "-"
+                    ) : (
+                      <Tooltip content={`${metrics?.sharpeRatio}`}>
+                        <span>{metrics?.sharpeRatio.toFixed(2)}</span>
+                      </Tooltip>
+                    )}
                   </Text>
                 </div>
                 <div className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
-                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2">
-                    Volatility
+                  <Text className="text-[15px] leading-[20px] text-[#6E6E73] mb-2 flex items-center gap-1">
+                    <span>Volatility</span>
+                    <InfoTooltip content={metricExplanations.volatility} />
                   </Text>
                   <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                    {isMetricsLoading
-                      ? "-"
-                      : `${metrics?.volatility.toFixed(1)}%`}
+                    {isMetricsLoading ? (
+                      "-"
+                    ) : (
+                      <Tooltip content={`${metrics?.volatility}%`}>
+                        <span>{metrics?.volatility.toFixed(2)}%</span>
+                      </Tooltip>
+                    )}
                   </Text>
                 </div>
               </div>

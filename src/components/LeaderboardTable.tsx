@@ -19,6 +19,8 @@ import {
   getBestPortfoliosByDailyReturn,
   type BestPortfolioResponse,
 } from "@/services/portfolioService";
+import Tooltip from "./Tooltip";
+import InfoTooltip, { metricExplanations } from "./InfoTooltip";
 
 // Trophy icons for top 3
 const TrophyGold = () => (
@@ -304,23 +306,48 @@ export default function LeaderboardTable({
                 Rank
               </TableHead>
               <TableHead className="text-sm font-medium text-[#6E6E73] w-[350px]">
-                Investor / Portfolio
+                <span className="flex items-center gap-1">
+                  Investor / Portfolio
+                  <InfoTooltip content="User and their portfolio name" />
+                </span>
               </TableHead>
               <TableHead className="text-right text-sm font-medium text-[#6E6E73] min-w-[120px] whitespace-nowrap w-[120px]">
-                {returnFilter === "total"
-                  ? "Total Return"
-                  : returnFilter === "monthly"
-                    ? "Monthly Return"
-                    : "Daily Return"}
+                <span className="flex items-center justify-end gap-1">
+                  {returnFilter === "total" ? (
+                    <>
+                      Total Return
+                      <InfoTooltip content={metricExplanations.totalReturn} />
+                    </>
+                  ) : returnFilter === "monthly" ? (
+                    <>
+                      Monthly Return
+                      <InfoTooltip content={metricExplanations.monthlyReturn} />
+                    </>
+                  ) : (
+                    <>
+                      Daily Return
+                      <InfoTooltip content={metricExplanations.dailyReturn} />
+                    </>
+                  )}
+                </span>
               </TableHead>
               <TableHead className="text-center text-sm font-medium text-[#6E6E73] whitespace-nowrap w-[120px]">
-                Risk Category
+                <span className="flex items-center justify-center gap-1">
+                  Risk Category
+                  <InfoTooltip content={metricExplanations.riskCategory} />
+                </span>
               </TableHead>
               <TableHead className="text-center text-sm font-medium text-[#6E6E73] whitespace-nowrap w-[100px]">
-                Holdings
+                <span className="flex items-center justify-center gap-1">
+                  Holdings
+                  <InfoTooltip content="Number of stocks or assets in the portfolio" />
+                </span>
               </TableHead>
               <TableHead className="text-right text-sm font-medium text-[#6E6E73] whitespace-nowrap w-[100px]">
-                Followers
+                <span className="flex items-center justify-end gap-1">
+                  Followers
+                  <InfoTooltip content="Number of users following this investor" />
+                </span>
               </TableHead>
               <TableHead className="w-[100px]"></TableHead>
             </TableRow>
@@ -391,7 +418,9 @@ export default function LeaderboardTable({
                   <TableCell
                     className={`text-right font-medium ${getReturnColorClass(getReturnValue(portfolio))} min-w-[120px] whitespace-nowrap w-[120px]`}
                   >
-                    {formatReturn(getReturnValue(portfolio))}
+                    <Tooltip content={`${getReturnValue(portfolio)}%`}>
+                      <span>{formatReturn(getReturnValue(portfolio))}</span>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="text-center w-[120px]">
                     <span className="inline-flex items-center justify-center min-w-[100px] px-3 py-1 rounded-full bg-gray-50/80 backdrop-blur-sm text-sm font-medium text-[#1D1D1F] ring-1 ring-black/[0.04] whitespace-nowrap">
