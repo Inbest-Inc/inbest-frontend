@@ -894,3 +894,86 @@ export async function getPortfolioYearlyReturns(
     };
   }
 }
+
+export interface TradeResponse {
+  status: string;
+  message: string;
+  data: {
+    tradeId: number;
+    portfolioId: number;
+    stockId: number;
+    entryDate: string;
+    exitDate: string;
+    averageCost: number;
+    exitPrice: number;
+    quantity: number;
+    totalReturn: number;
+    isBestTrade: boolean;
+    isWorstTrade: boolean;
+    lastUpdated: string;
+  } | null;
+}
+
+export async function getBestTrade(
+  portfolioId: number
+): Promise<TradeResponse> {
+  try {
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = {};
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/trade/portfolio/${portfolioId}/best`,
+      {
+        headers,
+      }
+    );
+
+    const data = await response.json();
+
+    // If we have an error property, it means there was an issue with the request
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching best trade:", error);
+    throw error;
+  }
+}
+
+export async function getWorstTrade(
+  portfolioId: number
+): Promise<TradeResponse> {
+  try {
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = {};
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/trade/portfolio/${portfolioId}/worst`,
+      {
+        headers,
+      }
+    );
+
+    const data = await response.json();
+
+    // If we have an error property, it means there was an issue with the request
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching worst trade:", error);
+    throw error;
+  }
+}

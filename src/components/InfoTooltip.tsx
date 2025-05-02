@@ -60,6 +60,12 @@ export const metricExplanations = {
   lastTransaction: "Most recent buying or selling activity for this asset",
   ranking:
     "Portfolio's performance ranking compared to other investors on the platform",
+  bestTrade:
+    "The trade that generated the highest percentage return in this portfolio",
+  worstTrade:
+    "The trade that generated the lowest percentage return (or highest loss) in this portfolio",
+  holdPeriod:
+    "The length of time between the first purchase and final sale of this position",
 };
 
 export default InfoTooltip;

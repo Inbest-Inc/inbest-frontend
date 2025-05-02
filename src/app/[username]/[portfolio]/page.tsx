@@ -15,6 +15,9 @@ import {
   getPortfolioHoldings,
   getPortfolioMetrics,
   getPortfolio,
+  getBestTrade,
+  getWorstTrade,
+  TradeResponse,
 } from "@/services/portfolioService";
 import { getUserInfo } from "@/services/userService";
 import Link from "next/link";
@@ -45,6 +48,19 @@ const portfolioReturns = {
   "1Y": -2.4,
   YTD: 22.1,
   Total: 67.8,
+};
+
+// Updated dummy data to match the new API response
+const defaultTradeData = {
+  stockSymbol: "TSLA",
+  stockName: "Tesla, Inc.",
+  return: 0,
+  entryDate: "",
+  exitDate: "",
+  holdPeriod: "-",
+  logo: "https://assets.parqet.com/logos/symbol/TSLA?format=svg" as string,
+  loaded: false,
+  error: null as string | null,
 };
 
 const bestTradeData = {
@@ -136,6 +152,10 @@ export default function PortfolioPage() {
   const [portfolioVisibility, setPortfolioVisibility] = useState<
     "public" | "private"
   >("private");
+  const [bestTrade, setBestTrade] = useState({ ...defaultTradeData });
+  const [worstTrade, setWorstTrade] = useState({ ...defaultTradeData });
+  const [isBestTradeLoading, setIsBestTradeLoading] = useState(true);
+  const [isWorstTradeLoading, setIsWorstTradeLoading] = useState(true);
 
   // Default user data
   const userData = {
@@ -284,6 +304,159 @@ export default function PortfolioPage() {
 
     if (params.portfolio) {
       fetchMetrics();
+    }
+  }, [params.portfolio]);
+
+  useEffect(() => {
+    const fetchBestTrade = async () => {
+      setIsBestTradeLoading(true);
+      try {
+        const response = await getBestTrade(Number(params.portfolio));
+        if (response.status === "success" && response.data) {
+          // Calculate hold period in a human-readable format
+          const entryDate = new Date(response.data.entryDate);
+          const exitDate = new Date(response.data.exitDate);
+          const diffInMs = exitDate.getTime() - entryDate.getTime();
+          const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+          let holdPeriod;
+          if (diffInDays < 30) {
+            holdPeriod = `${diffInDays} days`;
+          } else if (diffInDays < 365) {
+            const months = Math.floor(diffInDays / 30);
+            holdPeriod = `${months} ${months === 1 ? "month" : "months"}`;
+          } else {
+            const years = Math.floor(diffInDays / 365);
+            const remainingMonths = Math.floor((diffInDays % 365) / 30);
+            holdPeriod = `${years} ${years === 1 ? "year" : "years"}${remainingMonths > 0 ? ` ${remainingMonths} ${remainingMonths === 1 ? "month" : "months"}` : ""}`;
+          }
+
+          setBestTrade({
+            stockSymbol: "TSLA", // Placeholder until API provides this
+            stockName: "Tesla, Inc.", // Placeholder until API provides this
+            return: response.data.totalReturn,
+            entryDate: new Date(response.data.entryDate).toLocaleDateString(
+              "en-US",
+              {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              }
+            ),
+            exitDate: new Date(response.data.exitDate).toLocaleDateString(
+              "en-US",
+              {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              }
+            ),
+            holdPeriod,
+            logo: "https://assets.parqet.com/logos/symbol/TSLA?format=svg", // Placeholder
+            loaded: true,
+            error: null,
+          });
+        } else {
+          setBestTrade({
+            ...defaultTradeData,
+            loaded: true,
+            error: response.message || "No best trade found",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching best trade:", error);
+        setBestTrade({
+          ...defaultTradeData,
+          loaded: true,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to load best trade",
+        });
+      } finally {
+        setIsBestTradeLoading(false);
+      }
+    };
+
+    const fetchWorstTrade = async () => {
+      setIsWorstTradeLoading(true);
+      try {
+        const response = await getWorstTrade(Number(params.portfolio));
+        if (response.status === "success" && response.data) {
+          // Calculate hold period in a human-readable format
+          const entryDate = new Date(response.data.entryDate);
+          const exitDate = new Date(response.data.exitDate);
+          const diffInMs = exitDate.getTime() - entryDate.getTime();
+          const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+          let holdPeriod;
+          if (diffInDays < 30) {
+            holdPeriod = `${diffInDays} days`;
+          } else if (diffInDays < 365) {
+            const months = Math.floor(diffInDays / 30);
+            holdPeriod = `${months} ${months === 1 ? "month" : "months"}`;
+          } else {
+            const years = Math.floor(diffInDays / 365);
+            const remainingMonths = Math.floor((diffInDays % 365) / 30);
+            holdPeriod = `${years} ${years === 1 ? "year" : "years"}${remainingMonths > 0 ? ` ${remainingMonths} ${remainingMonths === 1 ? "month" : "months"}` : ""}`;
+          }
+
+          setWorstTrade({
+            stockSymbol: "NFLX", // Placeholder until API provides this
+            stockName: "Netflix, Inc.", // Placeholder until API provides this
+            return: response.data.totalReturn,
+            entryDate: new Date(response.data.entryDate).toLocaleDateString(
+              "en-US",
+              {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              }
+            ),
+            exitDate: new Date(response.data.exitDate).toLocaleDateString(
+              "en-US",
+              {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              }
+            ),
+            holdPeriod,
+            logo: "https://assets.parqet.com/logos/symbol/NFLX?format=svg", // Placeholder
+            loaded: true,
+            error: null,
+          });
+        } else {
+          setWorstTrade({
+            ...defaultTradeData,
+            stockSymbol: "NFLX",
+            stockName: "Netflix, Inc.",
+            logo: "https://assets.parqet.com/logos/symbol/NFLX?format=svg",
+            loaded: true,
+            error: response.message || "No worst trade found",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching worst trade:", error);
+        setWorstTrade({
+          ...defaultTradeData,
+          stockSymbol: "NFLX",
+          stockName: "Netflix, Inc.",
+          logo: "https://assets.parqet.com/logos/symbol/NFLX?format=svg",
+          loaded: true,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to load worst trade",
+        });
+      } finally {
+        setIsWorstTradeLoading(false);
+      }
+    };
+
+    if (params.portfolio) {
+      fetchBestTrade();
+      fetchWorstTrade();
     }
   }, [params.portfolio]);
 
@@ -690,148 +863,186 @@ export default function PortfolioPage() {
             {/* Best Trade */}
             <Card className="overflow-hidden bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
               <div className="p-6 border-b border-black/[0.04]">
-                <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                  Best Trade
+                <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F] flex items-center gap-1">
+                  <span>Best Trade</span>
+                  <InfoTooltip content={metricExplanations.bestTrade} />
                 </Text>
               </div>
               <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.04]">
-                      <Image
-                        src={bestTradeData.logo}
-                        alt={bestTradeData.symbol}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <div>
-                      <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F]">
-                        {bestTradeData.symbol}
-                      </Text>
-                      <Text className="text-[22px] leading-[28px] font-semibold text-[#00A852]">
-                        +{bestTradeData.return}%
-                      </Text>
-                    </div>
+                {isBestTradeLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
-                  <div className="h-12 w-12 rounded-full bg-[#00A852]/[0.08] flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-[#00A852]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 rounded-xl bg-[#00A852]/[0.04] ring-1 ring-[#00A852]/[0.1]">
-                    <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
-                      Hold Period
-                    </Text>
-                    <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                      {bestTradeData.holdPeriod}
+                ) : bestTrade.error ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                      {bestTrade.error}
                     </Text>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
-                      <Text className="text-[13px] leading-[18px] text-[#6E6E73] mb-1">
-                        Entry
-                      </Text>
-                      <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                        {bestTradeData.firstBuy}
-                      </Text>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.04]">
+                          <Image
+                            src={bestTrade.logo}
+                            alt={bestTrade.stockSymbol}
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                        <div>
+                          <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F]">
+                            {bestTrade.stockSymbol}
+                          </Text>
+                          <Text className="text-[22px] leading-[28px] font-semibold text-[#00A852]">
+                            {bestTrade.return >= 0 ? "+" : ""}
+                            {bestTrade.return.toFixed(2)}%
+                          </Text>
+                        </div>
+                      </div>
+                      <div className="h-12 w-12 rounded-full bg-[#00A852]/[0.08] flex items-center justify-center">
+                        <svg
+                          className="w-6 h-6 text-[#00A852]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                          />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
-                      <Text className="text-[13px] leading-[18px] text-[#6E6E73] mb-1">
-                        Exit
-                      </Text>
-                      <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                        {bestTradeData.lastSell}
-                      </Text>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center p-3 rounded-xl bg-[#00A852]/[0.04] ring-1 ring-[#00A852]/[0.1]">
+                        <Text className="text-[15px] leading-[20px] text-[#6E6E73] flex items-center gap-1">
+                          <span>Hold Period</span>
+                          <InfoTooltip
+                            content={metricExplanations.holdPeriod}
+                          />
+                        </Text>
+                        <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                          {bestTrade.holdPeriod}
+                        </Text>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
+                          <Text className="text-[13px] leading-[18px] text-[#6E6E73] mb-1">
+                            Entry
+                          </Text>
+                          <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                            {bestTrade.entryDate}
+                          </Text>
+                        </div>
+                        <div className="p-3 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
+                          <Text className="text-[13px] leading-[18px] text-[#6E6E73] mb-1">
+                            Exit
+                          </Text>
+                          <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                            {bestTrade.exitDate}
+                          </Text>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             </Card>
 
             {/* Worst Trade */}
             <Card className="overflow-hidden bg-white/80 backdrop-blur-md rounded-2xl ring-1 ring-black/[0.04] shadow-sm">
               <div className="p-6 border-b border-black/[0.04]">
-                <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F]">
-                  Worst Trade
+                <Text className="text-[22px] leading-[28px] font-semibold text-[#1D1D1F] flex items-center gap-1">
+                  <span>Worst Trade</span>
+                  <InfoTooltip content={metricExplanations.worstTrade} />
                 </Text>
               </div>
               <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.04]">
-                      <Image
-                        src={worstTradeData.logo}
-                        alt={worstTradeData.symbol}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <div>
-                      <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F]">
-                        {worstTradeData.symbol}
-                      </Text>
-                      <Text className="text-[22px] leading-[28px] font-semibold text-[#FF3B30]">
-                        {worstTradeData.return}%
-                      </Text>
-                    </div>
+                {isWorstTradeLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
-                  <div className="h-12 w-12 rounded-full bg-[#FF3B30]/[0.08] flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-[#FF3B30]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 rounded-xl bg-[#FF3B30]/[0.04] ring-1 ring-[#FF3B30]/[0.1]">
-                    <Text className="text-[15px] leading-[20px] text-[#6E6E73]">
-                      Hold Period
-                    </Text>
-                    <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                      {worstTradeData.holdPeriod}
+                ) : worstTrade.error ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Text className="text-[17px] leading-[22px] text-[#6E6E73]">
+                      {worstTrade.error}
                     </Text>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
-                      <Text className="text-[13px] leading-[18px] text-[#6E6E73] mb-1">
-                        Entry
-                      </Text>
-                      <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                        {worstTradeData.firstBuy}
-                      </Text>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-12 w-12 rounded-xl overflow-hidden ring-1 ring-black/[0.04]">
+                          <Image
+                            src={worstTrade.logo}
+                            alt={worstTrade.stockSymbol}
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                        <div>
+                          <Text className="text-[17px] leading-[22px] font-medium text-[#1D1D1F]">
+                            {worstTrade.stockSymbol}
+                          </Text>
+                          <Text className="text-[22px] leading-[28px] font-semibold text-[#FF3B30]">
+                            {worstTrade.return >= 0 ? "+" : ""}
+                            {worstTrade.return.toFixed(2)}%
+                          </Text>
+                        </div>
+                      </div>
+                      <div className="h-12 w-12 rounded-full bg-[#FF3B30]/[0.08] flex items-center justify-center">
+                        <svg
+                          className="w-6 h-6 text-[#FF3B30]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                          />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
-                      <Text className="text-[13px] leading-[18px] text-[#6E6E73] mb-1">
-                        Exit
-                      </Text>
-                      <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                        {worstTradeData.lastSell}
-                      </Text>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center p-3 rounded-xl bg-[#FF3B30]/[0.04] ring-1 ring-[#FF3B30]/[0.1]">
+                        <Text className="text-[15px] leading-[20px] text-[#6E6E73] flex items-center gap-1">
+                          <span>Hold Period</span>
+                          <InfoTooltip
+                            content={metricExplanations.holdPeriod}
+                          />
+                        </Text>
+                        <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                          {worstTrade.holdPeriod}
+                        </Text>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
+                          <Text className="text-[13px] leading-[18px] text-[#6E6E73] mb-1">
+                            Entry
+                          </Text>
+                          <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                            {worstTrade.entryDate}
+                          </Text>
+                        </div>
+                        <div className="p-3 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04]">
+                          <Text className="text-[13px] leading-[18px] text-[#6E6E73] mb-1">
+                            Exit
+                          </Text>
+                          <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                            {worstTrade.exitDate}
+                          </Text>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             </Card>
           </div>
