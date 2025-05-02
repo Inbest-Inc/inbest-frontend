@@ -12,6 +12,7 @@ import {
 } from "./Table";
 import Tooltip from "./Tooltip";
 import InfoTooltip, { metricExplanations } from "./InfoTooltip";
+import { getStockLogo } from "../utils/stockUtils";
 
 interface Holding {
   symbol: string;
@@ -139,7 +140,7 @@ export default function ActivityTable({ data }: { data: Holding[] }) {
                 <div className="flex items-center gap-3">
                   <div className="relative h-8 w-8">
                     <Image
-                      src={`https://assets.parqet.com/logos/symbol/${holding.symbol}?format=svg`}
+                      src={getStockLogo(holding.symbol)}
                       alt={holding.name}
                       fill
                       className="object-contain"

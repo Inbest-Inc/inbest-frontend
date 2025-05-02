@@ -28,6 +28,7 @@ import { getUserInfo } from "@/services/userService";
 import Avatar from "@/components/Avatar";
 import Tooltip from "@/components/Tooltip";
 import InfoTooltip, { metricExplanations } from "@/components/InfoTooltip";
+import { getStockLogo } from "@/utils/stockUtils";
 
 // Keep existing mock data
 const portfolioData = {
@@ -64,7 +65,7 @@ const portfolioData = {
       averagePrice: 175.23,
       currentPrice: 182.52,
       return: 4.16,
-      logo: "https://assets.parqet.com/logos/symbol/AAPL?format=svg",
+      logo: getStockLogo("AAPL"),
     },
     {
       symbol: "MSFT",
@@ -74,7 +75,7 @@ const portfolioData = {
       averagePrice: 285.12,
       currentPrice: 312.45,
       return: 9.59,
-      logo: "https://assets.parqet.com/logos/symbol/MSFT?format=svg",
+      logo: getStockLogo("MSFT"),
     },
     {
       symbol: "NVDA",
@@ -84,7 +85,7 @@ const portfolioData = {
       averagePrice: 420.5,
       currentPrice: 485.75,
       return: 15.52,
-      logo: "https://assets.parqet.com/logos/symbol/NVDA?format=svg",
+      logo: getStockLogo("NVDA"),
     },
     {
       symbol: "GOOGL",
@@ -94,7 +95,7 @@ const portfolioData = {
       averagePrice: 138.45,
       currentPrice: 125.3,
       return: -9.49,
-      logo: "https://assets.parqet.com/logos/symbol/GOOGL?format=svg",
+      logo: getStockLogo("GOOGL"),
     },
     {
       symbol: "META",
@@ -104,7 +105,7 @@ const portfolioData = {
       averagePrice: 280.15,
       currentPrice: 315.2,
       return: 12.51,
-      logo: "https://assets.parqet.com/logos/symbol/META?format=svg",
+      logo: getStockLogo("META"),
     },
     {
       symbol: "TSLA",
@@ -114,7 +115,7 @@ const portfolioData = {
       averagePrice: 265.25,
       currentPrice: 202.8,
       return: -23.54,
-      logo: "https://assets.parqet.com/logos/symbol/TSLA?format=svg",
+      logo: getStockLogo("TSLA"),
     },
   ],
 };

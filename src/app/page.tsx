@@ -28,11 +28,7 @@ import {
 } from "@/lib/chartUtils";
 
 import Posts from "@/components/posts/Posts";
-
-// Helper function to get stock logo URL
-const getStockLogo = (symbol: string) => {
-  return `https://assets.parqet.com/logos/symbol/${symbol}?format=svg`;
-};
+import { getStockLogo } from "../utils/stockUtils";
 
 const topTrades = [
   {

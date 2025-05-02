@@ -4,6 +4,7 @@ import { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import Image from "next/image";
 import { sharePost } from "@/services/socialService";
+import { getStockLogo } from "@/utils/stockUtils";
 
 /**
  * Interface for investment activities with consistent field naming
@@ -169,9 +170,7 @@ const normalizeAction = (action: any): InvestmentAction | null => {
   // Get logo URL
   const logo =
     actionData.logo ||
-    (stockSymbol
-      ? `https://assets.parqet.com/logos/symbol/${stockSymbol}?format=svg`
-      : "");
+    (stockSymbol ? getStockLogo(stockSymbol) : "/placeholder-stock.png");
 
   // Create normalized object with consistent field naming
   const normalized = {

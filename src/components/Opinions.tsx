@@ -29,6 +29,7 @@ import {
   TelegramIcon,
 } from "react-share";
 import { toast } from "react-hot-toast";
+import { getStockLogo } from "../utils/stockUtils";
 
 interface OpinionsProps {
   username?: string;
@@ -896,11 +897,6 @@ export default function Opinions({
         </svg>
       </div>
     );
-  };
-
-  // Helper function to get stock logo URL
-  const getStockLogo = (symbol: string) => {
-    return `https://assets.parqet.com/logos/symbol/${symbol}?format=svg`;
   };
 
   // Toggle expanded post

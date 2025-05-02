@@ -1,6 +1,7 @@
 import { toast } from "react-hot-toast";
 import { getApiUrl } from "@/config/env";
 import { getUserInfo } from "@/services/userService";
+import { getStockLogo } from "@/utils/stockUtils";
 
 const API_URL = getApiUrl();
 
@@ -463,7 +464,7 @@ export async function getPortfolioHoldings(
         averagePrice: Number(holding.averageprice.toFixed(2)),
         allocation: Number((holding.allocation * 100).toFixed(2)), // Convert to percentage
         return: Number((holding.return * 100).toFixed(2)), // Convert to percentage
-        logo: `https://assets.parqet.com/logos/symbol/${holding.symbol}?format=svg`, // Add logo URL
+        logo: getStockLogo(holding.symbol), // Use centralized logo function
         // Remove the lowercase properties
         currentprice: undefined,
         averageprice: undefined,

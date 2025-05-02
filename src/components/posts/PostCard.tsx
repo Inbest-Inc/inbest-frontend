@@ -15,6 +15,7 @@ import Avatar from "@/components/Avatar";
 import CommentsSection from "@/components/posts/CommentsSection";
 import PostShareButton from "@/components/posts/PostShareButton";
 import DeleteConfirmationModal from "@/components/posts/DeleteConfirmationModal";
+import { getStockLogo } from "../../utils/stockUtils";
 
 // Helper functions to format dates
 export const formatRelativeTime = (dateString: string) => {
@@ -165,11 +166,6 @@ export const getActionMessage = (
   }
 
   return `Updated ${stockName} (${symbol}) position`;
-};
-
-// Helper to get stock logo
-export const getStockLogo = (symbol: string) => {
-  return `https://assets.parqet.com/logos/symbol/${symbol}?format=svg`;
 };
 
 interface PostCardProps {

@@ -41,6 +41,7 @@ import { getApiUrl } from "@/config/env";
 import Tooltip from "@/components/Tooltip";
 import InfoTooltip, { metricExplanations } from "@/components/InfoTooltip";
 import PortfolioShareButton from "@/components/PortfolioShareButton";
+import { getStockLogo } from "@/utils/stockUtils";
 
 const portfolioReturns = {
   "1M": -2.3,
@@ -58,7 +59,7 @@ const defaultTradeData = {
   entryDate: "",
   exitDate: "",
   holdPeriod: "-",
-  logo: "https://assets.parqet.com/logos/symbol/TSLA?format=svg" as string,
+  logo: getStockLogo("TSLA"),
   loaded: false,
   error: null as string | null,
 };
@@ -69,7 +70,7 @@ const bestTradeData = {
   firstBuy: "Mar 23, 2020",
   lastSell: "Nov 15, 2021",
   holdPeriod: "1 year 8 months",
-  logo: "https://assets.parqet.com/logos/symbol/TSLA?format=svg",
+  logo: getStockLogo("TSLA"),
 };
 
 const worstTradeData = {
@@ -78,7 +79,7 @@ const worstTradeData = {
   firstBuy: "Nov 15, 2021",
   lastSell: "May 12, 2022",
   holdPeriod: "6 months",
-  logo: "https://assets.parqet.com/logos/symbol/NFLX?format=svg",
+  logo: getStockLogo("NFLX"),
 };
 
 const StatCard = ({ label, value, subtext, icon, trend = "neutral" }: any) => (
@@ -333,8 +334,8 @@ export default function PortfolioPage() {
 
           setBestTrade({
             stockSymbol: response.data.tickerSymbol,
-            stockName: response.data.tickerSymbol, // Using ticker as name until backend provides stock name
-            return: response.data.totalReturn,
+            stockName: response.data.tickerSymbol,
+            return: response.data.totalReturn * 100,
             entryDate: new Date(response.data.entryDate).toLocaleDateString(
               "en-US",
               {
@@ -343,24 +344,24 @@ export default function PortfolioPage() {
                 day: "numeric",
               }
             ),
-            exitDate: new Date(response.data.exitDate).toLocaleDateString(
-              "en-US",
-              {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              }
-            ),
-            holdPeriod,
-            logo: `https://assets.parqet.com/logos/symbol/${response.data.tickerSymbol}?format=svg`,
+            exitDate: response.data.exitDate
+              ? new Date(response.data.exitDate).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+              : "Current",
+            holdPeriod: holdPeriod || "Unknown",
+            logo: getStockLogo(response.data.tickerSymbol),
             loaded: true,
             error: null,
           });
         } else {
+          console.error("Error fetching best trade:", response.message);
           setBestTrade({
             ...defaultTradeData,
             loaded: true,
-            error: response.message || "No best trade found",
+            error: response.message || "Could not load best trade data",
           });
         }
       } catch (error) {
@@ -403,8 +404,8 @@ export default function PortfolioPage() {
 
           setWorstTrade({
             stockSymbol: response.data.tickerSymbol,
-            stockName: response.data.tickerSymbol, // Using ticker as name until backend provides stock name
-            return: response.data.totalReturn,
+            stockName: response.data.tickerSymbol,
+            return: response.data.totalReturn * 100,
             entryDate: new Date(response.data.entryDate).toLocaleDateString(
               "en-US",
               {
@@ -413,27 +414,30 @@ export default function PortfolioPage() {
                 day: "numeric",
               }
             ),
-            exitDate: new Date(response.data.exitDate).toLocaleDateString(
-              "en-US",
-              {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              }
-            ),
-            holdPeriod,
-            logo: `https://assets.parqet.com/logos/symbol/${response.data.tickerSymbol}?format=svg`,
+            exitDate: response.data.exitDate
+              ? new Date(response.data.exitDate).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+              : "Current",
+            holdPeriod: holdPeriod || "Unknown",
+            logo: getStockLogo(response.data.tickerSymbol),
             loaded: true,
             error: null,
           });
         } else {
+          console.error("Error fetching worst trade:", response.message);
           setWorstTrade({
-            ...defaultTradeData,
             stockSymbol: "NFLX",
             stockName: "Netflix, Inc.",
-            logo: "https://assets.parqet.com/logos/symbol/NFLX?format=svg",
+            return: -68.2,
+            entryDate: "Nov 15, 2021",
+            exitDate: "May 12, 2022",
+            holdPeriod: "6 months",
+            logo: getStockLogo("NFLX"),
             loaded: true,
-            error: response.message || "No worst trade found",
+            error: response.message || "Could not load worst trade data",
           });
         }
       } catch (error) {
@@ -442,7 +446,7 @@ export default function PortfolioPage() {
           ...defaultTradeData,
           stockSymbol: "NFLX",
           stockName: "Netflix, Inc.",
-          logo: "https://assets.parqet.com/logos/symbol/NFLX?format=svg",
+          logo: getStockLogo("NFLX"),
           loaded: true,
           error:
             error instanceof Error

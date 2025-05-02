@@ -9,6 +9,7 @@ import {
   getStockTickers,
 } from "@/services/portfolioService";
 import QuantityInput from "./QuantityInput";
+import { getStockLogo } from "@/utils/stockUtils";
 
 interface Stock {
   symbol: string;
@@ -21,27 +22,27 @@ const popularStocks: Stock[] = [
   {
     symbol: "AAPL",
     name: "Apple Inc.",
-    logo: "https://assets.parqet.com/logos/symbol/AAPL?format=svg",
+    logo: getStockLogo("AAPL"),
   },
   {
     symbol: "MSFT",
     name: "Microsoft Corporation",
-    logo: "https://assets.parqet.com/logos/symbol/MSFT?format=svg",
+    logo: getStockLogo("MSFT"),
   },
   {
     symbol: "NVDA",
     name: "NVIDIA Corporation",
-    logo: "https://assets.parqet.com/logos/symbol/NVDA?format=svg",
+    logo: getStockLogo("NVDA"),
   },
   {
     symbol: "GOOGL",
     name: "Alphabet Inc.",
-    logo: "https://assets.parqet.com/logos/symbol/GOOGL?format=svg",
+    logo: getStockLogo("GOOGL"),
   },
   {
     symbol: "AMZN",
     name: "Amazon.com Inc.",
-    logo: "https://assets.parqet.com/logos/symbol/AMZN?format=svg",
+    logo: getStockLogo("AMZN"),
   },
 ];
 
@@ -173,7 +174,7 @@ export default function AddStockModal({
           const stocksWithLogos = stockData.map((stock) => ({
             symbol: stock.ticker_symbol,
             name: stock.stock_name,
-            logo: `https://assets.parqet.com/logos/symbol/${stock.ticker_symbol}?format=svg`,
+            logo: getStockLogo(stock.ticker_symbol),
           }));
           setStocks(stocksWithLogos);
         }

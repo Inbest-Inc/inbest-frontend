@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card, Text } from "@tremor/react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getStockLogo } from "../utils/stockUtils";
 
 interface Comment {
   id: string;
@@ -36,11 +37,6 @@ interface FeedItem {
   likes: number;
   comments: Comment[];
 }
-
-// Helper function to get stock logo URL
-const getStockLogo = (symbol: string) => {
-  return `https://assets.parqet.com/logos/symbol/${symbol}?format=svg`;
-};
 
 const forYouFeed: FeedItem[] = [
   {
