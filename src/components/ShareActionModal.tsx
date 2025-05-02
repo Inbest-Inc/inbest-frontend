@@ -211,8 +211,16 @@ const getActionText = (action: InvestmentAction): string => {
     case "OPEN":
       return `Started investing in ${stockName} (${stockSymbol})`;
     case "BUY":
+      // Check if weights are identical (edge case)
+      if (old_position_weight === new_position_weight) {
+        return `Rebalanced ${stockName} (${stockSymbol}) position while maintaining ${formatWeight(new_position_weight)} of portfolio`;
+      }
       return `Increased ${stockName} (${stockSymbol}) position from ${formatWeight(old_position_weight)} to ${formatWeight(new_position_weight)} of portfolio`;
     case "SELL":
+      // Check if weights are identical (edge case)
+      if (old_position_weight === new_position_weight) {
+        return `Rebalanced ${stockName} (${stockSymbol}) position while maintaining ${formatWeight(new_position_weight)} of portfolio`;
+      }
       return `Reduced ${stockName} (${stockSymbol}) position from ${formatWeight(old_position_weight)} to ${formatWeight(new_position_weight)} of portfolio`;
     case "CLOSE":
       return `Closed position in ${stockName} (${stockSymbol})`;

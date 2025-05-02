@@ -150,6 +150,10 @@ export const getActionMessage = (
     return `Started investing in ${stockName} (${symbol})`;
   } else if (upperType === "BUY" || upperType === "INCREASE") {
     if (oldWeight !== undefined) {
+      // Check if weights are identical (edge case)
+      if (oldWeight === newWeight) {
+        return `Rebalanced ${stockName} (${symbol}) position while maintaining ${formatWeight(newWeight)} of portfolio`;
+      }
       return `Increased ${stockName} (${symbol}) position from ${formatWeight(oldWeight)} to ${formatWeight(newWeight)} of portfolio`;
     }
     return `Increased position in ${stockName} (${symbol})`;
@@ -160,6 +164,10 @@ export const getActionMessage = (
       return `Closed position in ${stockName} (${symbol})`;
     }
     if (oldWeight !== undefined) {
+      // Check if weights are identical (edge case)
+      if (oldWeight === newWeight) {
+        return `Rebalanced ${stockName} (${symbol}) position while maintaining ${formatWeight(newWeight)} of portfolio`;
+      }
       return `Reduced ${stockName} (${symbol}) position from ${formatWeight(oldWeight)} to ${formatWeight(newWeight)} of portfolio`;
     }
     return `Reduced position in ${stockName} (${symbol})`;

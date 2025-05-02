@@ -797,12 +797,20 @@ export default function Opinions({
     if (upperType === "ADD" || upperType === "START" || upperType === "OPEN") {
       return `Started investing in ${stockName} (${stockSymbol})`;
     } else if (upperType === "BUY" || upperType === "INCREASE") {
+      // Check if weights are identical (edge case)
+      if (oldWeight === newWeight) {
+        return `Rebalanced ${stockName} (${stockSymbol}) position while maintaining ${formatWeight(newWeight)} of portfolio`;
+      }
       return `Increased ${stockName} (${stockSymbol}) position from ${formatWeight(oldWeight)} to ${formatWeight(newWeight)} of portfolio`;
     } else if (upperType === "CLOSE") {
       return `Closed position in ${stockName} (${stockSymbol})`;
     } else if (upperType === "SELL" || upperType === "DECREASE") {
       if (newWeight === 0) {
         return `Closed position in ${stockName} (${stockSymbol})`;
+      }
+      // Check if weights are identical (edge case)
+      if (oldWeight === newWeight) {
+        return `Rebalanced ${stockName} (${stockSymbol}) position while maintaining ${formatWeight(newWeight)} of portfolio`;
       }
       return `Reduced ${stockName} (${stockSymbol}) position from ${formatWeight(oldWeight)} to ${formatWeight(newWeight)} of portfolio`;
     }
