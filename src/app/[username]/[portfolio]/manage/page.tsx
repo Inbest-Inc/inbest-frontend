@@ -318,11 +318,15 @@ export default function ManagePortfolioPage() {
           return;
         }
 
-        const portfolioResponse = await getPortfolio(portfolioId);
+        const portfolioResponse = await getPortfolio(
+          portfolioId,
+          params.username as string
+        );
         if (!isSubscribed) return;
 
         if (portfolioResponse.status !== "success") {
-          push(`/${params.username}/${params.portfolio}`);
+          console.error("Portfolio access error:", portfolioResponse.message);
+          push(`/${params.username}`);
           return;
         }
 
@@ -399,7 +403,9 @@ export default function ManagePortfolioPage() {
       } catch (error) {
         if (!isSubscribed) return;
         console.error("Error fetching portfolio:", error);
-        push(`/${params.username}/${params.portfolio}`);
+        // Redirect to user page on any portfolio access error
+        push(`/${params.username}`);
+        return;
       } finally {
         if (isSubscribed) {
           setIsLoadingHoldings(false);
@@ -492,12 +498,6 @@ export default function ManagePortfolioPage() {
     if (value === undefined || value === null) return "neutral";
     return value >= 0 ? "positive" : "negative";
   };
-
-  // Only show error if it's a critical error that prevents the page from functioning
-  if (error === "Portfolio not found or access denied") {
-    router.push(`/${params.username}`);
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white">

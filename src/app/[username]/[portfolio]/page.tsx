@@ -165,15 +165,26 @@ export default function PortfolioPage() {
     const fetchPortfolio = async () => {
       setIsPortfolioLoading(true);
       try {
-        const response = await getPortfolio(Number(params.portfolio));
+        const response = await getPortfolio(
+          Number(params.portfolio),
+          params.username as string
+        );
         if (response.status === "success") {
           setPortfolioName(response.data.portfolioName);
           setPortfolioVisibility(response.data.visibility);
         } else {
           console.error("Error fetching portfolio:", response.message);
+          setUserNotFound(true);
+          setNotFoundMessage(response.message || "Portfolio not found");
         }
       } catch (error) {
         console.error("Error fetching portfolio:", error);
+        setUserNotFound(true);
+        setNotFoundMessage(
+          error instanceof Error
+            ? error.message
+            : "Portfolio not found or access denied"
+        );
       } finally {
         setIsPortfolioLoading(false);
       }
@@ -182,7 +193,7 @@ export default function PortfolioPage() {
     if (params.portfolio) {
       fetchPortfolio();
     }
-  }, [params.portfolio]);
+  }, [params.portfolio, params.username]);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -276,8 +287,11 @@ export default function PortfolioPage() {
     }
   }, [params.portfolio]);
 
-  // If user not found, show 404 page
-  if (userNotFound && !isUserInfoLoading) {
+  // If user not found or portfolio error, show 404 page
+  if (
+    (userNotFound && !isUserInfoLoading) ||
+    (params.portfolio && !isPortfolioLoading && portfolioName === "Portfolio")
+  ) {
     return <NotFoundPage message={notFoundMessage} />;
   }
 

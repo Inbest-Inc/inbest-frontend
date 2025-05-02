@@ -164,21 +164,45 @@ interface PortfolioResponse {
   };
 }
 
-export async function getPortfolio(id: number): Promise<PortfolioResponse> {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
-
+export async function getPortfolio(
+  id: number,
+  username?: string
+): Promise<PortfolioResponse> {
   try {
-    const response = await fetch(`${API_URL}/api/portfolio/get?id=${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // Get the current username if not provided
+    if (!username) {
+      const userInfo = localStorage.getItem("user");
+      if (userInfo) {
+        const user = JSON.parse(userInfo);
+        username = user.username;
+      } else {
+        throw new Error("Username is required to access portfolio");
+      }
+    }
+
+    // Validate that we have both required parameters
+    if (!id || !username) {
+      throw new Error("Both portfolio ID and username are required");
+    }
+
+    // Build the URL with both required parameters
+    const url = `${API_URL}/api/portfolio/get?id=${id}&username=${username}`;
+
+    // Make the request with or without auth token
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = {};
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { headers });
 
     if (!response.ok) {
-      throw new Error("Portfolio not found or access denied");
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Portfolio not found or access denied"
+      );
     }
 
     const data = await response.json();
