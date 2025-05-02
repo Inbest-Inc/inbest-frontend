@@ -18,6 +18,17 @@ interface CommentsSectionProps {
   onCommentCountUpdate: (count: number) => void;
 }
 
+// API response format for comments
+interface CommentResponse {
+  commentId: number;
+  username: string;
+  userId: number;
+  comment: string;
+  createdAt: string;
+  imageUrl?: string;
+  fullName?: string;
+}
+
 export default function CommentsSection({
   postId,
   commentCount,
@@ -44,59 +55,25 @@ export default function CommentsSection({
       const response = await getPostComments(postId);
 
       if (response.status === "success" && response.data) {
-        // Debug: Log raw comments
-        console.log("Raw comments from API:", response.data);
-
         // Map API response to Comment objects with proper structure
-        const formattedComments = response.data.map((comment: any) => {
-          // Get content field, handling different API formats
-          const commentContent = comment.content || comment.comment || "";
+        const formattedComments = (
+          response.data as unknown as CommentResponse[]
+        ).map((comment) => ({
+          id: comment.commentId,
+          content: comment.comment,
+          createdAt: comment.createdAt,
+          imageUrl: comment.imageUrl,
+          fullName: comment.fullName,
+          userDTO: {
+            username: comment.username,
+            email: "",
+            name: comment.fullName?.split(" ")[0] || "",
+            surname: comment.fullName?.split(" ").slice(1).join(" ") || "",
+          },
+        }));
 
-          // Debug log each comment before processing
-          console.log("Processing comment:", comment, "ID:", comment.id);
-
-          // If the comment is from the old format (without userDTO), transform it
-          if (!comment.userDTO && comment.username) {
-            return {
-              id: comment.id, // Use the original comment ID, don't generate random one
-              content: commentContent, // Use the extracted content
-              createdAt: comment.createdAt || new Date().toISOString(),
-              imageUrl: comment.imageUrl || null,
-              fullName: comment.fullName || comment.username || "",
-              userDTO: {
-                username: comment.username || "",
-                email: "",
-                name: comment.username || "",
-                surname: "",
-              },
-            };
-          }
-
-          // For standard format, ensure content is set correctly
-          return {
-            ...comment,
-            content: commentContent, // Ensure content is set correctly
-          };
-        });
-
-        // Filter out any comments without valid IDs
-        const validComments = formattedComments.filter((comment) => {
-          const isValid = comment.id !== undefined && comment.id !== null;
-          if (!isValid) {
-            console.warn("Invalid comment found:", comment);
-          }
-          return isValid;
-        });
-
-        if (validComments.length !== formattedComments.length) {
-          console.warn(
-            `Filtered out ${formattedComments.length - validComments.length} comments with invalid IDs`
-          );
-          console.log("Valid comments:", validComments);
-        }
-
-        setComments(validComments);
-        onCommentCountUpdate(validComments.length);
+        setComments(formattedComments);
+        onCommentCountUpdate(formattedComments.length);
       } else {
         setError(response.message || "Failed to load comments");
       }
@@ -143,18 +120,14 @@ export default function CommentsSection({
         // Update comment count
         onCommentCountUpdate(commentCount + 1);
 
-        // Instead of refetching comments, add the new comment directly to the list
-        // with the current user's information to avoid the "@user" placeholder
-        // This ensures correct user info is displayed even before API refresh
-        const currentTimestamp = new Date().toISOString();
-
-        // Make sure we have a valid ID from the API response
-        if (response.data && response.data.id) {
+        // Check for the comment data in the response
+        const commentData = response.data as unknown as CommentResponse;
+        if (commentData && commentData.commentId) {
           // Create a new comment object with all required fields and the actual ID from API
           const newCommentObj: Comment = {
-            id: response.data.id, // Use the actual ID from API response
+            id: commentData.commentId,
             content: newComment,
-            createdAt: currentTimestamp,
+            createdAt: new Date().toISOString(),
             fullName: `${storedName} ${storedSurname}`.trim(),
             userDTO: {
               username: storedUsername,
@@ -293,7 +266,7 @@ export default function CommentsSection({
       {/* Comments list */}
       {comments.length > 0 ? (
         <div className="space-y-4">
-          {comments.map((comment, index) => {
+          {comments.map((comment) => {
             // Check if the current user is the comment owner
             const isOwnComment = comment.userDTO?.username === currentUsername;
 
@@ -339,26 +312,7 @@ export default function CommentsSection({
 
                         {isOwnComment && (
                           <button
-                            onClick={() => {
-                              // Only set the comment ID if it's defined
-                              if (
-                                comment.id !== undefined &&
-                                comment.id !== null
-                              ) {
-                                console.log(
-                                  "Setting comment to delete:",
-                                  comment.id
-                                );
-                                setCommentToDelete(comment.id);
-                              } else {
-                                console.error(
-                                  "Cannot delete comment: ID is undefined"
-                                );
-                                toast.error(
-                                  "Cannot delete comment: ID is missing"
-                                );
-                              }
-                            }}
+                            onClick={() => setCommentToDelete(comment.id)}
                             className="text-[#6E6E73] hover:text-red-500 transition-colors"
                             title="Delete comment"
                           >
