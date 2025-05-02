@@ -505,9 +505,12 @@ export async function updateStockQuantity(
   portfolioId: number,
   tickerName: string,
   quantity: number,
-  onSuccess?: RefreshCallback
+  onSuccess?: RefreshCallback,
+  silent: boolean = false
 ): Promise<UpdateStockQuantityResponse> {
-  const loadingToast = showLoadingToast(`Updating ${tickerName} shares...`);
+  const loadingToast = silent
+    ? undefined
+    : showLoadingToast(`Updating ${tickerName} shares...`);
 
   try {
     const token = localStorage.getItem("token");
@@ -553,7 +556,9 @@ export async function updateStockQuantity(
       }
 
       // Display the error toast and return an error response
-      toast.error(errorMessage, { id: loadingToast });
+      if (!silent && loadingToast) {
+        toast.error(errorMessage, { id: loadingToast });
+      }
       return {
         status: "error",
         message: errorMessage,
@@ -575,13 +580,17 @@ export async function updateStockQuantity(
       data.data?.activityId
     );
 
+    // Call the refresh callback to update the data from backend
     if (onSuccess) {
+      console.log("Calling refresh callback after stock quantity update");
       await onSuccess();
     }
 
-    toast.success(`Updated ${tickerName} to ${formattedQuantity} shares`, {
-      id: loadingToast,
-    });
+    if (!silent && loadingToast) {
+      toast.success(`Updated ${tickerName} to ${formattedQuantity} shares`, {
+        id: loadingToast,
+      });
+    }
 
     return {
       status: "success",
@@ -590,12 +599,14 @@ export async function updateStockQuantity(
     };
   } catch (error) {
     // Only display error toast if it hasn't been displayed yet by the code above
-    toast.error(
-      error instanceof Error
-        ? error.message
-        : "Couldn't update shares quantity",
-      { id: loadingToast }
-    );
+    if (!silent && loadingToast) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Couldn't update shares quantity",
+        { id: loadingToast }
+      );
+    }
     throw error;
   }
 }
@@ -608,11 +619,12 @@ export interface DeleteStockResponse {
 export async function deleteStockFromPortfolio(
   portfolioId: number,
   tickerName: string,
-  onSuccess?: RefreshCallback
+  onSuccess?: RefreshCallback,
+  silent: boolean = false
 ): Promise<DeleteStockResponse> {
-  const loadingToast = showLoadingToast(
-    `Deleting ${tickerName} from portfolio...`
-  );
+  const loadingToast = silent
+    ? undefined
+    : showLoadingToast(`Deleting ${tickerName} from portfolio...`);
 
   try {
     const token = localStorage.getItem("token");
@@ -657,7 +669,9 @@ export async function deleteStockFromPortfolio(
       }
 
       // Display the error toast and return an error response
-      toast.error(errorMessage, { id: loadingToast });
+      if (!silent && loadingToast) {
+        toast.error(errorMessage, { id: loadingToast });
+      }
       return {
         status: "error",
         message: errorMessage,
@@ -671,11 +685,17 @@ export async function deleteStockFromPortfolio(
       await onSuccess();
     }
 
-    toast.success(`Deleted ${tickerName} from portfolio`, { id: loadingToast });
+    if (!silent && loadingToast) {
+      toast.success(`Deleted ${tickerName} from portfolio`, {
+        id: loadingToast,
+      });
+    }
     return data;
   } catch (error) {
     // Only display error toast if it hasn't been displayed yet by the code above
     if (
+      !silent &&
+      loadingToast &&
       error instanceof Error &&
       !error.message.includes("not in your portfolio")
     ) {

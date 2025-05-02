@@ -190,27 +190,48 @@ export default function ManagePortfolioPage() {
   // Keep track of the fetch function reference
   const fetchDataRef = useRef<(() => Promise<void>) | null>(null);
 
-  /**
-   * Handles all stock operations (add/update/delete)
-   * @param operation Stock operation details
-   */
+  // Add a refreshHoldings function
+  const refreshHoldings = async () => {
+    try {
+      setIsLoadingHoldings(true);
+      const holdingsResponse = await getPortfolioHoldings(portfolioId);
+      if (holdingsResponse.status === "success") {
+        setHoldings(holdingsResponse.data.holdings || []);
+      }
+    } catch (error: any) {
+      // Silently handle "No stocks" case
+      setHoldings([]);
+      // Only log other errors
+      if (
+        !error.message?.includes("No stocks") &&
+        !error.message?.includes("404")
+      ) {
+        console.error("Error fetching holdings:", error);
+      }
+    } finally {
+      setIsLoadingHoldings(false);
+    }
+  };
+
+  // Update the handleStockOperation function to directly refresh holdings
   const handleStockOperation = async (operation: StockOperation) => {
     if (!operation?.symbol || typeof operation?.shares !== "number") {
       return;
     }
 
-    // Get the callback function if available
-    const refreshCallback = fetchDataRef.current || undefined;
+    // Set operation in progress flag
+    setIsOperationInProgress(true);
 
     try {
       let response;
+      let refreshRequired = true; // By default, we'll refresh unless handled specially
+
       switch (operation.type) {
         case "add":
           response = await addStockToPortfolio(
             portfolioId,
             operation.symbol,
-            operation.shares,
-            refreshCallback
+            operation.shares
           );
           console.log("Add stock operation complete response:", response);
 
@@ -262,7 +283,6 @@ export default function ManagePortfolioPage() {
                 setSelectedAction(shareData);
               }
               setIsShareActionModalOpen(true);
-              return;
             } else {
               console.log("No activityId found in response, creating one");
               // For the case when API didn't return an activityId
@@ -289,14 +309,17 @@ export default function ManagePortfolioPage() {
               setSelectedAction(tempAction);
               setIsShareActionModalOpen(true);
             }
+
+            // After handling share action, refresh the holdings
+            await refreshHoldings();
+            refreshRequired = false; // We've already refreshed
           }
           break;
         case "update":
           response = await updateStockQuantity(
             portfolioId,
             operation.symbol,
-            operation.shares,
-            refreshCallback
+            operation.shares
           );
 
           console.log(
@@ -333,6 +356,10 @@ export default function ManagePortfolioPage() {
                   toast.error(
                     "Unable to share this activity due to missing data. Please try again."
                   );
+
+                  // Still refresh the holdings
+                  await refreshHoldings();
+                  refreshRequired = false; // We've already refreshed
                   return;
                 }
 
@@ -342,6 +369,10 @@ export default function ManagePortfolioPage() {
                   toast.error(
                     "Unable to share this activity. Please refresh and try again."
                   );
+
+                  // Still refresh the holdings
+                  await refreshHoldings();
+                  refreshRequired = false; // We've already refreshed
                   return;
                 }
               }
@@ -349,14 +380,17 @@ export default function ManagePortfolioPage() {
               // Always pass the complete response data to ensure all fields are available
               setSelectedAction(response.data);
               setIsShareActionModalOpen(true);
+
+              // After handling share action, refresh the holdings
+              await refreshHoldings();
+              refreshRequired = false; // We've already refreshed
             }
           }
           break;
         case "delete":
           response = await deleteStockFromPortfolio(
             portfolioId,
-            operation.symbol,
-            refreshCallback
+            operation.symbol
           );
 
           // For CLOSE actions, we need to manually construct the data for sharing
@@ -380,15 +414,21 @@ export default function ManagePortfolioPage() {
           break;
       }
 
-      // We don't need to fetch data again since we passed the callback to the service
+      // After any operation, refresh the holdings if needed
+      if (refreshRequired) {
+        await refreshHoldings();
+      }
     } catch (error) {
       console.error("Error during stock operation:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to update portfolio"
       );
+    } finally {
+      setIsOperationInProgress(false);
     }
   };
 
+  // Update the useEffect to store the refreshHoldings function in the fetchDataRef
   useEffect(() => {
     let isSubscribed = true;
 
@@ -452,23 +492,10 @@ export default function ManagePortfolioPage() {
 
         // Fetch holdings data
         try {
-          const holdingsResponse = await getPortfolioHoldings(portfolioId);
+          await refreshHoldings();
+        } catch (error) {
           if (!isSubscribed) return;
-
-          if (holdingsResponse.status === "success") {
-            setHoldings(holdingsResponse.data.holdings || []);
-          }
-        } catch (error: any) {
-          if (!isSubscribed) return;
-          // Silently handle "No stocks" case
-          setHoldings([]);
-          // Only log other errors
-          if (
-            !error.message?.includes("No stocks") &&
-            !error.message?.includes("404")
-          ) {
-            console.error("Error fetching holdings:", error);
-          }
+          console.error("Error refreshing holdings:", error);
         }
 
         // Fetch metrics data
@@ -501,7 +528,7 @@ export default function ManagePortfolioPage() {
     };
 
     // Store the fetch function reference
-    fetchDataRef.current = fetchData;
+    fetchDataRef.current = refreshHoldings;
     fetchData();
 
     return () => {
@@ -827,8 +854,56 @@ export default function ManagePortfolioPage() {
               ) : (
                 <ManageableActivityTable
                   data={holdings}
-                  onChange={(changes) => {
+                  onChange={async (changes) => {
+                    // Only process when quantity changes
                     if ("quantity" in changes) {
+                      // For changes coming from the component itself, the share modal
+                      // may have already been triggered via the API response in handleQuantityUpdate
+                      console.log("Quantity change detected:", changes);
+
+                      // Special case: If we have a deleteAfterUpdate flag, handle it specifically
+                      if (changes.deleteAfterUpdate) {
+                        console.log("Handling deletion after update to zero");
+
+                        // Only delete if we aren't already processing the stock
+                        if (!isOperationInProgress) {
+                          try {
+                            setIsOperationInProgress(true);
+
+                            // Small delay to ensure update has been processed
+                            await new Promise((resolve) =>
+                              setTimeout(resolve, 300)
+                            );
+
+                            // Now delete the stock
+                            await deleteStockFromPortfolio(
+                              portfolioId,
+                              changes.symbol,
+                              undefined, // No callback
+                              true // Silent mode - no toast
+                            );
+
+                            // Refresh the holdings
+                            await refreshHoldings();
+                          } catch (error) {
+                            console.error(
+                              "Error during post-update deletion:",
+                              error
+                            );
+                          } finally {
+                            setIsOperationInProgress(false);
+                          }
+                        }
+                        return;
+                      }
+
+                      // If API call was already made in the component, just refresh data
+                      if (changes.apiCallComplete) {
+                        refreshHoldings();
+                        return;
+                      }
+
+                      // Otherwise handle the stock operation normally
                       handleStockOperation({
                         type: changes.quantity === 0 ? "delete" : "update",
                         symbol: changes.symbol,
@@ -837,6 +912,7 @@ export default function ManagePortfolioPage() {
                     }
                   }}
                   onShare={(action) => {
+                    console.log("Share action triggered:", action);
                     setSelectedAction(action);
                     setIsShareActionModalOpen(true);
                   }}

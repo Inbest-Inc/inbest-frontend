@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import Image from "next/image";
 import {
@@ -177,18 +177,12 @@ export default function ManageableActivityTable({
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [selectedStock, setSelectedStock] = useState<Holding | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  const [holdings, setHoldings] = useState(() => {
-    const totalValue = data.reduce(
-      (sum, h) => sum + h.shares * h.currentPrice,
-      0
-    );
+  const [holdings, setHoldings] = useState(data);
 
-    return data.map((h) => ({
-      ...h,
-      allocation: ((h.shares * h.currentPrice) / totalValue) * 100,
-      return: ((h.currentPrice - h.averagePrice) / h.averagePrice) * 100,
-    }));
-  });
+  // Update holdings when data from parent changes (e.g. after refresh)
+  useEffect(() => {
+    setHoldings(data);
+  }, [data]);
 
   const [deleteConfirmStock, setDeleteConfirmStock] = useState<{
     isOpen: boolean;
@@ -214,12 +208,10 @@ export default function ManageableActivityTable({
       const newAvgPrice = totalCost / newShares;
       return {
         averagePrice: newAvgPrice,
-        return: ((currentPrice - newAvgPrice) / newAvgPrice) * 100,
       };
     }
     return {
       averagePrice: currentAvgPrice,
-      return: ((currentPrice - currentAvgPrice) / currentAvgPrice) * 100,
     };
   };
 
@@ -239,52 +231,36 @@ export default function ManageableActivityTable({
       holding.currentPrice
     );
 
-    // First update the holding with new shares and metrics
     const updatedHoldings = holdings.map((h) =>
       h.symbol === symbol
         ? {
             ...h,
             shares: newShares,
             averagePrice: metrics.averagePrice,
-            return: metrics.return,
           }
         : h
     );
 
-    // Then calculate new total value and allocations
-    const totalValue = updatedHoldings.reduce(
-      (sum, h) => sum + h.shares * h.currentPrice,
-      0
-    );
-
-    // Finally update allocations for all holdings
-    const finalHoldings = updatedHoldings.map((h) => ({
-      ...h,
-      allocation: ((h.shares * h.currentPrice) / totalValue) * 100,
-    }));
-
-    // Trigger share action if needed
-    const newHolding = finalHoldings.find((h) => h.symbol === symbol);
-    if (newHolding && newShares !== oldShares) {
+    if (newShares !== oldShares) {
       const type = determineActionType(
         symbol,
         oldShares,
         newShares,
         oldAllocation,
-        newHolding.allocation
+        oldAllocation
       );
       handleSharesChange(
         symbol,
         newShares,
         oldShares,
         oldAllocation,
-        newHolding.allocation,
+        oldAllocation,
         DEMO_USERNAME,
         type
       );
     }
 
-    return finalHoldings;
+    return updatedHoldings;
   };
 
   const handleShareKeyDown = (
@@ -427,16 +403,22 @@ export default function ManageableActivityTable({
 
       console.log("Closing position for:", deleteConfirmStock.stock.symbol);
 
-      // First, update quantity to 0 to get a proper activityId
-      console.log("Setting quantity to 0 to get proper activityId for sharing");
-
       let hasSharedAction = false;
+      let skipDeleteToast = false;
+      const stockSymbol = deleteConfirmStock.stock.symbol;
 
+      // For CLOSE actions, we have two approaches:
+      // 1. Update to 0 shares then trigger share action (only if we need to share)
+      // 2. Just delete the stock without sharing (simpler, fewer API calls)
+
+      // If we're sharing the action, update to 0 first to get activityId
       try {
         const updateResponse = await updateStockQuantity(
           portfolioId,
           holding.symbol,
-          0 // Set to zero quantity
+          0, // Set to zero quantity
+          undefined, // Don't pass callback to avoid toast
+          true // Add silent flag to suppress toast
         );
 
         console.log(
@@ -446,6 +428,7 @@ export default function ManageableActivityTable({
 
         // Check if we have a valid activityId in the response
         if (updateResponse.status === "success" && updateResponse.data) {
+          skipDeleteToast = true; // We'll be deleting right after, so skip redundant toast
           const activityId =
             updateResponse.data.activityId ||
             (updateResponse.data.data && updateResponse.data.data.activityId);
@@ -467,9 +450,28 @@ export default function ManageableActivityTable({
 
             // Trigger share modal
             console.log("Triggering share modal for CLOSE action:");
-            debugActionObject("CLOSE via delete", shareAction);
             onShare(shareAction);
             hasSharedAction = true;
+
+            // Important: Now let the parent component handle the actual deletion
+            // by sending the onChange event. Do NOT call delete API directly here.
+
+            // Update local state immediately for UI responsiveness
+            const newHoldings = holdings.filter(
+              (h) => h.symbol !== stockSymbol
+            );
+            setHoldings(newHoldings);
+
+            // Inform parent component to delete the stock - this eliminates duplicate API calls
+            onChange({
+              symbol: stockSymbol,
+              quantity: 0,
+              apiCallComplete: true, // Signal that API call was made
+              deleteAfterUpdate: true, // Signal that we need a deletion
+            });
+
+            setDeleteConfirmStock({ isOpen: false, stock: null });
+            return; // Exit early - parent will handle deletion
           }
         }
       } catch (updateError) {
@@ -477,27 +479,26 @@ export default function ManageableActivityTable({
         // Continue with deletion even if update fails
       }
 
-      // Add a small delay to ensure the update operation is processed
-      if (hasSharedAction) {
-        console.log(
-          "Adding small delay before deletion to ensure proper order of operations"
-        );
-        await new Promise((resolve) => setTimeout(resolve, 300));
-      }
-
-      // Now proceed with the actual deletion
-      console.log("Proceeding with actual deletion");
+      // If we didn't share the action or there was an error, proceed with direct deletion
+      console.log("Proceeding with direct deletion");
       await deleteStockFromPortfolio(
         portfolioId,
-        deleteConfirmStock.stock.symbol
+        stockSymbol,
+        undefined, // Skip refresh callback
+        skipDeleteToast // Skip toast if we already showed update toast
       );
 
       // Update local state
-      const newHoldings = holdings.filter(
-        (h) => h.symbol !== deleteConfirmStock.stock?.symbol
-      );
+      const newHoldings = holdings.filter((h) => h.symbol !== stockSymbol);
       setHoldings(newHoldings);
-      onChange(newHoldings);
+
+      // Inform parent component about the change
+      onChange({
+        symbol: stockSymbol,
+        quantity: 0,
+        apiCallComplete: true, // Signal that API call is already complete
+      });
+
       setDeleteConfirmStock({ isOpen: false, stock: null });
     } catch (error) {
       console.error("Error closing position:", error);
@@ -533,16 +534,16 @@ export default function ManageableActivityTable({
       );
 
       if (response.status === "success") {
-        // Update local state
-        const updatedHoldings = updateHoldings(
-          selectedStock.symbol,
-          quantity,
-          oldShares
+        // Update only the current stock in UI while backend data is being fetched
+        // This provides immediate feedback to the user
+        const tempUpdatedHoldings = holdings.map((h) =>
+          h.symbol === selectedStock.symbol ? { ...h, shares: quantity } : h
         );
-        setHoldings(updatedHoldings);
-        onChange(updatedHoldings);
 
-        // If we have activity data in the response, use it for sharing
+        setHoldings(tempUpdatedHoldings);
+
+        // Process share action before refreshing data
+        let didTriggerShareAction = false;
         if (response.data) {
           console.log(
             "Stock quantity update response data:",
@@ -574,8 +575,8 @@ export default function ManageableActivityTable({
               console.log(
                 "About to trigger onShare with API response data (CLOSE action):"
               );
-              debugActionObject("CLOSE API response", shareAction);
               onShare(shareAction);
+              didTriggerShareAction = true;
             } else {
               // For non-CLOSE actions, use the API response as is
               const shareAction = {
@@ -584,82 +585,25 @@ export default function ManageableActivityTable({
               };
 
               console.log("About to trigger onShare with API response data:");
-              debugActionObject("API response-based", shareAction);
               onShare(shareAction);
-            }
-          } else {
-            // Fallback to the old method
-            console.log(
-              "No activityId found in response, using generic method"
-            );
-
-            // If this is a CLOSE action without an activityId, show error and don't share
-            if (isCloseAction) {
-              console.error(
-                "CLOSE action detected but no valid activityId found"
-              );
-              toast.error("Unable to share this activity. Please try again.");
-              return;
-            }
-
-            const updatedHolding = updatedHoldings.find(
-              (h) => h.symbol === selectedStock.symbol
-            );
-            if (updatedHolding) {
-              const type = determineActionType(
-                selectedStock.symbol,
-                oldShares,
-                quantity,
-                oldAllocation,
-                updatedHolding.allocation
-              );
-
-              // Create action with fixed ID instead of timestamp
-              const tempActivityId = 123456;
-              console.log("Using fixed activityId:", tempActivityId);
-
-              // Check for CLOSE action (when reducing to zero shares)
-              const isCloseAction =
-                quantity === 0 || updatedHolding.allocation === 0;
-
-              if (isCloseAction) {
-                console.warn("CLOSE action detected without valid activityId");
-                console.log(
-                  "Cannot share CLOSE actions without proper API-provided activityId"
-                );
-                // We don't handle share for CLOSE actions here - they need a real activityId
-                toast.error(
-                  "Unable to share this activity. Try closing the position again."
-                );
-                return;
-              }
-
-              // Log the action before sending it
-              console.log(
-                "About to call handleSharesChange with fallback data"
-              );
-
-              handleSharesChange(
-                selectedStock.symbol,
-                quantity,
-                oldShares,
-                oldAllocation,
-                updatedHolding.allocation,
-                DEMO_USERNAME,
-                type,
-                tempActivityId // Use temporary ID
-              );
+              didTriggerShareAction = true;
             }
           }
-        } else {
-          console.log("No response data available for sharing");
         }
+
+        // Inform parent component about the change to trigger a fetch of fresh data
+        onChange({
+          symbol: selectedStock.symbol,
+          quantity: quantity,
+          displayShareModal: !didTriggerShareAction, // Only show share modal if we haven't done it here
+          apiCallComplete: true, // Signal that API call is already complete
+        });
+
+        setSelectedStock(null);
+        setUpdateError(null);
       } else {
         setUpdateError(response.message || "Failed to update quantity");
       }
-
-      setSelectedStock(null);
-      setUpdateError(null);
     } catch (error) {
       setUpdateError(
         error instanceof Error ? error.message : "Failed to update quantity"
@@ -759,17 +703,17 @@ export default function ManageableActivityTable({
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Tooltip content={`${holding.allocation}%`}>
+                  <Tooltip content={`${holding.allocation.toFixed(2)}%`}>
                     <span>{holding.allocation.toFixed(1)}%</span>
                   </Tooltip>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Tooltip content={`$${holding.averagePrice}`}>
+                  <Tooltip content={`$${holding.averagePrice.toFixed(2)}`}>
                     <span>${holding.averagePrice.toFixed(2)}</span>
                   </Tooltip>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Tooltip content={`$${holding.currentPrice}`}>
+                  <Tooltip content={`$${holding.currentPrice.toFixed(2)}`}>
                     <span>${holding.currentPrice.toFixed(2)}</span>
                   </Tooltip>
                 </TableCell>
@@ -778,7 +722,7 @@ export default function ManageableActivityTable({
                     holding.return >= 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
-                  <Tooltip content={`${holding.return}%`}>
+                  <Tooltip content={`${holding.return.toFixed(2)}%`}>
                     <span>
                       {holding.return >= 0 ? "+" : ""}
                       {holding.return.toFixed(2)}%
