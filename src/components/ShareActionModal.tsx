@@ -5,151 +5,234 @@ import { Dialog, Transition } from "@headlessui/react";
 import Image from "next/image";
 import { sharePost } from "@/services/socialService";
 
+/**
+ * Interface for investment activities with consistent field naming
+ */
+interface InvestmentAction {
+  activityId: number;
+  portfolioId: number;
+  stockSymbol: string;
+  stockName: string;
+  actionType: "OPEN" | "BUY" | "SELL" | "CLOSE";
+  stockQuantity: number;
+  old_position_weight: number;
+  new_position_weight: number;
+  logo?: string;
+}
+
 interface ShareActionModalProps {
   isOpen: boolean;
   onClose: () => void;
   action: any;
 }
 
-// Debug function to log the action object structure
-const logActionStructure = (action: any) => {
-  if (!action) {
-    console.log("Action is null or undefined");
-    return;
-  }
-
-  const keys = Object.keys(action);
-  console.log("Action keys:", keys);
-
-  console.log("Action essential fields:");
-  console.log(
-    "- stockSymbol/symbol:",
-    action.stockSymbol || action.symbol || "MISSING"
-  );
-  console.log(
-    "- stockName/name:",
-    action.stockName || action.name || "MISSING"
-  );
-  console.log(
-    "- actionType/type:",
-    action.actionType || action.type || "MISSING"
-  );
-
-  // Check for structure nesting issues
-  if (action.data) {
-    console.log("Action has nested data:");
-    console.log(JSON.stringify(action.data, null, 2));
-  }
-};
-
-// Normalize the action object to ensure all required fields are present
-const normalizeAction = (action: any) => {
+/**
+ * Normalizes the action object to ensure consistent field naming
+ * regardless of the source/format of the data
+ */
+const normalizeAction = (action: any): InvestmentAction | null => {
   if (!action) return null;
 
-  // Create a new object with standard field names for consistency
-  const normalized = {
-    // Use consistent field names, preferring newer API field names but falling back to legacy ones
-    stockSymbol: action.stockSymbol || action.symbol || "",
-    stockName: action.stockName || action.name || "",
-    actionType: action.actionType || action.type || "",
-    stockQuantity: action.stockQuantity || action.newShares || 0,
-    old_position_weight:
-      action.old_position_weight ||
-      (action.oldAllocation ? action.oldAllocation / 100 : 0),
-    new_position_weight:
-      action.new_position_weight ||
-      (action.newAllocation ? action.newAllocation / 100 : 0),
-    activityId: action.activityId || action.investmentActivityId || 0,
-    logo: action.logo || "",
+  // Add debug logging to see the exact structure of the action data
+  console.log("Normalizing action data:", JSON.stringify(action, null, 2));
 
-    // Preserve legacy fields too for compatibility
-    symbol: action.stockSymbol || action.symbol || "",
-    name: action.stockName || action.name || "",
-    type: action.type || "",
-    oldAllocation:
-      action.oldAllocation ||
-      (action.old_position_weight ? action.old_position_weight * 100 : 0),
-    newAllocation:
-      action.newAllocation ||
-      (action.new_position_weight ? action.new_position_weight * 100 : 0),
+  // Extract data from the nested 'data' object if present (handling API response format)
+  // For direct API responses, the data we need is in the 'data' property
+  const actionData = action.data || action;
 
-    // Preserve any other fields that might be useful
-    ...action,
-  };
+  // IMPROVED ACTIVITY ID EXTRACTION:
+  // Look for activityId in all possible locations with detailed logging
+  let originalActivityId: number | undefined;
 
-  // If we have nested data, merge it as well
-  if (action.data) {
-    // Only add properties we don't already have
-    Object.keys(action.data).forEach((key) => {
-      if (normalized[key] === undefined || normalized[key] === "") {
-        normalized[key] = action.data[key];
-      }
-    });
+  // Try direct activityId property
+  if (typeof actionData.activityId === "number") {
+    originalActivityId = actionData.activityId;
+    console.log(
+      `Found activityId directly in actionData: ${originalActivityId}`
+    );
+  }
+  // Try nested data.activityId property
+  else if (action.data && typeof action.data.activityId === "number") {
+    originalActivityId = action.data.activityId;
+    console.log(`Found activityId in nested data: ${originalActivityId}`);
+  }
+  // Try investmentActivityId property
+  else if (typeof actionData.investmentActivityId === "number") {
+    originalActivityId = actionData.investmentActivityId;
+    console.log(
+      `Found activityId as investmentActivityId: ${originalActivityId}`
+    );
+  }
+  // For legacy API responses, check for id
+  else if (typeof actionData.id === "number") {
+    originalActivityId = actionData.id;
+    console.log(`Found activityId as id: ${originalActivityId}`);
+  }
+  // Check for string versions that need conversion
+  else if (
+    typeof actionData.activityId === "string" &&
+    !isNaN(parseInt(actionData.activityId, 10))
+  ) {
+    originalActivityId = parseInt(actionData.activityId, 10);
+    console.log(`Converted string activityId to number: ${originalActivityId}`);
+  }
+  // Last resort - use 0 (not 123456 to avoid the temp ID issue)
+  else {
+    originalActivityId = 0;
+    console.log(`No valid activityId found, using 0 as placeholder`);
   }
 
-  // Log normalized result
+  // Special check for the problematic temporary ID
+  if (originalActivityId === 123456) {
+    console.warn(
+      "WARNING: Using the temporary activity ID (123456) which will cause API failures"
+    );
+  }
+
+  // Map legacy action types to standardized types
+  const mapActionType = (type: string): "OPEN" | "BUY" | "SELL" | "CLOSE" => {
+    const upperType = (type || "").toUpperCase();
+
+    // First priority: explicit CLOSE type
+    if (upperType === "CLOSE") {
+      console.log("Mapped to CLOSE: explicit CLOSE type");
+      return "CLOSE";
+    }
+
+    // Second priority: SELL with zero shares or zero weight = CLOSE
+    if (
+      upperType === "SELL" &&
+      (actionData.stockQuantity === 0 ||
+        actionData.newShares === 0 ||
+        actionData.new_position_weight === 0)
+    ) {
+      console.log("Mapped to CLOSE: SELL with zero quantity/allocation");
+      return "CLOSE";
+    }
+
+    // Handle other standard types
+    if (upperType === "ADD" || upperType === "START" || upperType === "OPEN") {
+      return "OPEN";
+    } else if (upperType === "BUY" || upperType === "INCREASE") {
+      return "BUY";
+    } else if (upperType === "DECREASE" || upperType === "SELL") {
+      return "SELL";
+    }
+
+    // Default to most likely action type based on available data
+    // If shares are 0, it's probably a CLOSE
+    if (
+      actionData.stockQuantity === 0 ||
+      actionData.newShares === 0 ||
+      actionData.new_position_weight === 0
+    ) {
+      console.log("Mapped to CLOSE: detected zero quantity/allocation");
+      return "CLOSE";
+    }
+
+    return "BUY";
+  };
+
+  // Extract action type from possible fields
+  const rawActionType = actionData.actionType || actionData.type || "";
+  const actionType = mapActionType(rawActionType);
+
+  console.log("Mapped action type:", rawActionType, "→", actionType);
+
+  // Extract stock symbol from possible fields
+  const stockSymbol = actionData.stockSymbol || actionData.symbol || "";
+
+  // Extract stock name from possible fields
+  const stockName = actionData.stockName || actionData.name || stockSymbol;
+
+  // Extract portfolio ID from possible fields
+  const portfolioId = actionData.portfolioId || 0;
+
+  // Extract stock quantity from possible fields
+  const stockQuantity = actionData.stockQuantity || actionData.newShares || 0;
+
+  // Extract position weights from possible fields
+  const oldWeight =
+    typeof actionData.old_position_weight === "number"
+      ? actionData.old_position_weight
+      : actionData.oldAllocation
+        ? actionData.oldAllocation / 100
+        : 0;
+
+  const newWeight =
+    typeof actionData.new_position_weight === "number"
+      ? actionData.new_position_weight
+      : actionData.newAllocation
+        ? actionData.newAllocation / 100
+        : 0;
+
+  // Get logo URL
+  const logo =
+    actionData.logo ||
+    (stockSymbol
+      ? `https://assets.parqet.com/logos/symbol/${stockSymbol}?format=svg`
+      : "");
+
+  // Create normalized object with consistent field naming
+  const normalized = {
+    activityId: originalActivityId || 0,
+    portfolioId,
+    stockSymbol,
+    stockName,
+    actionType,
+    stockQuantity,
+    old_position_weight: oldWeight,
+    new_position_weight: newWeight,
+    logo,
+  };
+
+  // Debug log the normalized result
   console.log("Normalized action:", JSON.stringify(normalized, null, 2));
 
   return normalized;
 };
 
-const getActionText = (action: any) => {
-  // Debug log of full action object
-  console.log("getActionText called with:", JSON.stringify(action, null, 2));
+/**
+ * Gets standardized action text based on the action type, stock name, and weights
+ */
+const getActionText = (action: InvestmentAction): string => {
+  const {
+    stockName,
+    stockSymbol,
+    actionType,
+    old_position_weight,
+    new_position_weight,
+  } = action;
 
-  // Normalize the action to ensure consistent field names
-  const normalizedAction = normalizeAction(action);
+  const formatWeight = (weight: number) => {
+    return `${(weight * 100).toFixed(1)}%`;
+  };
 
-  if (!normalizedAction) {
-    console.error("Failed to normalize action in getActionText");
-    return "Unknown action";
-  }
-
-  // Using normalized fields which will always be present
-  const symbol = normalizedAction.stockSymbol;
-  const name = normalizedAction.stockName;
-
-  if (!symbol || !name) {
-    console.error("Missing stock symbol or name in normalized action");
-    return "Unknown investment action";
-  }
-
-  // Determine text based on action type
-  switch (normalizedAction.actionType) {
-    case "ADD":
-      return `Started investing in ${name} (${symbol})`;
+  switch (actionType) {
+    case "OPEN":
+      return `Started investing in ${stockName} (${stockSymbol})`;
     case "BUY":
-      return `Increased ${name} (${symbol}) position from ${(normalizedAction.old_position_weight * 100).toFixed(1)}% to ${(normalizedAction.new_position_weight * 100).toFixed(1)}%`;
+      return `Increased ${stockName} (${stockSymbol}) position from ${formatWeight(old_position_weight)} to ${formatWeight(new_position_weight)} of portfolio`;
     case "SELL":
-      if (normalizedAction.stockQuantity === 0) {
-        return `Closed position in ${name} (${symbol})`;
-      }
-      return `Reduced ${name} (${symbol}) position from ${(normalizedAction.old_position_weight * 100).toFixed(1)}% to ${(normalizedAction.new_position_weight * 100).toFixed(1)}%`;
-    case "start":
-      return `Started a new position in ${name} (${symbol})`;
-    case "increase":
-      return `Increased ${name} (${symbol}) position from ${normalizedAction.oldAllocation.toFixed(1)}% to ${normalizedAction.newAllocation.toFixed(1)}%`;
-    case "decrease":
-      return `Decreased ${name} (${symbol}) position from ${normalizedAction.oldAllocation.toFixed(1)}% to ${normalizedAction.newAllocation.toFixed(1)}%`;
+      return `Reduced ${stockName} (${stockSymbol}) position from ${formatWeight(old_position_weight)} to ${formatWeight(new_position_weight)} of portfolio`;
+    case "CLOSE":
+      return `Closed position in ${stockName} (${stockSymbol})`;
     default:
-      console.error("Unrecognized action type:", normalizedAction.actionType);
-      return `Updated position in ${name} (${symbol})`;
+      return `Updated ${stockName} (${stockSymbol}) position`;
   }
 };
 
-const getActionColor = (type: string) => {
-  // Using the new actionType if available
-  if (type === "ADD") return "blue";
-  if (type === "BUY") return "emerald";
-  if (type === "SELL") return "rose";
-
-  // Fallback to original format
-  switch (type) {
-    case "start":
+/**
+ * Gets the action color based on action type
+ */
+const getActionColor = (actionType: string): string => {
+  switch (actionType) {
+    case "OPEN":
       return "blue";
-    case "increase":
+    case "BUY":
       return "emerald";
-    case "decrease":
+    case "SELL":
+    case "CLOSE":
       return "rose";
     default:
       return "blue";
@@ -164,26 +247,28 @@ export default function ShareActionModal({
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [normalizedAction, setNormalizedAction] = useState<any>(null);
+  const [normalizedAction, setNormalizedAction] =
+    useState<InvestmentAction | null>(null);
 
   // Normalize the action object when it changes
   useEffect(() => {
     if (action) {
-      const normalized = normalizeAction(action);
-      setNormalizedAction(normalized);
+      try {
+        console.log(
+          "Action received in ShareActionModal:",
+          JSON.stringify(action, null, 2)
+        );
+        const normalized = normalizeAction(action);
+        setNormalizedAction(normalized);
+
+        if (!normalized) {
+          console.error("Failed to normalize action:", action);
+        }
+      } catch (err) {
+        console.error("Error normalizing action:", err, action);
+      }
     }
   }, [action]);
-
-  // Log action object whenever it changes or modal opens
-  useEffect(() => {
-    if (isOpen && action) {
-      console.log(
-        "ShareActionModal opened with action:",
-        JSON.stringify(action, null, 2)
-      );
-      logActionStructure(action);
-    }
-  }, [isOpen, action]);
 
   const handleShare = async () => {
     if (isSubmitting) return;
@@ -191,43 +276,80 @@ export default function ShareActionModal({
     // Reset error state
     setError(null);
 
-    // Get the investment activity ID from the action
-    console.log(
-      "Action object for sharing:",
-      JSON.stringify(normalizedAction || action, null, 2)
-    );
+    // Use normalized action if available, or try to normalize action again
+    const actionToUse = normalizedAction || normalizeAction(action);
 
-    // Use normalized action if available
-    const actionToUse = normalizedAction || action;
-
-    // Try to extract investmentActivityId from various possible locations
-    const investmentActivityId =
-      actionToUse.investmentActivityId || actionToUse.activityId;
-
-    // Validate that we have investment activity ID
-    if (!investmentActivityId) {
+    if (!actionToUse) {
       setError("Cannot share post: Missing investment activity information");
-      console.error(
-        "Investment activity ID missing from all possible locations:",
-        actionToUse
-      );
+      console.error("Cannot process action for sharing:", action);
       return;
     }
 
-    console.log("Found investmentActivityId to use:", investmentActivityId);
+    // Extract the raw data from the action to ensure we have all possible sources of the activityId
+    const rawData = action.data || action;
+
+    // Try to get the activityId from multiple possible sources
+    // Priority: 1. Normalized action, 2. Raw data activityId, 3. Raw data.data activityId
+    const effectiveActivityId =
+      actionToUse.activityId ||
+      rawData.activityId ||
+      (rawData.data && rawData.data.activityId);
+
+    console.log(
+      `Using activityId: ${effectiveActivityId} (${typeof effectiveActivityId}) for sharing post`
+    );
+    console.log("Action type:", actionToUse.actionType);
+
+    // Special handling for different actions
+    if (actionToUse.actionType === "CLOSE") {
+      console.log("CLOSE action detected - using raw activity ID if available");
+      console.log("Raw action data:", JSON.stringify(rawData, null, 2));
+
+      // For CLOSE actions, ensure we're not using the temporary ID (123456)
+      if (effectiveActivityId === 123456) {
+        setError(
+          "Cannot share CLOSE action with temporary ID. Please try again or contact support."
+        );
+        console.error(
+          "Attempted to share CLOSE action with temporary ID 123456"
+        );
+        return;
+      }
+    }
+
+    if (!effectiveActivityId) {
+      setError("Cannot share post: Missing investment activity ID");
+      console.error("Investment activity ID missing from all sources:", {
+        normalizedId: actionToUse.activityId,
+        rawId: rawData.activityId,
+        nestedId: rawData.data && rawData.data.activityId,
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      // Create request with investmentActivityId and content
+      // Ensure activity ID is a number for the API
+      const numericActivityId =
+        typeof effectiveActivityId === "string"
+          ? parseInt(effectiveActivityId, 10)
+          : effectiveActivityId;
+
+      // Reject if still using temporary ID
+      if (numericActivityId === 123456) {
+        throw new Error(
+          "Cannot share with temporary activity ID (123456). This may be caused by a system issue. Please try again or refresh the page."
+        );
+      }
+
       const postData = {
-        investmentActivityId: investmentActivityId,
+        investmentActivityId: numericActivityId,
         content: note,
       };
 
-      console.log("Sending share post request:", JSON.stringify(postData));
-
-      // Call the share post service
+      console.log("Sending post data:", JSON.stringify(postData, null, 2));
       const response = await sharePost(postData);
+      console.log("Share post response:", JSON.stringify(response, null, 2));
 
       if (response.status === "success") {
         // Reset the note and close the modal
@@ -235,6 +357,8 @@ export default function ShareActionModal({
         onClose();
       } else if (response.message) {
         setError(response.message);
+      } else {
+        setError("Failed to share post. Please try again.");
       }
     } catch (error) {
       console.error("Error sharing post:", error);
@@ -244,47 +368,21 @@ export default function ShareActionModal({
     }
   };
 
-  // Early check for action data issues
+  // Early check for action data issues - render nothing if no action
   if (!action) {
-    console.error("ShareActionModal rendered with null/undefined action");
     return null;
   }
 
-  // Use normalized action if available, otherwise use original action
-  const actionToUse = normalizedAction || action;
-
-  // Log any potential issues with action structure
-  if (!actionToUse.stockSymbol && !actionToUse.symbol) {
-    console.error(
-      "Action missing both stockSymbol and symbol fields:",
-      actionToUse
-    );
+  // Use normalized action if available, otherwise return early
+  if (!normalizedAction) {
+    return null;
   }
 
-  if (!actionToUse.stockName && !actionToUse.name) {
-    console.error(
-      "Action missing both stockName and name fields:",
-      actionToUse
-    );
-  }
-
-  if (!actionToUse.actionType && !actionToUse.type) {
-    console.error(
-      "Action missing both actionType and type fields:",
-      actionToUse
-    );
-  }
-
-  // Determine the appropriate type to use for color
-  const actionType = actionToUse.actionType || actionToUse.type;
+  const { actionType, stockSymbol, stockName, logo } = normalizedAction;
   const actionColor = getActionColor(actionType);
 
-  // Get the appropriate symbol, name and logo values
-  const symbol = actionToUse.stockSymbol || actionToUse.symbol;
-  const name = actionToUse.stockName || actionToUse.name;
-  const logo =
-    actionToUse.logo ||
-    `https://assets.parqet.com/logos/symbol/${symbol}?format=svg`;
+  // Ensure we have a valid URL for the logo to avoid type errors
+  const logoUrl = logo || "/placeholder-stock.png";
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -324,18 +422,18 @@ export default function ShareActionModal({
                       <div className="flex items-center gap-4 mb-4">
                         <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-white">
                           <Image
-                            src={logo}
-                            alt={name || "Stock"}
+                            src={logoUrl}
+                            alt={stockName || "Stock"}
                             fill
                             className="object-contain"
                           />
                         </div>
                         <div className="flex-1">
                           <h3 className="text-[17px] leading-[22px] font-medium text-[#1D1D1F]">
-                            {name || "Unknown Stock"}
+                            {stockName || "Unknown Stock"}
                           </h3>
                           <p className="text-[13px] leading-[18px] text-[#6E6E73]">
-                            {symbol || "N/A"}
+                            {stockSymbol || "N/A"}
                           </p>
                         </div>
                         <div
@@ -347,8 +445,7 @@ export default function ShareActionModal({
                             viewBox="0 0 24 24"
                             stroke="currentColor"
                           >
-                            {(actionType === "start" ||
-                              actionType === "ADD") && (
+                            {actionType === "OPEN" && (
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -356,8 +453,7 @@ export default function ShareActionModal({
                                 d="M12 4v16m8-8H4"
                               />
                             )}
-                            {(actionType === "increase" ||
-                              actionType === "BUY") && (
+                            {actionType === "BUY" && (
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -365,8 +461,8 @@ export default function ShareActionModal({
                                 d="M5 10l7-7m0 0l7 7m-7-7v18"
                               />
                             )}
-                            {(actionType === "decrease" ||
-                              actionType === "SELL") && (
+                            {(actionType === "SELL" ||
+                              actionType === "CLOSE") && (
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -378,7 +474,7 @@ export default function ShareActionModal({
                         </div>
                       </div>
                       <p className="text-[15px] leading-[20px] text-[#6E6E73]">
-                        {getActionText(actionToUse)}
+                        {getActionText(normalizedAction)}
                       </p>
                     </div>
 

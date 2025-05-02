@@ -20,6 +20,7 @@ import {
 import { formatQuantity } from "@/utils/quantityUtils";
 import Tooltip from "./Tooltip";
 import InfoTooltip, { metricExplanations } from "./InfoTooltip";
+import { toast } from "react-hot-toast";
 
 interface Holding {
   symbol: string;
@@ -318,16 +319,35 @@ export default function ManageableActivityTable({
       return;
     }
 
+    // First, detect if this is a CLOSE action (reducing shares to 0)
+    const isCloseAction = newShares === 0;
+
     // Determine the proper action type based on the backend's static types
     let actionType = "BUY";
     if (oldShares === 0) {
       actionType = "ADD"; // First time buying this stock
     } else if (newShares > oldShares) {
       actionType = "BUY"; // Adding more shares to existing position
-    } else if (newShares === 0) {
-      actionType = "SELL"; // Sold entire position
+    } else if (isCloseAction) {
+      actionType = "CLOSE"; // Explicitly use CLOSE for positions reduced to 0
     } else {
-      actionType = "SELL"; // Reduced position
+      actionType = "SELL"; // Reduced position but not to 0
+    }
+
+    // Log the detected action type
+    console.log(
+      `Action detected: ${actionType} (shares: ${oldShares} → ${newShares})`
+    );
+
+    // If this is a CLOSE action and we don't have a valid API activity ID, show error
+    if (isCloseAction && (!apiActivityId || apiActivityId === 123456)) {
+      console.error(
+        "Attempted to share a CLOSE action without a valid API-provided activityId"
+      );
+      toast.error(
+        "Unable to share when closing a position without an activity ID. Please try again."
+      );
+      return;
     }
 
     // New structure based on the API response
@@ -399,26 +419,80 @@ export default function ManageableActivityTable({
     if (!deleteConfirmStock.stock) return;
 
     try {
-      await deleteStockFromPortfolio(
-        portfolioId,
-        deleteConfirmStock.stock.symbol
-      );
-
+      // Get the holding before deleting it
       const holding = holdings.find(
         (h) => h.symbol === deleteConfirmStock.stock?.symbol
       );
       if (!holding) return;
 
-      handleSharesChange(
-        holding.symbol,
-        0,
-        holding.shares,
-        holding.allocation,
-        0,
-        DEMO_USERNAME,
-        "decrease"
+      console.log("Closing position for:", deleteConfirmStock.stock.symbol);
+
+      // First, update quantity to 0 to get a proper activityId
+      console.log("Setting quantity to 0 to get proper activityId for sharing");
+
+      let hasSharedAction = false;
+
+      try {
+        const updateResponse = await updateStockQuantity(
+          portfolioId,
+          holding.symbol,
+          0 // Set to zero quantity
+        );
+
+        console.log(
+          "Update to zero response:",
+          JSON.stringify(updateResponse, null, 2)
+        );
+
+        // Check if we have a valid activityId in the response
+        if (updateResponse.status === "success" && updateResponse.data) {
+          const activityId =
+            updateResponse.data.activityId ||
+            (updateResponse.data.data && updateResponse.data.data.activityId);
+
+          if (activityId) {
+            console.log("Got valid activityId for CLOSE action:", activityId);
+
+            // Create a share action with proper CLOSE type
+            const shareAction = {
+              ...updateResponse.data,
+              activityId: activityId,
+              actionType: "CLOSE", // Force CLOSE type for clarity
+              stockQuantity: 0,
+              stockSymbol: holding.symbol,
+              stockName: holding.name,
+              old_position_weight: holding.allocation / 100,
+              new_position_weight: 0,
+            };
+
+            // Trigger share modal
+            console.log("Triggering share modal for CLOSE action:");
+            debugActionObject("CLOSE via delete", shareAction);
+            onShare(shareAction);
+            hasSharedAction = true;
+          }
+        }
+      } catch (updateError) {
+        console.error("Error updating quantity to 0:", updateError);
+        // Continue with deletion even if update fails
+      }
+
+      // Add a small delay to ensure the update operation is processed
+      if (hasSharedAction) {
+        console.log(
+          "Adding small delay before deletion to ensure proper order of operations"
+        );
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+
+      // Now proceed with the actual deletion
+      console.log("Proceeding with actual deletion");
+      await deleteStockFromPortfolio(
+        portfolioId,
+        deleteConfirmStock.stock.symbol
       );
 
+      // Update local state
       const newHoldings = holdings.filter(
         (h) => h.symbol !== deleteConfirmStock.stock?.symbol
       );
@@ -426,8 +500,8 @@ export default function ManageableActivityTable({
       onChange(newHoldings);
       setDeleteConfirmStock({ isOpen: false, stock: null });
     } catch (error) {
-      console.error("Error deleting stock:", error);
-      // You might want to show an error message to the user here
+      console.error("Error closing position:", error);
+      toast.error("Failed to close position. Please try again.");
     }
   };
 
@@ -439,11 +513,23 @@ export default function ManageableActivityTable({
       const oldShares = selectedStock.shares;
       const oldAllocation = selectedStock.allocation;
 
+      // Detect if this is a CLOSE action (setting shares to 0)
+      const isCloseAction = quantity === 0;
+
+      if (isCloseAction) {
+        console.log("CLOSE action detected (reducing shares to 0)");
+      }
+
       // Call API to update quantity
       const response = await updateStockQuantity(
         portfolioId,
         selectedStock.symbol,
         quantity
+      );
+
+      console.log(
+        "Stock quantity update response:",
+        JSON.stringify(response, null, 2)
       );
 
       if (response.status === "success") {
@@ -472,20 +558,50 @@ export default function ManageableActivityTable({
           if (activityId) {
             console.log("Found activityId in response:", activityId);
 
-            // Create a share action with the activityId
-            const shareAction = {
-              ...response.data,
-              activityId: activityId, // Ensure activityId is at the top level
-            };
+            // For CLOSE actions, make sure the actionType is set correctly
+            if (isCloseAction) {
+              console.log(
+                "Setting actionType to CLOSE for shares reduced to 0"
+              );
 
-            console.log("About to trigger onShare with API response data:");
-            debugActionObject("API response-based", shareAction);
-            onShare(shareAction);
+              // Create a share action with the activityId and correct CLOSE actionType
+              const shareAction = {
+                ...response.data,
+                activityId: activityId,
+                actionType: "CLOSE", // Force CLOSE type for positions reduced to 0
+              };
+
+              console.log(
+                "About to trigger onShare with API response data (CLOSE action):"
+              );
+              debugActionObject("CLOSE API response", shareAction);
+              onShare(shareAction);
+            } else {
+              // For non-CLOSE actions, use the API response as is
+              const shareAction = {
+                ...response.data,
+                activityId: activityId, // Ensure activityId is at the top level
+              };
+
+              console.log("About to trigger onShare with API response data:");
+              debugActionObject("API response-based", shareAction);
+              onShare(shareAction);
+            }
           } else {
             // Fallback to the old method
             console.log(
               "No activityId found in response, using generic method"
             );
+
+            // If this is a CLOSE action without an activityId, show error and don't share
+            if (isCloseAction) {
+              console.error(
+                "CLOSE action detected but no valid activityId found"
+              );
+              toast.error("Unable to share this activity. Please try again.");
+              return;
+            }
+
             const updatedHolding = updatedHoldings.find(
               (h) => h.symbol === selectedStock.symbol
             );
@@ -501,6 +617,22 @@ export default function ManageableActivityTable({
               // Create action with fixed ID instead of timestamp
               const tempActivityId = 123456;
               console.log("Using fixed activityId:", tempActivityId);
+
+              // Check for CLOSE action (when reducing to zero shares)
+              const isCloseAction =
+                quantity === 0 || updatedHolding.allocation === 0;
+
+              if (isCloseAction) {
+                console.warn("CLOSE action detected without valid activityId");
+                console.log(
+                  "Cannot share CLOSE actions without proper API-provided activityId"
+                );
+                // We don't handle share for CLOSE actions here - they need a real activityId
+                toast.error(
+                  "Unable to share this activity. Try closing the position again."
+                );
+                return;
+              }
 
               // Log the action before sending it
               console.log(

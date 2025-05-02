@@ -782,76 +782,120 @@ export default function Opinions({
   const getActionMessage = (
     actionType: string,
     stockSymbol: string,
-    weight: number
+    stockName: string,
+    oldWeight: number,
+    newWeight: number
   ) => {
-    switch (actionType.toUpperCase()) {
-      case "BUY":
-        return `Increased position to ${weight.toFixed(2)}% of portfolio`;
-      case "SELL":
-        return `Decreased position to ${weight.toFixed(2)}% of portfolio`;
-      default:
-        return `${actionType} position (${weight.toFixed(2)}% of portfolio)`;
+    const formatWeight = (weight: number) => {
+      return `${(weight * 100).toFixed(1)}%`;
+    };
+
+    // Standardize action types
+    const upperType = actionType.toUpperCase();
+
+    if (upperType === "ADD" || upperType === "START" || upperType === "OPEN") {
+      return `Started investing in ${stockName} (${stockSymbol})`;
+    } else if (upperType === "BUY" || upperType === "INCREASE") {
+      return `Increased ${stockName} (${stockSymbol}) position from ${formatWeight(oldWeight)} to ${formatWeight(newWeight)} of portfolio`;
+    } else if (upperType === "CLOSE") {
+      return `Closed position in ${stockName} (${stockSymbol})`;
+    } else if (upperType === "SELL" || upperType === "DECREASE") {
+      if (newWeight === 0) {
+        return `Closed position in ${stockName} (${stockSymbol})`;
+      }
+      return `Reduced ${stockName} (${stockSymbol}) position from ${formatWeight(oldWeight)} to ${formatWeight(newWeight)} of portfolio`;
     }
+
+    return `Updated ${stockName} (${stockSymbol}) position`;
   };
 
   // Get action icon based on action type
   const getActionIcon = (actionType: string) => {
-    switch (actionType.toUpperCase()) {
-      case "BUY":
-        return (
-          <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-emerald-50/80">
-            <svg
-              className="w-5 h-5 text-emerald-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </div>
-        );
-      case "SELL":
-        return (
-          <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-red-50/80">
-            <svg
-              className="w-5 h-5 text-red-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M20 12H4"
-              />
-            </svg>
-          </div>
-        );
-      default:
-        return (
-          <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-blue-50/80">
-            <svg
-              className="w-5 h-5 text-blue-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </div>
-        );
+    // Standardize the action type
+    const upperType = (actionType || "").toUpperCase();
+
+    if (upperType === "OPEN" || upperType === "ADD" || upperType === "START") {
+      return (
+        <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-blue-50/80">
+          <svg
+            className="w-5 h-5 text-blue-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+        </div>
+      );
     }
+
+    if (upperType === "BUY" || upperType === "INCREASE") {
+      return (
+        <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-emerald-50/80">
+          <svg
+            className="w-5 h-5 text-emerald-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M5 10l7-7m0 0l7 7m-7-7v18"
+            />
+          </svg>
+        </div>
+      );
+    }
+
+    if (
+      upperType === "SELL" ||
+      upperType === "DECREASE" ||
+      upperType === "CLOSE"
+    ) {
+      return (
+        <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-red-50/80">
+          <svg
+            className="w-5 h-5 text-red-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+            />
+          </svg>
+        </div>
+      );
+    }
+
+    // Default icon for unknown action types
+    return (
+      <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-blue-50/80">
+        <svg
+          className="w-5 h-5 text-blue-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </div>
+    );
   };
 
   // Helper function to get stock logo URL
@@ -1076,13 +1120,17 @@ export default function Opinions({
                       <div className="flex-1">
                         <div className="flex items-center">
                           <span className="text-[#1D1D1F] font-medium">
-                            {post.investmentActivityResponseDTO.actionType.toUpperCase() ===
-                            "BUY"
-                              ? "Bought"
-                              : post.investmentActivityResponseDTO.actionType.toUpperCase() ===
-                                  "SELL"
-                                ? "Sold"
-                                : "Adjusted position in"}
+                            {getActionMessage(
+                              post.investmentActivityResponseDTO.actionType,
+                              post.investmentActivityResponseDTO.stockSymbol ||
+                                post.stockSymbol,
+                              post.investmentActivityResponseDTO.stockName ||
+                                post.stockSymbol,
+                              post.investmentActivityResponseDTO
+                                .old_position_weight,
+                              post.investmentActivityResponseDTO
+                                .new_position_weight
+                            )}
                           </span>
 
                           {/* Stock Info */}
@@ -1103,13 +1151,7 @@ export default function Opinions({
 
                         {/* Position Details */}
                         <div className="text-sm text-[#6E6E73] mt-1">
-                          {post.investmentActivityResponseDTO.actionType.toUpperCase() ===
-                          "BUY"
-                            ? `New position: ${post.investmentActivityResponseDTO.new_position_weight.toFixed(2)}% of portfolio`
-                            : post.investmentActivityResponseDTO.actionType.toUpperCase() ===
-                                "SELL"
-                              ? `Reduced to ${post.investmentActivityResponseDTO.new_position_weight.toFixed(2)}% of portfolio`
-                              : `Position is now ${post.investmentActivityResponseDTO.new_position_weight.toFixed(2)}% of portfolio`}
+                          {/* Position details now included in the action message */}
                         </div>
                       </div>
 

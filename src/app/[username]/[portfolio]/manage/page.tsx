@@ -231,31 +231,61 @@ export default function ManagePortfolioPage() {
 
             if (activityId) {
               console.log("Found activityId:", activityId);
-              const shareData = {
-                activityId: activityId,
-                portfolioId: portfolioId,
-                stockSymbol: operation.symbol,
-                actionType: "ADD",
-                stockQuantity: operation.shares,
-              };
 
-              console.log("Setting share action with:", shareData);
-              setSelectedAction(shareData);
+              // Check if we have full stock data in the response
+              let stockName = operation.symbol;
+              if (response.data && response.data.stockName) {
+                stockName = response.data.stockName;
+              }
+
+              // Use the complete response data if available
+              if (response.data && response.data.stockSymbol) {
+                console.log("Using complete response data for share action");
+                setSelectedAction(response.data);
+              } else {
+                // Fallback to constructing our own object
+                const shareData = {
+                  activityId: activityId,
+                  portfolioId: portfolioId,
+                  stockSymbol: operation.symbol,
+                  stockName: stockName,
+                  actionType: "OPEN", // Use standardized "OPEN" for new positions
+                  stockQuantity: operation.shares,
+                  old_position_weight: 0,
+                  new_position_weight: 0,
+                };
+
+                console.log(
+                  "Setting share action with constructed data:",
+                  shareData
+                );
+                setSelectedAction(shareData);
+              }
               setIsShareActionModalOpen(true);
               return;
             } else {
               console.log("No activityId found in response, creating one");
+              // For the case when API didn't return an activityId
+
+              // Check if we have full stock data in the response
+              let stockName = operation.symbol;
+              if (response.data && response.data.stockName) {
+                stockName = response.data.stockName;
+              }
+
               // Force the share dialog with a temporary ID if needed
               const tempAction = {
                 activityId: 123456, // Fixed ID instead of Date.now()
                 portfolioId: portfolioId,
                 stockSymbol: operation.symbol,
-                actionType: "ADD",
+                stockName: stockName,
+                actionType: "OPEN", // Use standardized "OPEN" for new positions
                 stockQuantity: operation.shares,
-                stockName: operation.symbol, // Use symbol as name if not available
+                old_position_weight: 0,
+                new_position_weight: 0,
               };
 
-              console.log("Using temp action:", tempAction);
+              console.log("Using temp action with fallback data:", tempAction);
               setSelectedAction(tempAction);
               setIsShareActionModalOpen(true);
             }
@@ -269,7 +299,10 @@ export default function ManagePortfolioPage() {
             refreshCallback
           );
 
-          console.log("Update stock response for sharing:", response);
+          console.log(
+            "Update stock response for sharing:",
+            JSON.stringify(response, null, 2)
+          );
 
           // If it's an update with activity data, show share modal
           if (response?.status === "success" && response.data) {
@@ -279,6 +312,41 @@ export default function ManagePortfolioPage() {
                 "Found activityId in update response:",
                 response.data.activityId
               );
+
+              // Special handling for CLOSE actions (when quantity is reduced to 0)
+              if (
+                response.data.actionType === "CLOSE" ||
+                (response.data.actionType === "SELL" &&
+                  (response.data.stockQuantity === 0 ||
+                    response.data.new_position_weight === 0))
+              ) {
+                console.log(
+                  "CLOSE/SELL-to-zero action detected, preserving original activity ID"
+                );
+
+                // Make sure we have the actual activityId for CLOSE operations
+                if (!response.data.activityId) {
+                  console.error(
+                    "Missing activityId for CLOSE operation:",
+                    response.data
+                  );
+                  toast.error(
+                    "Unable to share this activity due to missing data. Please try again."
+                  );
+                  return;
+                }
+
+                // Never use temporary IDs for CLOSE operations
+                if (response.data.activityId === 123456) {
+                  console.error("Cannot use temporary ID for CLOSE operation");
+                  toast.error(
+                    "Unable to share this activity. Please refresh and try again."
+                  );
+                  return;
+                }
+              }
+
+              // Always pass the complete response data to ensure all fields are available
               setSelectedAction(response.data);
               setIsShareActionModalOpen(true);
             }
@@ -290,6 +358,25 @@ export default function ManagePortfolioPage() {
             operation.symbol,
             refreshCallback
           );
+
+          // For CLOSE actions, we need to manually construct the data for sharing
+          // since the delete API doesn't return activity details
+          console.log(
+            "Delete stock response for sharing:",
+            JSON.stringify(response, null, 2)
+          );
+
+          // If the deletion was successful, construct a sharing object
+          if (response?.status === "success") {
+            console.log("Processing delete/CLOSE response for sharing");
+
+            // Since the delete API doesn't provide an activityId, we need to
+            // prompt the user to try using the update API with 0 shares instead
+            toast.success(
+              "To share that you closed this position, please reduce shares to 0 instead of deleting.",
+              { duration: 5000 }
+            );
+          }
           break;
       }
 

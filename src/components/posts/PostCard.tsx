@@ -37,89 +37,134 @@ export const formatExactDate = (dateString: string) => {
   }
 };
 
-// Helper function to get the right icon for different action types
+// Helper to get an icon based on the action type
 export const getActionIcon = (actionType: string) => {
-  switch (actionType?.toLowerCase()) {
-    case "buy":
-    case "purchased":
-      return (
-        <div className="p-2 bg-green-50 text-green-600 rounded-full">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-        </div>
-      );
-    case "sell":
-    case "sold":
-      return (
-        <div className="p-2 bg-red-50 text-red-600 rounded-full">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M20 12H4"
-            />
-          </svg>
-        </div>
-      );
-    default:
-      return (
-        <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-            />
-          </svg>
-        </div>
-      );
+  // Standardize the action type
+  const upperType = (actionType || "").toUpperCase();
+
+  if (upperType === "OPEN" || upperType === "ADD" || upperType === "START") {
+    return (
+      <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-blue-50/80">
+        <svg
+          className="w-5 h-5 text-blue-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M12 4v16m8-8H4"
+          />
+        </svg>
+      </div>
+    );
   }
+
+  if (upperType === "BUY" || upperType === "INCREASE") {
+    return (
+      <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-emerald-50/80">
+        <svg
+          className="w-5 h-5 text-emerald-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M5 10l7-7m0 0l7 7m-7-7v18"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  if (
+    upperType === "SELL" ||
+    upperType === "DECREASE" ||
+    upperType === "CLOSE"
+  ) {
+    return (
+      <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-red-50/80">
+        <svg
+          className="w-5 h-5 text-red-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M19 14l-7 7m0 0l-7-7m7 7V3"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  // Default icon for unknown action types
+  return (
+    <div className="h-10 w-10 rounded-xl flex items-center justify-center backdrop-blur-sm bg-blue-50/80">
+      <svg
+        className="w-5 h-5 text-blue-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M9 5l7 7-7 7"
+        />
+      </svg>
+    </div>
+  );
 };
 
 // Helper to get an action message based on the action type
 export const getActionMessage = (
   actionType: string,
   symbol: string,
-  newWeight?: number
+  name?: string,
+  newWeight?: number,
+  oldWeight?: number
 ) => {
-  const formatPercent = (value?: number) => {
-    if (value === undefined || value === null) return "";
-    return ` (${(value * 100).toFixed(1)}% of portfolio)`;
+  const stockName = name || symbol;
+
+  const formatWeight = (weight?: number) => {
+    if (weight === undefined || weight === null) return "0.0%";
+    return `${(weight * 100).toFixed(1)}%`;
   };
 
-  switch (actionType?.toLowerCase()) {
-    case "buy":
-    case "purchased":
-      return `Purchased ${symbol}${formatPercent(newWeight)}`;
-    case "sell":
-    case "sold":
-      return `Sold ${symbol}${formatPercent(newWeight)}`;
-    default:
-      return `Updated ${symbol} position${formatPercent(newWeight)}`;
+  // Convert to uppercase and standardize action types
+  const upperType = actionType.toUpperCase();
+
+  // Use the same standardized action messages as in ShareActionModal
+  if (upperType === "ADD" || upperType === "START" || upperType === "OPEN") {
+    return `Started investing in ${stockName} (${symbol})`;
+  } else if (upperType === "BUY" || upperType === "INCREASE") {
+    if (oldWeight !== undefined) {
+      return `Increased ${stockName} (${symbol}) position from ${formatWeight(oldWeight)} to ${formatWeight(newWeight)} of portfolio`;
+    }
+    return `Increased position in ${stockName} (${symbol})`;
+  } else if (upperType === "CLOSE") {
+    return `Closed position in ${stockName} (${symbol})`;
+  } else if (upperType === "SELL" || upperType === "DECREASE") {
+    if (newWeight === 0) {
+      return `Closed position in ${stockName} (${symbol})`;
+    }
+    if (oldWeight !== undefined) {
+      return `Reduced ${stockName} (${symbol}) position from ${formatWeight(oldWeight)} to ${formatWeight(newWeight)} of portfolio`;
+    }
+    return `Reduced position in ${stockName} (${symbol})`;
   }
+
+  return `Updated ${stockName} (${symbol}) position`;
 };
 
 // Helper to get stock logo
@@ -281,7 +326,9 @@ export default function PostCard({
                   {getActionMessage(
                     post.investmentActivityResponseDTO.actionType,
                     post.stockSymbol,
-                    post.investmentActivityResponseDTO.new_position_weight
+                    post.investmentActivityResponseDTO.stockName,
+                    post.investmentActivityResponseDTO.new_position_weight,
+                    post.investmentActivityResponseDTO.old_position_weight
                   )}
                 </div>
               </div>

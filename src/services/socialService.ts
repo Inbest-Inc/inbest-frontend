@@ -72,6 +72,13 @@ export async function sharePost(
       JSON.stringify(data, null, 2)
     );
 
+    // ADDITIONAL DEBUGGING: Check if this looks like a hardcoded temporary ID
+    if (data.investmentActivityId === 123456) {
+      console.warn(
+        "WARNING: Using temporary ID (123456) instead of actual activity ID! This will cause 'Investment activity not found' errors."
+      );
+    }
+
     // Validate that the required fields are present
     if (!data.investmentActivityId) {
       console.error("Missing required field: investmentActivityId");
@@ -104,6 +111,7 @@ export async function sharePost(
     // Check data type of investmentActivityId to ensure it's a number
     const activityIdType = typeof data.investmentActivityId;
     console.log("investmentActivityId type:", activityIdType);
+    console.log("Raw investmentActivityId value:", data.investmentActivityId);
 
     // If it's not a number, try to convert it
     let parsedActivityId = data.investmentActivityId;
@@ -119,8 +127,37 @@ export async function sharePost(
       }
     }
 
+    // Extra check for NaN
+    if (isNaN(parsedActivityId)) {
+      console.error(
+        "Activity ID is not a valid number:",
+        data.investmentActivityId
+      );
+      toast.error("Invalid activity ID format", { id: loadingToast });
+      return {
+        status: "error",
+        message: "Invalid activity ID format",
+      };
+    }
+
+    // ADDITIONAL CHECK: Detect and handle the hardcoded temporary ID
+    if (parsedActivityId === 123456) {
+      console.error(
+        "Detected temporary ID (123456) in share request. This is likely caused by not preserving the actual activityId from the API response."
+      );
+      toast.error("Cannot share using a temporary activity ID", {
+        id: loadingToast,
+      });
+      return {
+        status: "error",
+        message:
+          "Cannot share using a temporary activity ID. Please try again.",
+      };
+    }
+
+    // Ensure we're sending a number to the API
     const requestBody = {
-      investmentActivityId: parsedActivityId,
+      investmentActivityId: Number(parsedActivityId),
       content: data.content,
     };
 
@@ -153,8 +190,15 @@ export async function sharePost(
         // Try to parse as JSON first
         const errorData = await response.json();
         console.error("Error response data:", errorData);
-        errorMessage =
-          errorData.message || errorData.error || "Failed to share post";
+
+        // Special handling for investment activity not found error
+        if (errorMessage.includes("Investment activity not found")) {
+          console.error("Activity ID not found on server:", parsedActivityId);
+          errorMessage = `Investment activity ID ${parsedActivityId} not found. Please try again or contact support.`;
+        } else {
+          errorMessage =
+            errorData.message || errorData.error || "Failed to share post";
+        }
       } catch (parseError) {
         // If not JSON, try to get the text
         try {
@@ -164,6 +208,15 @@ export async function sharePost(
           // If text contains meaningful information, use it
           if (textData && textData.length > 0) {
             errorMessage = textData;
+
+            // Special handling for investment activity not found error
+            if (errorMessage.includes("Investment activity not found")) {
+              console.error(
+                "Activity ID not found on server:",
+                parsedActivityId
+              );
+              errorMessage = `Investment activity ID ${parsedActivityId} not found. Please try again or contact support.`;
+            }
           }
         } catch (textError) {
           // If we can't even get the text, use status code information
