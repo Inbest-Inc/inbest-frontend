@@ -12,7 +12,7 @@ export default function ResetPasswordPage() {
       ? new URLSearchParams(window.location.search).get("token")
       : null;
   const [passwords, setPasswords] = useState({
-    newPassword: "",
+    password: "",
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -47,13 +47,13 @@ export default function ResetPasswordPage() {
     }
 
     // Validate passwords match
-    if (passwords.newPassword !== passwords.confirmPassword) {
+    if (passwords.password !== passwords.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
     // Validate password strength
-    const passwordErrors = validatePassword(passwords.newPassword);
+    const passwordErrors = validatePassword(passwords.password);
     if (passwordErrors.length > 0) {
       setError(passwordErrors.join(". "));
       return;
@@ -69,18 +69,19 @@ export default function ResetPasswordPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ password: passwords.newPassword }),
+          body: JSON.stringify({
+            password: passwords.password,
+            confirmPassword: passwords.confirmPassword,
+          }),
         }
       );
 
-      const data = await response.text(); // Response is plain text
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data || "Failed to reset password");
-      }
-
-      if (data === "Invalid or expired token") {
-        throw new Error(data);
+        // Get just the message from the error response
+        setError(data.message || "Failed to reset password");
+        return;
       }
 
       setIsSubmitted(true);
@@ -91,9 +92,7 @@ export default function ResetPasswordPage() {
     } catch (error) {
       console.error("Password reset failed:", error);
       setError(
-        error instanceof Error
-          ? error.message
-          : "An error occurred while resetting your password. Please try again later."
+        "An error occurred while resetting your password. Please try again later."
       );
     } finally {
       setIsLoading(false);
@@ -177,20 +176,20 @@ export default function ResetPasswordPage() {
               {/* New Password Input */}
               <div className="space-y-2">
                 <label
-                  htmlFor="newPassword"
+                  htmlFor="password"
                   className="block text-[15px] leading-[20px] font-medium text-[#1D1D1F]"
                 >
                   New Password
                 </label>
                 <input
-                  id="newPassword"
-                  name="newPassword"
+                  id="password"
+                  name="password"
                   type="password"
                   autoComplete="new-password"
                   required
-                  value={passwords.newPassword}
+                  value={passwords.password}
                   onChange={(e) =>
-                    setPasswords({ ...passwords, newPassword: e.target.value })
+                    setPasswords({ ...passwords, password: e.target.value })
                   }
                   className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
                   placeholder="••••••••"
