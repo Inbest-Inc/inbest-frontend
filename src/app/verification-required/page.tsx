@@ -150,14 +150,14 @@ export default function VerificationRequiredPage() {
           </div>
         )}
 
-        <div className="pt-4">
+        {/* <div className="pt-4">
           <Link
             href={`/${username}`}
             className="inline-block text-[15px] leading-[20px] text-blue-600 hover:text-blue-700 transition-colors"
           >
             Back to profile
           </Link>
-        </div>
+        </div> */}
       </motion.div>
     </main>
   );
