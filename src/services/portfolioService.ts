@@ -902,15 +902,16 @@ export interface TradeResponse {
     tradeId: number;
     portfolioId: number;
     stockId: number;
+    tickerSymbol: string;
     entryDate: string;
     exitDate: string;
     averageCost: number;
     exitPrice: number;
     quantity: number;
     totalReturn: number;
-    isBestTrade: boolean;
-    isWorstTrade: boolean;
-    lastUpdated: string;
+    isBestTrade?: boolean;
+    isWorstTrade?: boolean;
+    lastUpdated?: string;
   } | null;
 }
 

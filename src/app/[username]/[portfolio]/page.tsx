@@ -332,8 +332,8 @@ export default function PortfolioPage() {
           }
 
           setBestTrade({
-            stockSymbol: "TSLA", // Placeholder until API provides this
-            stockName: "Tesla, Inc.", // Placeholder until API provides this
+            stockSymbol: response.data.tickerSymbol,
+            stockName: response.data.tickerSymbol, // Using ticker as name until backend provides stock name
             return: response.data.totalReturn,
             entryDate: new Date(response.data.entryDate).toLocaleDateString(
               "en-US",
@@ -352,7 +352,7 @@ export default function PortfolioPage() {
               }
             ),
             holdPeriod,
-            logo: "https://assets.parqet.com/logos/symbol/TSLA?format=svg", // Placeholder
+            logo: `https://assets.parqet.com/logos/symbol/${response.data.tickerSymbol}?format=svg`,
             loaded: true,
             error: null,
           });
@@ -402,8 +402,8 @@ export default function PortfolioPage() {
           }
 
           setWorstTrade({
-            stockSymbol: "NFLX", // Placeholder until API provides this
-            stockName: "Netflix, Inc.", // Placeholder until API provides this
+            stockSymbol: response.data.tickerSymbol,
+            stockName: response.data.tickerSymbol, // Using ticker as name until backend provides stock name
             return: response.data.totalReturn,
             entryDate: new Date(response.data.entryDate).toLocaleDateString(
               "en-US",
@@ -422,7 +422,7 @@ export default function PortfolioPage() {
               }
             ),
             holdPeriod,
-            logo: "https://assets.parqet.com/logos/symbol/NFLX?format=svg", // Placeholder
+            logo: `https://assets.parqet.com/logos/symbol/${response.data.tickerSymbol}?format=svg`,
             loaded: true,
             error: null,
           });
