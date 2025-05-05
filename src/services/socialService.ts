@@ -55,6 +55,16 @@ export interface PostsResponse {
   data?: Post[];
 }
 
+export interface PaginatedPostsResponse {
+  status: string;
+  page: number;
+  totalPages: number;
+  totalPosts: number;
+  nextPage: number | null;
+  message: string;
+  data?: Post[];
+}
+
 /**
  * Share an investment post with the user's rationale
  * @param data - The post data including investmentActivityId and content
@@ -920,6 +930,78 @@ export async function getPostComments(
     return {
       status: "error",
       message: "Failed to get comments. Please try again later.",
+    };
+  }
+}
+
+/**
+ * Fetch trending posts with pagination
+ * @param page - The page number to fetch
+ * @returns A promise that resolves to the paginated response from the server
+ */
+export async function getTrendingPosts(
+  page: number = 1
+): Promise<PaginatedPostsResponse> {
+  try {
+    const token = localStorage.getItem("token");
+
+    // Create headers object conditionally to include token if available
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_URL}/api/posts/trending?page=${page}`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Failed to fetch trending posts";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || "Failed to fetch trending posts";
+      } catch (e) {
+        if (response.status === 404) {
+          errorMessage = "Posts not found";
+        } else if (response.status === 500) {
+          errorMessage = "Server error. Please try again later.";
+        }
+      }
+      return {
+        status: "error",
+        page: page,
+        totalPages: 0,
+        totalPosts: 0,
+        nextPage: null,
+        message: errorMessage,
+        data: [],
+      };
+    }
+
+    const data = await response.json();
+    return {
+      status: data.status,
+      page: data.page || page,
+      totalPages: data.totalPages || 0,
+      totalPosts: data.totalPosts || 0,
+      nextPage: data.nextPage || null,
+      message: data.message || "Trending posts fetched successfully",
+      data: data.data || [],
+    };
+  } catch (error) {
+    console.error("Error fetching trending posts:", error);
+    return {
+      status: "error",
+      page: page,
+      totalPages: 0,
+      totalPosts: 0,
+      nextPage: null,
+      message: "Failed to fetch trending posts. Please try again later.",
+      data: [],
     };
   }
 }

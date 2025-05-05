@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card, Text } from "@tremor/react";
 import { motion } from "framer-motion";
 import {
@@ -7,6 +7,7 @@ import {
   getPortfolioPosts,
   getAllPosts,
   getFollowedPosts,
+  getTrendingPosts,
   Post,
 } from "@/services/socialService";
 import PostCard from "./PostCard";
@@ -26,45 +27,104 @@ export default function Posts({
 }: PostsProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchPosts();
-  }, [username, isOwnProfile, portfolioId, view]);
+  // Function to fetch initial posts
+  const fetchPosts = async (resetState = true) => {
+    if (resetState) {
+      setIsLoading(true);
+      setError(null);
+      setPosts([]);
+      setCurrentPage(1);
+      setHasNextPage(true);
+    }
 
-  const fetchPosts = async () => {
-    setIsLoading(true);
-    setError(null);
     try {
       let response;
 
       if (view === "forYou") {
-        // For the "For You" tab in the Opinions page
-        response = await getAllPosts();
+        // For the "For You" tab in the Opinions page, use the new trending endpoint with pagination
+        const trendingResponse = await getTrendingPosts(1);
+
+        if (trendingResponse.status === "success") {
+          // Set pagination state
+          setTotalPages(trendingResponse.totalPages);
+          setHasNextPage(trendingResponse.nextPage !== null);
+
+          // Ensure all posts have a valid liked field
+          const processedPosts = (trendingResponse.data || []).map((post) => ({
+            ...post,
+            liked: post.liked === true, // Ensure it's a boolean
+          }));
+
+          setPosts(processedPosts);
+        } else {
+          setError(trendingResponse.message || "Failed to load trending posts");
+        }
       } else if (view === "followed") {
         // For the "Following" tab in the Opinions page
         response = await getFollowedPosts();
+
+        if (response.status === "success") {
+          // Ensure all posts have a valid liked field
+          const processedPosts = (response.data || []).map((post) => ({
+            ...post,
+            liked: post.liked === true, // Ensure it's a boolean
+          }));
+
+          setPosts(processedPosts);
+        } else {
+          setError(response.message || "Failed to load posts");
+        }
       } else if (portfolioId) {
         // If portfolioId is provided, fetch posts for that portfolio
         response = await getPortfolioPosts(portfolioId);
+
+        if (response.status === "success") {
+          // Ensure all posts have a valid liked field
+          const processedPosts = (response.data || []).map((post) => ({
+            ...post,
+            liked: post.liked === true, // Ensure it's a boolean
+          }));
+
+          setPosts(processedPosts);
+        } else {
+          setError(response.message || "Failed to load posts");
+        }
       } else if (isOwnProfile || !username) {
         response = await getUserPosts();
+
+        if (response.status === "success") {
+          // Ensure all posts have a valid liked field
+          const processedPosts = (response.data || []).map((post) => ({
+            ...post,
+            liked: post.liked === true, // Ensure it's a boolean
+          }));
+
+          setPosts(processedPosts);
+        } else {
+          setError(response.message || "Failed to load posts");
+        }
       } else {
         response = await getUserPostsByUsername(username);
-      }
 
-      // If response is success but data is empty array, just set posts to empty array without error
-      if (response.status === "success") {
-        // Ensure all posts have a valid liked field
-        const processedPosts = (response.data || []).map((post) => ({
-          ...post,
-          liked: post.liked === true, // Ensure it's a boolean
-        }));
+        if (response.status === "success") {
+          // Ensure all posts have a valid liked field
+          const processedPosts = (response.data || []).map((post) => ({
+            ...post,
+            liked: post.liked === true, // Ensure it's a boolean
+          }));
 
-        setPosts(processedPosts);
-      } else {
-        // Only set error if actual error response
-        setError(response.message || "Failed to load posts");
+          setPosts(processedPosts);
+        } else {
+          setError(response.message || "Failed to load posts");
+        }
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -73,6 +133,82 @@ export default function Posts({
       setIsLoading(false);
     }
   };
+
+  // Function to load more posts for infinite scroll
+  const loadMorePosts = async () => {
+    // Only load more if we have a next page and we're not already loading
+    if (!hasNextPage || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+
+    try {
+      const nextPage = currentPage + 1;
+
+      if (view === "forYou") {
+        const trendingResponse = await getTrendingPosts(nextPage);
+
+        if (trendingResponse.status === "success" && trendingResponse.data) {
+          // Set pagination state
+          setCurrentPage(nextPage);
+          setTotalPages(trendingResponse.totalPages);
+          setHasNextPage(trendingResponse.nextPage !== null);
+
+          // Ensure all posts have a valid liked field
+          const processedPosts = (trendingResponse.data || []).map((post) => ({
+            ...post,
+            liked: post.liked === true, // Ensure it's a boolean
+          }));
+
+          // Append new posts to existing posts
+          setPosts((prevPosts) => [...prevPosts, ...processedPosts]);
+        } else {
+          console.error("Failed to load more posts:", trendingResponse.message);
+          setHasNextPage(false);
+        }
+      }
+      // Other views don't support pagination yet
+    } catch (error) {
+      console.error("Error loading more posts:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Setup Intersection Observer for infinite scroll
+  const lastPostRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (isLoading || isLoadingMore) return;
+
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasNextPage) {
+            loadMorePosts();
+          }
+        },
+        { rootMargin: "200px" } // Load more posts when we're 200px from the bottom
+      );
+
+      if (node) {
+        observerRef.current.observe(node);
+      }
+    },
+    [isLoading, isLoadingMore, hasNextPage]
+  );
+
+  // Fetch posts on initial mount and when dependencies change
+  useEffect(() => {
+    fetchPosts();
+    return () => {
+      // Clean up observer on unmount
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [username, isOwnProfile, portfolioId, view]);
 
   const handlePostDeleted = (postId: number) => {
     setPosts(posts.filter((post) => post.id !== postId));
@@ -145,7 +281,7 @@ export default function Posts({
           </Text>
           <button
             className="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-200 transition-colors"
-            onClick={fetchPosts}
+            onClick={() => fetchPosts()}
           >
             Retry
           </button>
@@ -195,14 +331,44 @@ export default function Posts({
 
   return (
     <div className="space-y-6">
-      {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          onPostDeleted={handlePostDeleted}
-          isStandalone={true}
-        />
-      ))}
+      {posts.map((post, index) => {
+        // If this is the last post and we have more pages, attach the ref for infinite scrolling
+        if (
+          index === posts.length - 1 &&
+          view === "forYou" &&
+          currentPage < totalPages
+        ) {
+          return (
+            <div key={post.id} ref={lastPostRef}>
+              <PostCard
+                post={post}
+                onPostDeleted={handlePostDeleted}
+                isStandalone={true}
+              />
+            </div>
+          );
+        }
+        return (
+          <PostCard
+            key={post.id}
+            post={post}
+            onPostDeleted={handlePostDeleted}
+            isStandalone={true}
+          />
+        );
+      })}
+
+      {/* Loading indicator for fetching more posts */}
+      {isLoadingMore && (
+        <div className="flex justify-center items-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+
+      {/* Hidden div at the bottom to trigger loading more posts */}
+      {view === "forYou" && hasNextPage && !isLoadingMore && (
+        <div ref={loadMoreRef} className="h-1 opacity-0"></div>
+      )}
     </div>
   );
 }
