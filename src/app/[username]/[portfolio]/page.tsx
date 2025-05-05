@@ -613,15 +613,38 @@ export default function PortfolioPage() {
           <StatCard
             label={
               <span className="flex items-center gap-1">
-                <span>Ranking</span>
-                <InfoTooltip content={metricExplanations.ranking} />
+                <span>Hourly Return</span>
+                <InfoTooltip content={metricExplanations.hourlyReturn} />
               </span>
             }
-            value="-"
-            subtext="of investors"
+            value={
+              isMetricsLoading ? (
+                "-"
+              ) : (
+                <Tooltip
+                  content={`${metrics?.hourlyReturn < 1 && metrics?.hourlyReturn > -1 ? metrics?.hourlyReturn * 100 : metrics?.hourlyReturn}%`}
+                >
+                  <span>
+                    {metrics?.hourlyReturn >= 0 ? "+" : ""}
+                    {(metrics?.hourlyReturn < 1 && metrics?.hourlyReturn > -1
+                      ? metrics?.hourlyReturn * 100
+                      : metrics?.hourlyReturn
+                    ).toFixed(2)}
+                    %
+                  </span>
+                </Tooltip>
+              )
+            }
+            trend={
+              isMetricsLoading
+                ? "neutral"
+                : metrics?.hourlyReturn >= 0
+                  ? "positive"
+                  : "negative"
+            }
             icon={
               <svg
-                className="w-5 h-5 text-[#1D1D1F]"
+                className={`w-5 h-5 ${isMetricsLoading ? "text-[#1D1D1F]" : metrics?.hourlyReturn >= 0 ? "text-[#00A852]" : "text-[#FF3B30]"}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -630,7 +653,11 @@ export default function PortfolioPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={1.5}
-                  d="M16 4v12l-4-2-4 2V4M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  d={
+                    isMetricsLoading || metrics?.hourlyReturn >= 0
+                      ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                  }
                 />
               </svg>
             }
@@ -646,10 +673,16 @@ export default function PortfolioPage() {
               isMetricsLoading ? (
                 "-"
               ) : (
-                <Tooltip content={`${metrics?.dailyReturn}%`}>
+                <Tooltip
+                  content={`${metrics?.dailyReturn < 1 && metrics?.dailyReturn > -1 ? metrics?.dailyReturn * 100 : metrics?.dailyReturn}%`}
+                >
                   <span>
                     {metrics?.dailyReturn >= 0 ? "+" : ""}
-                    {metrics?.dailyReturn.toFixed(2)}%
+                    {(metrics?.dailyReturn < 1 && metrics?.dailyReturn > -1
+                      ? metrics?.dailyReturn * 100
+                      : metrics?.dailyReturn
+                    ).toFixed(2)}
+                    %
                   </span>
                 </Tooltip>
               )
@@ -692,10 +725,16 @@ export default function PortfolioPage() {
               isMetricsLoading ? (
                 "-"
               ) : (
-                <Tooltip content={`${metrics?.monthlyReturn}%`}>
+                <Tooltip
+                  content={`${metrics?.monthlyReturn < 1 && metrics?.monthlyReturn > -1 ? metrics?.monthlyReturn * 100 : metrics?.monthlyReturn}%`}
+                >
                   <span>
                     {metrics?.monthlyReturn >= 0 ? "+" : ""}
-                    {metrics?.monthlyReturn.toFixed(2)}%
+                    {(metrics?.monthlyReturn < 1 && metrics?.monthlyReturn > -1
+                      ? metrics?.monthlyReturn * 100
+                      : metrics?.monthlyReturn
+                    ).toFixed(2)}
+                    %
                   </span>
                 </Tooltip>
               )
@@ -738,10 +777,16 @@ export default function PortfolioPage() {
               isMetricsLoading ? (
                 "-"
               ) : (
-                <Tooltip content={`${metrics?.totalReturn}%`}>
+                <Tooltip
+                  content={`${metrics?.totalReturn < 1 && metrics?.totalReturn > -1 ? metrics?.totalReturn * 100 : metrics?.totalReturn}%`}
+                >
                   <span>
                     {metrics?.totalReturn >= 0 ? "+" : ""}
-                    {metrics?.totalReturn.toFixed(2)}%
+                    {(metrics?.totalReturn < 1 && metrics?.totalReturn > -1
+                      ? metrics?.totalReturn * 100
+                      : metrics?.totalReturn
+                    ).toFixed(2)}
+                    %
                   </span>
                 </Tooltip>
               )
@@ -845,8 +890,16 @@ export default function PortfolioPage() {
                     {isMetricsLoading ? (
                       "-"
                     ) : (
-                      <Tooltip content={`${metrics?.volatility}%`}>
-                        <span>{metrics?.volatility.toFixed(2)}%</span>
+                      <Tooltip
+                        content={`${metrics?.volatility < 1 ? metrics?.volatility * 100 : metrics?.volatility}%`}
+                      >
+                        <span>
+                          {(metrics?.volatility < 1
+                            ? metrics?.volatility * 100
+                            : metrics?.volatility
+                          ).toFixed(2)}
+                          %
+                        </span>
                       </Tooltip>
                     )}
                   </Text>

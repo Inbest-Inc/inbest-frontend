@@ -190,16 +190,23 @@ export default function LeaderboardTable({
   }, [returnFilter, onError]);
 
   const getReturnValue = (portfolio: Portfolio) => {
+    let value;
     switch (returnFilter) {
       case "total":
-        return portfolio.portfolioMetric.totalReturn;
+        value = portfolio.portfolioMetric.totalReturn;
+        break;
       case "monthly":
-        return portfolio.portfolioMetric.monthlyReturn;
+        value = portfolio.portfolioMetric.monthlyReturn;
+        break;
       case "daily":
-        return portfolio.portfolioMetric.dailyReturn;
+        value = portfolio.portfolioMetric.dailyReturn;
+        break;
       default:
-        return portfolio.portfolioMetric.totalReturn;
+        value = portfolio.portfolioMetric.totalReturn;
     }
+
+    // Check if value is already in percentage form or needs conversion
+    return value < 1 && value > -1 ? value * 100 : value;
   };
 
   const getRankIcon = (rank: number) => {
@@ -220,7 +227,7 @@ export default function LeaderboardTable({
   };
 
   const formatReturn = (value: number) => {
-    // Ensure we always have 2 decimal places
+    // Value is already converted to percentage in getReturnValue
     const formattedValue =
       value >= 0 ? `+${value.toFixed(2)}` : value.toFixed(2);
     return `${formattedValue}%`;
