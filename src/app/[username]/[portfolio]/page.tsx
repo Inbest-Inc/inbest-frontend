@@ -2,10 +2,10 @@
 
 export const runtime = "edge";
 
+import React, { useState, useEffect, useRef } from "react";
 import { Card, Text } from "@tremor/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import PortfolioChart from "@/components/PortfolioChart";
 import PortfolioPerformanceChart from "@/components/PortfolioPerformanceChart";
@@ -42,6 +42,9 @@ import Tooltip from "@/components/Tooltip";
 import InfoTooltip, { metricExplanations } from "@/components/InfoTooltip";
 import PortfolioShareButton from "@/components/PortfolioShareButton";
 import { getStockLogo } from "@/utils/stockUtils";
+import { CategoryBar } from "@/components/CategoryBar";
+import { cx } from "@/lib/utils";
+import { getColorClassName, AvailableChartColorsKeys } from "@/lib/chartUtils";
 
 const portfolioReturns = {
   "1M": -2.3,
@@ -157,6 +160,9 @@ export default function PortfolioPage() {
   const [worstTrade, setWorstTrade] = useState({ ...defaultTradeData });
   const [isBestTradeLoading, setIsBestTradeLoading] = useState(true);
   const [isWorstTradeLoading, setIsWorstTradeLoading] = useState(true);
+  const [activeHoldingIndex, setActiveHoldingIndex] = useState<number | null>(
+    null
+  );
 
   // Default user data
   const userData = {
@@ -1130,67 +1136,202 @@ export default function PortfolioPage() {
                   </Text>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {holdings.map((holding) => (
-                    <div
-                      key={holding.symbol}
-                      className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04] hover:bg-white/60 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="relative h-10 w-10 rounded-xl overflow-hidden ring-1 ring-black/[0.04]">
-                          <Image
-                            src={holding.logo}
-                            alt={holding.name}
-                            fill
-                            className="object-contain"
-                          />
-                        </div>
-                        <div>
-                          <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                            {holding.symbol}
-                          </Text>
-                          <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
-                            {holding.name}
-                          </Text>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <Text className="text-[13px] leading-[18px] text-[#6E6E73] flex items-center gap-1">
-                            <span>Allocation</span>
-                            <InfoTooltip
-                              content={metricExplanations.allocation}
+                <>
+                  {/* Category Bar for Holdings Allocation */}
+                  <div className="mb-8">
+                    {(() => {
+                      // Sort holdings by allocation in descending order (include all stocks, even with 0 allocation)
+                      const sortedHoldings = [...holdings].sort(
+                        (a, b) => b.allocation - a.allocation
+                      );
+
+                      // If no holdings data, don't render the bar
+                      if (sortedHoldings.length === 0 || isLoading) {
+                        return null;
+                      }
+
+                      // Limit to top 10 holdings
+                      const displayHoldings = sortedHoldings.slice(0, 10);
+
+                      // Extract values for the category bar
+                      const values = displayHoldings.map(
+                        (holding) => holding.allocation
+                      );
+
+                      // Use a consistent set of colors based on our design
+                      const colors: AvailableChartColorsKeys[] = [
+                        "blue",
+                        "emerald",
+                        "violet",
+                        "amber",
+                        "gray",
+                      ];
+
+                      return (
+                        <div className="py-6">
+                          <div className="relative">
+                            <CategoryBar
+                              values={values}
+                              colors={colors}
+                              showLabels={false}
+                              marker={
+                                activeHoldingIndex !== null &&
+                                activeHoldingIndex < displayHoldings.length
+                                  ? {
+                                      value:
+                                        values
+                                          .slice(0, activeHoldingIndex)
+                                          .reduce((sum, val) => sum + val, 0) +
+                                        values[activeHoldingIndex] / 2,
+                                      tooltip: `${displayHoldings[activeHoldingIndex].symbol}: ${displayHoldings[activeHoldingIndex].allocation.toFixed(2)}%`,
+                                      showAnimation: true,
+                                    }
+                                  : undefined
+                              }
+                              className="max-w-full h-5"
                             />
-                          </Text>
-                          <Tooltip content={`${holding.allocation}%`}>
-                            <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
-                              {holding.allocation}%
-                            </Text>
-                          </Tooltip>
+                          </div>
+
+                          {/* Interactive color legend with tooltips */}
+                          <div className="flex flex-wrap gap-3 mt-8 justify-center">
+                            {displayHoldings.map((holding, index) => {
+                              const color = colors[index % colors.length];
+
+                              return (
+                                <Tooltip
+                                  key={holding.symbol}
+                                  content={
+                                    <div className="text-center">
+                                      <div className="font-medium mb-1">
+                                        {holding.name || holding.symbol}
+                                      </div>
+                                      <div className="flex items-center justify-between gap-3">
+                                        <span>Allocation:</span>
+                                        <span className="font-medium">
+                                          {holding.allocation.toFixed(2)}%
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center justify-between gap-3">
+                                        <span>Return:</span>
+                                        <span
+                                          className={`font-medium ${holding.return >= 0 ? "text-green-500" : "text-red-500"}`}
+                                        >
+                                          {holding.return >= 0 ? "+" : ""}
+                                          {holding.return.toFixed(2)}%
+                                        </span>
+                                      </div>
+                                    </div>
+                                  }
+                                >
+                                  <div
+                                    className={cx(
+                                      "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-200 cursor-pointer",
+                                      activeHoldingIndex === index
+                                        ? "bg-white shadow-md transform scale-110"
+                                        : "bg-white/60 hover:bg-white/90 shadow-sm hover:shadow hover:scale-105"
+                                    )}
+                                    onMouseEnter={() =>
+                                      setActiveHoldingIndex(index)
+                                    }
+                                    onMouseLeave={() =>
+                                      setActiveHoldingIndex(null)
+                                    }
+                                  >
+                                    <div
+                                      className={cx(
+                                        "h-3.5 w-3.5 rounded-full",
+                                        getColorClassName(color, "bg")
+                                      )}
+                                    />
+                                    <Text className="text-[13px] leading-[18px] font-medium text-[#1D1D1F]">
+                                      {holding.symbol}
+                                    </Text>
+                                  </div>
+                                </Tooltip>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <Text className="text-[13px] leading-[18px] text-[#6E6E73] flex items-center gap-1">
-                            <span>Return</span>
-                            <InfoTooltip content={metricExplanations.return} />
-                          </Text>
-                          <Tooltip content={`${holding.return}%`}>
-                            <Text
-                              className={`text-[15px] leading-[20px] font-medium ${
-                                holding.return >= 0
-                                  ? "text-[#00A852]"
-                                  : "text-[#FF3B30]"
-                              }`}
-                            >
-                              {holding.return >= 0 ? "+" : ""}
-                              {holding.return}%
-                            </Text>
-                          </Tooltip>
-                        </div>
-                        {/* Last Action row commented out as requested */}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Sort holdings by allocation in descending order */}
+                    {[...holdings]
+                      .sort((a, b) => b.allocation - a.allocation)
+                      .map((holding) => {
+                        // Skip rendering if critical data is missing
+                        if (!holding.symbol || holding.symbol.trim() === "") {
+                          return null;
+                        }
+
+                        return (
+                          <div
+                            key={holding.symbol}
+                            className="p-4 rounded-xl bg-white/40 backdrop-blur-sm ring-1 ring-black/[0.04] hover:bg-white/60 transition-all duration-300"
+                          >
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="relative h-10 w-10 rounded-xl overflow-hidden ring-1 ring-black/[0.04]">
+                                <Image
+                                  src={holding.logo || "/placeholder-stock.png"} // Fallback image
+                                  alt={holding.name || holding.symbol}
+                                  fill
+                                  className="object-contain"
+                                />
+                              </div>
+                              <div>
+                                <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                                  {holding.symbol}
+                                </Text>
+                                <Text className="text-[13px] leading-[18px] text-[#6E6E73]">
+                                  {holding.name || "Unknown stock"}
+                                </Text>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <Text className="text-[13px] leading-[18px] text-[#6E6E73] flex items-center gap-1">
+                                  <span>Allocation</span>
+                                  <InfoTooltip
+                                    content={metricExplanations.allocation}
+                                  />
+                                </Text>
+                                <Tooltip
+                                  content={`${holding.allocation || 0}%`}
+                                >
+                                  <Text className="text-[15px] leading-[20px] font-medium text-[#1D1D1F]">
+                                    {(holding.allocation || 0).toFixed(2)}%
+                                  </Text>
+                                </Tooltip>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <Text className="text-[13px] leading-[18px] text-[#6E6E73] flex items-center gap-1">
+                                  <span>Return</span>
+                                  <InfoTooltip
+                                    content={metricExplanations.return}
+                                  />
+                                </Text>
+                                <Tooltip content={`${holding.return || 0}%`}>
+                                  <Text
+                                    className={`text-[15px] leading-[20px] font-medium ${
+                                      (holding.return || 0) >= 0
+                                        ? "text-[#00A852]"
+                                        : "text-[#FF3B30]"
+                                    }`}
+                                  >
+                                    {(holding.return || 0) >= 0 ? "+" : ""}
+                                    {(holding.return || 0).toFixed(2)}%
+                                  </Text>
+                                </Tooltip>
+                              </div>
+                              {/* Last Action row commented out as requested */}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </>
               )}
             </div>
           </Card>
