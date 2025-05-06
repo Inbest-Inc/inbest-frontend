@@ -3,7 +3,7 @@ import { Card } from "@tremor/react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { toast } from "react-hot-toast";
 import {
   Post,
@@ -20,8 +20,29 @@ import { getStockLogo } from "../../utils/stockUtils";
 // Helper functions to format dates
 export const formatRelativeTime = (dateString: string) => {
   try {
-    const date = new Date(dateString);
-    return formatDistanceToNow(date, { addSuffix: true });
+    // Parse the ISO string
+    const utcDate = parseISO(dateString);
+
+    // Server sends UTC timestamps, so for comparing with local time
+    // we need to add the same hours that the local timezone is ahead of UTC
+    // Turkey is UTC+3, so we add 3 hours to the UTC timestamp
+    const localDate = new Date(utcDate.getTime() + 3 * 60 * 60 * 1000);
+
+    // Current timestamp for comparison
+    const now = new Date();
+
+    // Calculate difference in seconds
+    const diffInSeconds = Math.floor(
+      (now.getTime() - localDate.getTime()) / 1000
+    );
+
+    // For very recent posts (less than 60 seconds)
+    if (diffInSeconds < 60) {
+      return diffInSeconds <= 5 ? "just now" : `${diffInSeconds} seconds ago`;
+    }
+
+    // Use formatDistanceToNow with the adjusted date for correct relative time
+    return formatDistanceToNow(localDate, { addSuffix: true });
   } catch (e) {
     console.error("Error formatting date:", e);
     return dateString;
@@ -30,8 +51,14 @@ export const formatRelativeTime = (dateString: string) => {
 
 export const formatExactDate = (dateString: string) => {
   try {
-    const date = new Date(dateString);
-    return format(date, "MMM d, yyyy 'at' h:mm a");
+    // Parse the ISO string
+    const utcDate = parseISO(dateString);
+
+    // Add 3 hours to match Turkey timezone (UTC+3)
+    const localDate = new Date(utcDate.getTime() + 3 * 60 * 60 * 1000);
+
+    // Format the local date
+    return format(localDate, "MMM d, yyyy 'at' h:mm a");
   } catch (e) {
     console.error("Error formatting date:", e);
     return dateString;

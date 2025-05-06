@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card, Text } from "@tremor/react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { format, formatDistanceToNow } from "date-fns";
 import { getStockLogo } from "../utils/stockUtils";
 
 interface Comment {
@@ -363,27 +364,45 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
     );
   };
 
-  // Updated to return human-readable dates
+  // Updated to return human-readable dates with proper timezone handling
   const formatDate = (date: Date) => {
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
+    try {
+      // Add 3 hours to match Turkey timezone (UTC+3)
+      // This is needed because hard-coded dates in the feed are in UTC
+      const localDate = new Date(date.getTime() + 3 * 60 * 60 * 1000);
 
-    const month = months[date.getMonth()];
-    const day = date.getDate();
+      // Current timestamp for comparison
+      const now = new Date();
 
-    return `${month} ${day}`;
+      // Check if date is recent (less than 24 hours ago)
+      const diffInHours =
+        (now.getTime() - localDate.getTime()) / (1000 * 60 * 60);
+
+      if (diffInHours < 24) {
+        // For recent dates, show relative time
+        return formatDistanceToNow(localDate, { addSuffix: true });
+      }
+
+      // For older dates, show formatted date
+      return format(localDate, "MMM d");
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      const months = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+      return `${months[date.getMonth()]} ${date.getDate()}`;
+    }
   };
 
   const togglePostLike = (postId: string, e: React.MouseEvent) => {
@@ -643,41 +662,11 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
                                     d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
                                   />
                                 </svg>
-                                <span>
-                                  {likedComments.includes(comment.id)
-                                    ? comment.likes + 1
-                                    : comment.likes}
-                                </span>
-                              </button>
-                              <button className="text-xs text-[#6E6E73] hover:text-[#0071E3] transition-colors duration-200">
-                                Reply
                               </button>
                             </div>
                           </div>
                         </div>
                       ))}
-                    </div>
-
-                    {/* Comment Input */}
-                    <div className="mt-4 flex gap-3">
-                      <div className="relative h-8 w-8 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100">
-                        <Image
-                          src="https://sametsahin.com/images/new-pp.jpeg"
-                          alt="Your avatar"
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 relative">
-                        <input
-                          type="text"
-                          placeholder="Add a comment..."
-                          className="w-full py-2 px-4 bg-gray-50 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-200"
-                        />
-                        <button className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500 font-medium text-sm">
-                          Post
-                        </button>
-                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -685,17 +674,6 @@ export default function OpinionsFeed({ activeTab }: OpinionsFeedProps) {
           </Link>
         </motion.div>
       ))}
-
-      {feed.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-[#6E6E73] mb-2">No opinions yet</div>
-          <div className="text-sm text-[#6E6E73]">
-            {activeTab === "for-you"
-              ? "Check back later for personalized opinions"
-              : "Follow more investors to see their opinions"}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
