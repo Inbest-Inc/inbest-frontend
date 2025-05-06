@@ -1,5 +1,9 @@
 import { toast } from "react-hot-toast";
 import { getApiUrl } from "@/config/env";
+import {
+  validatePassword,
+  getPasswordErrorMessage,
+} from "@/utils/passwordUtils";
 
 const API_URL = getApiUrl();
 
@@ -111,8 +115,10 @@ export async function changePassword(
       throw new Error("New password is required");
     }
 
-    if (passwordData.newPassword.length < 6) {
-      throw new Error("New password must be at least 6 characters long");
+    // Validate password with our utility
+    const passwordErrors = validatePassword(passwordData.newPassword);
+    if (passwordErrors.length > 0) {
+      throw new Error(passwordErrors.join(". "));
     }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -130,17 +136,20 @@ export async function changePassword(
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to change password");
+      throw new Error(
+        errorData.error || errorData.message || "Failed to change password"
+      );
     }
 
     const result = await response.json();
     toast.success("Password changed successfully", { id: loadingToast });
     return result;
   } catch (error) {
-    toast.error(
-      error instanceof Error ? error.message : "Failed to change password",
-      { id: loadingToast }
-    );
+    // Use our utility to handle password errors, prioritizing backend messages if possible
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to change password";
+
+    toast.error(errorMessage, { id: loadingToast });
     throw error;
   }
 }

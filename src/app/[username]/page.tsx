@@ -32,6 +32,7 @@ import NotFoundPage from "@/components/NotFoundPage";
 import FollowersModal from "@/components/FollowersModal";
 import FollowingModal from "@/components/FollowingModal";
 import Avatar from "@/components/Avatar";
+import { validatePassword } from "@/utils/passwordUtils";
 
 // Update mock data
 const DEFAULT_NAME = "John Doe";
@@ -318,8 +319,10 @@ export default function UserProfilePage() {
         return;
       }
 
-      if (formData.newPassword.length < 6) {
-        toast.error("New password must be at least 6 characters long");
+      // Use our utility for password validation
+      const passwordErrors = validatePassword(formData.newPassword);
+      if (passwordErrors.length > 0) {
+        toast.error(passwordErrors.join(". "));
         return;
       }
 

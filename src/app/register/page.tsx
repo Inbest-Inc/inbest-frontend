@@ -5,6 +5,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Text } from "@tremor/react";
 import { getApiUrl } from "@/config/env";
+import {
+  validatePassword,
+  getPasswordErrorMessage,
+} from "@/utils/passwordUtils";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -91,8 +95,10 @@ export default function RegisterPage() {
       errors.confirmPassword = "Passwords don't match";
     }
 
-    if (formData.password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
+    // Use the password validation utility
+    const passwordErrors = validatePassword(formData.password);
+    if (passwordErrors.length > 0) {
+      errors.password = passwordErrors[0]; // Use first error for field validation
     }
 
     // Validate username is lowercase
@@ -104,15 +110,15 @@ export default function RegisterPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
     if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
-    setError("");
 
     try {
       const response = await fetch(`${API_URL}/api/auth/register`, {
@@ -124,28 +130,36 @@ export default function RegisterPage() {
       });
 
       const data = await response.json();
-      console.log("Registration response:", data);
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Registration failed. Please try again."
-        );
+        // Check if the backend returned field-specific validation errors
+        if (data.errors && typeof data.errors === "object") {
+          setValidationErrors(data.errors);
+        } else if (data.message) {
+          // If there's a password-specific error in the message
+          if (data.message.toLowerCase().includes("password")) {
+            // Use our utility to prioritize backend message
+            const passwordErrors = validatePassword(formData.password);
+            setError(getPasswordErrorMessage(data.message, passwordErrors));
+          } else {
+            // For other generic errors
+            setError(data.message);
+          }
+        } else {
+          setError("Registration failed. Please try again.");
+        }
+        setIsLoading(false);
+        return;
       }
 
-      // Successfully registered, but we're not logging in automatically
-      // so we only store the username
+      // Save the username in localStorage for auto-fill in login page
       localStorage.setItem("username", formData.username);
 
-      // Redirect to login page
+      // Redirect to the login page with a success flag
       window.location.href = "/login?registered=true";
     } catch (error) {
-      console.error("Registration failed:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Registration failed. Please try again."
-      );
-    } finally {
+      console.error("Registration error:", error);
+      setError("An unexpected error occurred. Please try again later.");
       setIsLoading(false);
     }
   };
@@ -179,7 +193,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleRegister} className="space-y-6">
           {/* Error Message */}
           {error && (
             <div className="p-4 rounded-xl bg-red-50 border border-red-100">
@@ -206,7 +220,7 @@ export default function RegisterPage() {
               value={formData.username}
               onChange={handleChange}
               className={getInputClass("username")}
-              placeholder="your_username"
+              placeholder="username"
               minLength={3}
               maxLength={50}
             />

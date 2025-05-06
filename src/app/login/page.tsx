@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Text } from "@tremor/react";
 import { useRouter } from "next/navigation";
 import { getApiUrl } from "@/config/env";
+import { getPasswordErrorMessage } from "@/utils/passwordUtils";
 
 const API_URL = getApiUrl();
 
@@ -53,12 +54,19 @@ export default function LoginPage() {
       });
 
       const data = await response.json();
-      console.log("Login response:", data);
 
       if (!response.ok) {
-        throw new Error(
-          data.result || data.message || "Invalid username or password"
-        );
+        // Check if the error is password-related
+        if (data.message && data.message.toLowerCase().includes("password")) {
+          setError(getPasswordErrorMessage(data.message, []));
+        } else {
+          // For other errors, display the backend message or a fallback
+          setError(
+            data.result || data.message || "Invalid username or password"
+          );
+        }
+        setIsLoading(false);
+        return;
       }
 
       // Check if token exists in the expected location
@@ -81,7 +89,6 @@ export default function LoginPage() {
           ? error.message
           : "Failed to login. Please try again."
       );
-    } finally {
       setIsLoading(false);
     }
   };
@@ -141,7 +148,7 @@ export default function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
               className="w-full h-[44px] px-4 rounded-xl border border-black/[0.08] bg-white/90 backdrop-blur-xl shadow-sm text-[17px] leading-[22px] text-[#1D1D1F] placeholder-[#6E6E73] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
-              placeholder="your_username"
+              placeholder="username"
               minLength={3}
               maxLength={50}
             />

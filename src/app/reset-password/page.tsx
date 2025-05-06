@@ -5,6 +5,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Text } from "@tremor/react";
 import { getApiUrl } from "@/config/env";
+import {
+  validatePassword,
+  getPasswordErrorMessage,
+} from "@/utils/passwordUtils";
 
 export default function ResetPasswordPage() {
   const token =
@@ -18,23 +22,6 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
-
-  const validatePassword = (password: string) => {
-    const errors = [];
-    if (password.length < 6) {
-      errors.push("Password must be at least 6 characters long");
-    }
-    if (!/[A-Z]/.test(password)) {
-      errors.push("Password must contain at least one uppercase letter");
-    }
-    if (!/[a-z]/.test(password)) {
-      errors.push("Password must contain at least one lowercase letter");
-    }
-    if (!/[0-9]/.test(password)) {
-      errors.push("Password must contain at least one number");
-    }
-    return errors;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,8 +66,8 @@ export default function ResetPasswordPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Get just the message from the error response
-        setError(data.message || "Failed to reset password");
+        // Use the utility to get the error message, prioritizing backend error
+        setError(getPasswordErrorMessage(data.message, passwordErrors));
         return;
       }
 
