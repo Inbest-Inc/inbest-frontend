@@ -23,6 +23,9 @@ interface LineChartProps {
   yAxisLabel?: string;
   colors?: string[];
   connectNulls?: boolean;
+  minValue?: number;
+  maxValue?: number;
+  tooltipField?: string;
 }
 
 const defaultColors = {
@@ -46,6 +49,9 @@ export const LineChart = ({
   yAxisLabel,
   colors: customColors,
   connectNulls = false,
+  minValue,
+  maxValue,
+  tooltipField,
 }: LineChartProps) => {
   const [hiddenSeries, setHiddenSeries] = React.useState<Set<string>>(
     new Set()
@@ -148,13 +154,25 @@ export const LineChart = ({
             tick={{ fill: "#6b7280", fontSize: 12 }}
             tickFormatter={valueFormatter}
             width={80}
+            domain={
+              minValue !== undefined && maxValue !== undefined
+                ? [minValue, maxValue]
+                : ["auto", "auto"]
+            }
           />
           <Tooltip
             content={({ active, payload, label }) => {
               if (active && payload && payload.length) {
+                const displayLabel =
+                  tooltipField && payload[0]?.payload[tooltipField]
+                    ? payload[0].payload[tooltipField]
+                    : label;
+
                 return (
                   <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
-                    <div className="mb-2 text-sm font-medium">{label}</div>
+                    <div className="mb-2 text-sm font-medium">
+                      {displayLabel}
+                    </div>
                     <div className="space-y-1">
                       {payload
                         .filter((entry) => {

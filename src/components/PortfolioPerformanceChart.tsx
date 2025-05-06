@@ -60,28 +60,14 @@ export default function PortfolioPerformanceChart({
           response.data &&
           response.data.length > 0
         ) {
-          // Start with base values of 100 for each series
-          let portfolioValue = 100;
-          let spyValue = 100;
-          let goldValue = 100;
-
-          // Transform the data to calculate cumulative returns
+          // Transform the data to display in the chart
           const transformedData = response.data.map((item) => {
-            // Handle potential null or undefined values
-            const portfolioReturn = item.portfolioReturn || 0;
-            const spyReturn = item.spyReturn || 0;
-            const goldReturn = item.goldReturn || 0;
-
-            // Calculate the new values based on the monthly returns
-            portfolioValue = portfolioValue * (1 + portfolioReturn / 100);
-            spyValue = spyValue * (1 + spyReturn / 100);
-            goldValue = goldValue * (1 + goldReturn / 100);
-
             return {
-              date: formatDate(item.date),
-              Portfolio: parseFloat(portfolioValue.toFixed(2)),
-              "S&P 500": parseFloat(spyValue.toFixed(2)),
-              Gold: parseFloat(goldValue.toFixed(2)),
+              date: formatDate(item.date, false), // Simple date for X-axis
+              tooltip: formatDate(item.date, true), // Detailed date+time for tooltip
+              Portfolio: parseFloat(item.portfolioReturn.toFixed(2)),
+              "S&P 500": parseFloat(item.spyReturn.toFixed(2)),
+              Gold: parseFloat(item.goldReturn.toFixed(2)),
             };
           });
 
@@ -91,6 +77,7 @@ export default function PortfolioPerformanceChart({
             const duplicatePoint = {
               ...singlePoint,
               date: "Future", // Add a second date point
+              tooltip: "Future", // Also update tooltip label
             };
             transformedData.push(duplicatePoint);
           }
@@ -133,7 +120,7 @@ export default function PortfolioPerformanceChart({
     }
   }, [portfolioId]);
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string, includeTime = false) => {
     if (!dateStr) return "Unknown";
 
     try {
@@ -142,6 +129,19 @@ export default function PortfolioPerformanceChart({
       if (isNaN(date.getTime())) {
         return dateStr; // Return original string if invalid date
       }
+
+      if (includeTime) {
+        return `${date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })} ${date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "numeric",
+          hour12: true,
+        })}`;
+      }
+
       return date.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
@@ -151,6 +151,34 @@ export default function PortfolioPerformanceChart({
       return dateStr;
     }
   };
+
+  // Calculate min and max values for the chart
+  const getChartRange = () => {
+    if (chartData.length === 0) return { minValue: 85, maxValue: 115 };
+
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+
+    chartData.forEach((item) => {
+      categories.forEach((category) => {
+        if (item[category] < minVal) minVal = item[category];
+        if (item[category] > maxVal) maxVal = item[category];
+      });
+    });
+
+    // Calculate the range and add more padding below to center values better
+    const range = maxVal - minVal;
+    const topPadding = Math.max(range * 0.2, 5);
+    const bottomPadding = Math.max(range * 0.3, 10); // More padding at the bottom
+
+    // Make sure we don't go below 85 for min value and have at least 20 points range
+    return {
+      minValue: Math.max(80, Math.floor(minVal - bottomPadding)),
+      maxValue: Math.ceil(maxVal + topPadding),
+    };
+  };
+
+  const { minValue, maxValue } = getChartRange();
 
   return (
     <div>
@@ -198,8 +226,11 @@ export default function PortfolioPerformanceChart({
           colors={chartColors}
           valueFormatter={(value) => `${value.toFixed(1)}%`}
           xAxisLabel="Time"
-          yAxisLabel="Value (%)"
+          yAxisLabel="Value"
+          minValue={minValue}
+          maxValue={maxValue}
           connectNulls={true}
+          tooltipField="tooltip"
         />
       )}
     </div>
