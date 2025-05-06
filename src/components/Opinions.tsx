@@ -971,11 +971,13 @@ export default function Opinions({
           </div>
           <Text className="text-red-500 font-medium text-lg mb-2">
             {view === "followed"
-              ? "Failed to load followed posts"
-              : "Failed to load posts"}
+              ? "Sign in required for followed posts"
+              : "Oops! Something went wrong"}
           </Text>
           <Text className="text-gray-500 text-center">
-            We couldn't load the content. Please try again later.
+            {view === "followed"
+              ? "You need to be signed in to view posts from accounts you follow."
+              : "We're having trouble loading this content right now. Please try again in a moment."}
           </Text>
           <button
             className="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-200 transition-colors"

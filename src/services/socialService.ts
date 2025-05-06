@@ -929,7 +929,7 @@ export async function getPostComments(
     console.error("Error getting comments:", error);
     return {
       status: "error",
-      message: "Failed to get comments. Please try again later.",
+      message: "We couldn't load the comments. Please try refreshing the page.",
     };
   }
 }
@@ -1289,7 +1289,8 @@ export async function getFollowedPosts(): Promise<PostsResponse> {
       console.error("Cannot fetch followed posts without authentication");
       return {
         status: "error",
-        message: "Authentication required to view followed posts",
+        message:
+          "Sign in required - You need to be signed in to view posts from people you follow",
       };
     }
 
