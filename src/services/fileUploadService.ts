@@ -30,13 +30,7 @@ export interface FileUploadResponse {
 }
 
 // Allowed file types for profile photos
-const ALLOWED_FILE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "image/svg+xml",
-];
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png"];
 
 // Maximum file size (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -53,7 +47,7 @@ export const validateFile = (
   if (!ALLOWED_FILE_TYPES.includes(file.type)) {
     return {
       isValid: false,
-      error: `Invalid file type. Allowed types: ${ALLOWED_FILE_TYPES.map((type) => type.replace("image/", "")).join(", ")}`,
+      error: "Invalid file type. Only JPG and PNG images are allowed.",
     };
   }
 

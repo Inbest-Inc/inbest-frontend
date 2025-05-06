@@ -593,7 +593,7 @@ export default function UserProfilePage() {
                       type="file"
                       ref={fileInputRef}
                       className="hidden"
-                      accept="image/*"
+                      accept=".jpg,.jpeg,.png"
                       onChange={handlePhotoUpload}
                     />
                     <button
