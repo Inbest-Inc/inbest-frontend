@@ -154,7 +154,7 @@ const topTrades = [
 
 const featuredPortfolios = [
   {
-    user: "Sude Akarcay",
+    user: "sudeakarcay",
     avatar: "https://i.ytimg.com/vi/m0XpDRhnTN8/maxresdefault.jpg",
     allocation: [
       { name: "AAPL", value: 44.3, logo: getStockLogo("AAPL") },
@@ -169,9 +169,8 @@ const featuredPortfolios = [
     topStockReturn: "+31.2%",
   },
   {
-    user: "Ercan Uchar",
-    avatar:
-      "https://pbs.twimg.com/profile_images/1316982158578298880/BRoYwo1W_400x400.jpg",
+    user: "mehmet",
+    avatar: "https://avatars.githubusercontent.com/u/141614198?v=4",
     allocation: [
       { name: "TSLA", value: 38.5, logo: getStockLogo("TSLA") },
       { name: "COIN", value: 28.7, logo: getStockLogo("COIN") },
@@ -653,7 +652,7 @@ export default function Home() {
 
           {/* Add the "See More" button */}
           <div className="flex justify-center mt-16">
-            <Link href="/investors" className="group relative overflow-hidden">
+            <Link href="/opinions" className="group relative overflow-hidden">
               <div className="relative px-8 py-4 bg-white border border-[#D2D2D7] rounded-full z-10 flex items-center gap-2 group-hover:border-[#0071E3] transition-colors duration-300">
                 <span className="text-[17px] font-medium text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors duration-300">
                   Discover more investors
@@ -845,7 +844,10 @@ export default function Home() {
 
           {/* Add the "See More" button */}
           <div className="flex justify-center mt-16">
-            <Link href="/trades" className="group relative overflow-hidden">
+            <Link
+              href="/best-portfolios"
+              className="group relative overflow-hidden"
+            >
               <div className="relative px-8 py-4 bg-white border border-[#D2D2D7] rounded-full z-10 flex items-center gap-2 group-hover:border-[#0071E3] transition-colors duration-300">
                 <span className="text-[17px] font-medium text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors duration-300">
                   Explore more trades
